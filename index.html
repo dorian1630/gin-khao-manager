@@ -1,0 +1,2575 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0A0908">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gin Khao">
+<title>Gin Khao Manager — Démo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep:       #0A0908;
+  --bg-soft:       #14110E;
+  --surface:       #1C1814;
+  --surface-2:    #251F19;
+  --border:        #2D261E;
+  --border-soft:   #221C16;
+
+  --sriracha:      #E63946;
+  --sriracha-soft: #C42E3B;
+  --gold:          #E4B860;
+  --gold-soft:     #B8924E;
+  --lime:          #A8E10C;
+  --lime-soft:     #82B509;
+
+  --text:          #F5EDE2;
+  --text-soft:     #C7B9A5;
+  --text-mute:     #8B7E6F;
+  --text-dim:      #5A5045;
+
+  --danger:        #E63946;
+  --success:       #82B509;
+  --warning:       #E4B860;
+
+  --display: 'Fraunces', Georgia, serif;
+  --body:    'Manrope', system-ui, sans-serif;
+  --mono:    'JetBrains Mono', monospace;
+
+  --radius:    18px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%;
+  background: #0a0908;
+  font-family: var(--body);
+  color: var(--text);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== DESKTOP BACKGROUND ===== */
+.desktop-stage {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(230, 57, 70, 0.08), transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(228, 184, 96, 0.06), transparent 50%),
+    linear-gradient(180deg, #0a0908 0%, #0d0a07 100%);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.desktop-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' /%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.desktop-label {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  color: var(--text-mute);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.desktop-label strong { color: var(--gold); font-weight: 600; }
+.desktop-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ===== PHONE FRAME ===== */
+.phone {
+  width: 390px;
+  height: 800px;
+  background: var(--bg-deep);
+  border-radius: 48px;
+  border: 10px solid #1a1612;
+  box-shadow:
+    0 0 0 2px #2a221a,
+    0 50px 100px -20px rgba(0, 0, 0, 0.8),
+    0 30px 60px -30px rgba(230, 57, 70, 0.15);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Notch */
+.notch {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 28px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 100;
+}
+
+/* Status bar */
+.status-bar {
+  height: 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 28px 0 32px;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+  padding-top: 8px;
+}
+.status-bar .icons { display: flex; gap: 6px; align-items: center; }
+
+/* ===== APP CONTENT ===== */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 90px;
+  scrollbar-width: none;
+}
+.app-content::-webkit-scrollbar { display: none; }
+
+/* Screens */
+.screen { display: none; padding: 8px 20px 20px; animation: fadeIn 0.35s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== HEADER ===== */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 24px;
+}
+.greeting-block .hello {
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--text-mute);
+  letter-spacing: 0.02em;
+}
+.greeting-block .name {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 500;
+  font-variation-settings: "opsz" 60, "SOFT" 50;
+  color: var(--text);
+  line-height: 1.1;
+  margin-top: 2px;
+}
+.greeting-block .resto {
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.bell {
+  width: 42px;
+  height: 42px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.bell:active { transform: scale(0.95); }
+.bell-dot {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  background: var(--sriracha);
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+
+/* ===== SCREEN TITLES ===== */
+.screen-title {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 400;
+  font-variation-settings: "opsz" 80;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.screen-sub {
+  font-size: 13px;
+  color: var(--text-mute);
+  margin-bottom: 24px;
+}
+
+/* ===== HERO CARD (Dashboard) ===== */
+.hero {
+  position: relative;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(230, 57, 70, 0.25), transparent 60%),
+    linear-gradient(135deg, #2a1f1a 0%, #1f1814 100%);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(228, 184, 96, 0.12), transparent 70%);
+  pointer-events: none;
+}
+.hero-label {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 2;
+}
+.hero-amount {
+  font-family: var(--display);
+  font-size: 56px;
+  font-weight: 400;
+  font-variation-settings: "opsz" 100;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  position: relative;
+  z-index: 2;
+}
+.hero-amount .currency {
+  font-size: 28px;
+  vertical-align: top;
+  margin-left: 4px;
+  color: var(--text-soft);
+}
+.hero-delta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  position: relative;
+  z-index: 2;
+}
+.hero-delta .up { color: var(--lime); font-weight: 700; font-family: var(--mono); }
+.hero-delta .label { color: var(--text-mute); }
+
+.hero-spark {
+  margin-top: 20px;
+  height: 50px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ===== KPI ROW ===== */
+.kpi-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px 12px;
+}
+.kpi-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.kpi-value {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1;
+}
+.kpi-sub {
+  font-size: 11px;
+  color: var(--text-mute);
+  margin-top: 4px;
+}
+.kpi-sub.up { color: var(--lime); }
+.kpi-sub.down { color: var(--sriracha); }
+
+/* ===== SECTION ===== */
+.section { margin-bottom: 24px; }
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.section-link {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+/* ===== ALERTS ===== */
+.alerts-card {
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.12), rgba(230, 57, 70, 0.04));
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 24px;
+}
+.alerts-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.alerts-head .pulse {
+  width: 8px;
+  height: 8px;
+  background: var(--sriracha);
+  border-radius: 50%;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(230, 57, 70, 0); }
+}
+.alerts-head .label {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--sriracha);
+  font-weight: 700;
+}
+.alert-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(230, 57, 70, 0.15);
+}
+.alert-item:first-of-type { border-top: none; padding-top: 0; }
+.alert-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: rgba(230, 57, 70, 0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sriracha);
+}
+.alert-body { flex: 1; min-width: 0; }
+.alert-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.alert-desc {
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+/* ===== TOP PLATS LIST ===== */
+.plats-list { display: flex; flex-direction: column; gap: 10px; }
+.plat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.plat-rank {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--gold);
+  width: 24px;
+  flex-shrink: 0;
+}
+.plat-info { flex: 1; min-width: 0; }
+.plat-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.plat-meta {
+  font-size: 11px;
+  color: var(--text-mute);
+  margin-top: 2px;
+}
+.plat-amount {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+}
+.plat-margin {
+  font-size: 10px;
+  color: var(--lime);
+  margin-top: 2px;
+  text-align: right;
+  font-weight: 600;
+}
+.plat-margin.warn { color: var(--gold); }
+.plat-margin.bad { color: var(--sriracha); }
+
+/* ===== HOURLY CHART ===== */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 110px;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.bar {
+  flex: 1;
+  background: var(--surface-2);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  min-height: 4px;
+  transition: all 0.3s;
+}
+.bar.peak {
+  background: linear-gradient(180deg, var(--sriracha) 0%, var(--sriracha-soft) 100%);
+}
+.bar.high {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-soft) 100%);
+}
+.bar.mid {
+  background: var(--gold-soft);
+  opacity: 0.5;
+}
+.bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+/* ===== QUICK ACTIONS ===== */
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.quick-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+  font-family: var(--body);
+}
+.quick-btn:active { transform: scale(0.97); background: var(--surface-2); }
+.quick-btn .icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(228, 184, 96, 0.1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+.quick-btn.accent .icon { background: rgba(230, 57, 70, 0.12); color: var(--sriracha); }
+.quick-btn .title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.quick-btn .desc {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+.tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-mute);
+  padding: 8px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--body);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab.active {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ===== DONUT ===== */
+.donut-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.donut-svg { width: 100px; height: 100px; flex-shrink: 0; }
+.donut-legend { flex: 1; }
+.legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.legend-row .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.legend-row .name { color: var(--text-soft); }
+.legend-row .val { color: var(--text); font-weight: 600; font-family: var(--mono); }
+
+/* ===== REVIEWS ===== */
+.rating-block {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.rating-num {
+  font-family: var(--display);
+  font-size: 52px;
+  font-weight: 400;
+  font-variation-settings: "opsz" 100;
+  line-height: 1;
+  color: var(--text);
+}
+.rating-info { flex: 1; }
+.rating-stars {
+  color: var(--gold);
+  font-size: 18px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.rating-count {
+  font-size: 12px;
+  color: var(--text-mute);
+}
+.rating-trend {
+  font-size: 11px;
+  color: var(--lime);
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.themes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.theme-chip {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.theme-chip.pos { border-color: rgba(168, 225, 12, 0.25); background: rgba(168, 225, 12, 0.04); }
+.theme-chip.neg { border-color: rgba(230, 57, 70, 0.25); background: rgba(230, 57, 70, 0.04); }
+.theme-chip .top { display: flex; justify-content: space-between; align-items: center; }
+.theme-chip .label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.theme-chip .count {
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.theme-chip.pos .count { color: var(--lime); }
+.theme-chip.neg .count { color: var(--sriracha); }
+.theme-chip .desc {
+  font-size: 10px;
+  color: var(--text-mute);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.review-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.review-source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.review-source .src-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.review-source .google { background: rgba(228, 184, 96, 0.15); color: var(--gold); }
+.review-source .uber { background: rgba(168, 225, 12, 0.12); color: var(--lime); }
+.review-source .deliveroo { background: rgba(230, 57, 70, 0.15); color: var(--sriracha); }
+.review-source .stars { color: var(--gold); font-size: 12px; letter-spacing: 1px; }
+.review-date {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+.review-author {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.review-text {
+  font-size: 13px;
+  color: var(--text-soft);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.review-ai {
+  background: var(--bg-soft);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.review-ai .ai-label {
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.review-ai .ai-text {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  font-style: italic;
+}
+.review-ai-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.btn-mini {
+  flex: 1;
+  background: var(--gold);
+  color: #1a1612;
+  border: none;
+  padding: 8px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  letter-spacing: 0.03em;
+}
+.btn-mini.ghost {
+  background: transparent;
+  color: var(--text-mute);
+  border: 1px solid var(--border);
+}
+
+/* ===== STOCKS ===== */
+.stock-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 8px;
+}
+.stock-item.critical { border-color: rgba(230, 57, 70, 0.4); background: rgba(230, 57, 70, 0.04); }
+.stock-item.warning { border-color: rgba(228, 184, 96, 0.3); }
+.stock-info { flex: 1; min-width: 0; }
+.stock-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.stock-meta {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+.stock-gauge {
+  margin-top: 8px;
+  height: 4px;
+  background: var(--bg-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.stock-gauge-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--lime);
+}
+.stock-gauge-fill.warning { background: var(--gold); }
+.stock-gauge-fill.critical { background: var(--sriracha); }
+
+.stock-action {
+  width: 36px;
+  height: 36px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.ia-suggestion {
+  background: linear-gradient(135deg, rgba(228, 184, 96, 0.08), rgba(228, 184, 96, 0.02));
+  border: 1px solid rgba(228, 184, 96, 0.25);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.ia-suggestion .top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ia-suggestion .badge {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+}
+.ia-suggestion p {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.ia-suggestion .impact {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--lime);
+  font-weight: 600;
+}
+
+/* ===== AI CHAT ===== */
+.chat-screen {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+}
+.chat-screen.active { display: flex; }
+.chat-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.chat-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--sriracha), var(--gold));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--bg-deep);
+  position: relative;
+}
+.chat-avatar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background: var(--lime);
+  border-radius: 50%;
+  border: 2px solid var(--bg-deep);
+}
+.chat-name {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 500;
+}
+.chat-status {
+  font-size: 11px;
+  color: var(--lime);
+  margin-top: 1px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: none;
+}
+.chat-messages::-webkit-scrollbar { display: none; }
+
+.msg {
+  max-width: 88%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.msg.user {
+  align-self: flex-end;
+  background: var(--gold);
+  color: var(--bg-deep);
+  border-bottom-right-radius: 4px;
+  font-weight: 500;
+}
+.msg.ai {
+  align-self: flex-start;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-soft);
+  border-bottom-left-radius: 4px;
+  max-width: 92%;
+}
+.msg.ai h4 {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  margin: 10px 0 4px;
+  letter-spacing: 0.02em;
+}
+.msg.ai h4:first-child { margin-top: 0; }
+.msg.ai ul { padding-left: 16px; margin: 4px 0; }
+.msg.ai li { margin-bottom: 3px; font-size: 12px; line-height: 1.5; color: var(--text-soft); }
+.msg.ai li strong { color: var(--text); font-weight: 600; }
+.msg.ai .impact-tag {
+  display: inline-block;
+  background: rgba(168, 225, 12, 0.12);
+  color: var(--lime);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  margin-left: 4px;
+}
+
+.chat-suggestions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.chat-suggestions::-webkit-scrollbar { display: none; }
+.sugg {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text-soft);
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--body);
+}
+.sugg:active { background: var(--surface-2); transform: scale(0.97); }
+
+.chat-input-bar {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 11px 16px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--body);
+  outline: none;
+}
+.chat-input::placeholder { color: var(--text-mute); }
+.send-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--sriracha);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: white;
+}
+
+/* ===== MARKETING MODAL ===== */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  animation: fadeIn 0.25s ease;
+}
+.modal-overlay.active { display: flex; }
+.modal-sheet {
+  width: 100%;
+  background: var(--bg-soft);
+  border-radius: 28px 28px 0 0;
+  border-top: 1px solid var(--border);
+  padding: 24px 20px;
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 90%;
+  overflow-y: auto;
+  padding-bottom: 100px;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+.modal-title {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.modal-sub {
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-bottom: 20px;
+}
+
+.post-preview {
+  background: linear-gradient(135deg, #2a1f1a, #1a1612);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.post-preview .img-placeholder {
+  height: 220px;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(230, 57, 70, 0.4), transparent 60%),
+    radial-gradient(circle at 70% 60%, rgba(228, 184, 96, 0.3), transparent 60%),
+    linear-gradient(135deg, #3a2a1a, #1f1814);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+  position: relative;
+  overflow: hidden;
+}
+.post-preview .img-placeholder::after {
+  content: '🍜';
+  position: absolute;
+  font-size: 80px;
+  opacity: 0.3;
+  bottom: -10px;
+  right: -10px;
+  filter: blur(0.5px);
+}
+.post-caption {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+.post-hashtags {
+  font-size: 12px;
+  color: var(--gold);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.btn-primary {
+  background: var(--sriracha);
+  color: white;
+  border: none;
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  font-family: var(--body);
+  margin-top: 8px;
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--body);
+  margin-top: 8px;
+}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10, 9, 8, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  padding: 10px 4px 22px;
+  z-index: 50;
+}
+.nav-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 6px 2px;
+  cursor: pointer;
+  font-family: var(--body);
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+.nav-btn .nav-icon { width: 21px; height: 21px; }
+.nav-btn .nav-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.nav-btn.active { color: var(--gold); }
+.nav-btn.ia-tab { color: var(--sriracha); opacity: 0.85; }
+.nav-btn.ia-tab .nav-icon { filter: drop-shadow(0 0 6px rgba(230, 57, 70, 0.4)); }
+.nav-btn.ia-tab.active { color: var(--sriracha); opacity: 1; }
+
+/* ===== UTIL ===== */
+.divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 16px 0;
+}
+
+/* ===== COMPTA / FINANCE ===== */
+.finance-hero {
+  position: relative;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(168, 225, 12, 0.18), transparent 55%),
+    linear-gradient(135deg, #1d2416 0%, #181712 100%);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.finance-hero .hero-label { color: var(--lime); }
+.finance-hero .hero-amount { color: var(--text); }
+.finance-hero .sub-line {
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* Cascade financière (waterfall) */
+.waterfall { display: flex; flex-direction: column; gap: 2px; }
+.wf-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+}
+.wf-bar-wrap { flex: 1; min-width: 0; }
+.wf-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+.wf-name { font-size: 13px; color: var(--text-soft); font-weight: 500; }
+.wf-name.total { color: var(--text); font-weight: 700; }
+.wf-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.wf-val.neg { color: var(--sriracha); }
+.wf-val.pos { color: var(--lime); }
+.wf-track {
+  height: 8px;
+  background: var(--bg-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.wf-fill { height: 100%; border-radius: 4px; }
+.wf-fill.ca { background: linear-gradient(90deg, var(--gold), var(--gold-soft)); }
+.wf-fill.cost { background: var(--sriracha); opacity: 0.8; }
+.wf-fill.net { background: linear-gradient(90deg, var(--lime), var(--lime-soft)); }
+.wf-divider { height: 1px; background: var(--border-soft); margin: 6px 0; }
+
+/* Finance alert (format Problème/Impact/Cause/Action) */
+.fin-alert {
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.1), rgba(230, 57, 70, 0.03));
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.fin-alert.warn {
+  background: linear-gradient(135deg, rgba(228, 184, 96, 0.1), rgba(228, 184, 96, 0.03));
+  border-color: rgba(228, 184, 96, 0.3);
+}
+.fin-alert-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.fin-alert-head .tag {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sriracha);
+}
+.fin-alert.warn .fin-alert-head .tag { color: var(--gold); }
+.fin-alert-head .amount {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sriracha);
+}
+.fin-alert.warn .fin-alert-head .amount { color: var(--gold); }
+.fin-row {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 4px 0;
+}
+.fin-row .k {
+  flex-shrink: 0;
+  width: 62px;
+  color: var(--text-mute);
+  font-weight: 600;
+  font-size: 11px;
+}
+.fin-row .v { color: var(--text-soft); }
+.fin-row .v strong { color: var(--text); }
+.fin-action {
+  margin-top: 10px;
+  background: var(--surface-2);
+  border: none;
+  color: var(--text);
+  width: 100%;
+  padding: 10px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--body);
+  cursor: pointer;
+}
+.fin-alert.warn .fin-action { color: var(--gold); }
+
+/* Dépenses catégorisées */
+.expense-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.expense-row:last-child { border-bottom: none; }
+.expense-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--surface-2);
+  font-size: 16px;
+}
+.expense-info { flex: 1; min-width: 0; }
+.expense-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.expense-cat {
+  font-size: 11px;
+  color: var(--text-mute);
+  margin-top: 2px;
+}
+.expense-amount {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+.expense-pct {
+  font-size: 10px;
+  color: var(--text-mute);
+  text-align: right;
+  margin-top: 2px;
+}
+
+/* Scan facture CTA */
+.scan-card {
+  background: linear-gradient(135deg, rgba(228, 184, 96, 0.1), rgba(230, 57, 70, 0.05));
+  border: 1px dashed rgba(228, 184, 96, 0.4);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.scan-card:active { transform: scale(0.98); }
+.scan-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  background: rgba(228, 184, 96, 0.15);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+}
+.scan-title {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.scan-desc { font-size: 12px; color: var(--text-mute); }
+
+/* Facture extraite (résultat scan) */
+.invoice-extract {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 12px;
+}
+.invoice-extract .ie-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.invoice-extract .ie-badge {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--lime);
+  background: rgba(168, 225, 12, 0.12);
+  padding: 4px 8px;
+  border-radius: 5px;
+}
+.invoice-extract .ie-supplier {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ie-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ie-field .lbl {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.ie-field .val {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+  font-family: var(--mono);
+}
+.ie-field .val.cat {
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--gold);
+}
+.ie-flag {
+  margin-top: 12px;
+  background: rgba(230, 57, 70, 0.1);
+  border-radius: 9px;
+  padding: 10px;
+  font-size: 11px;
+  color: var(--sriracha);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Treso mini-bars */
+.treso-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.treso-now {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1;
+}
+.treso-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.treso-bars {
+  display: flex;
+  align-items: flex-end;
+  height: 60px;
+  gap: 6px;
+  margin-top: 16px;
+}
+.treso-bars .tb {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  background: var(--surface-2);
+  position: relative;
+  min-height: 6px;
+}
+.treso-bars .tb.up { background: linear-gradient(180deg, var(--lime), var(--lime-soft)); }
+.treso-bars .tb.flat { background: var(--gold-soft); opacity: 0.6; }
+.treso-bars-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  margin-top: 6px;
+}
+
+/* ===== MOBILE OVERRIDE ===== */
+@media (max-width: 600px) {
+  .desktop-stage {
+    display: block;
+    height: auto;
+    min-height: 100dvh;
+    padding: 0;
+    background: var(--bg-deep);
+  }
+  .desktop-stage::before { display: none; }
+  .desktop-label, .desktop-hint { display: none; }
+  .phone {
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+  .notch { display: none; }
+  /* On masque la fausse barre : la vraie barre iPhone affiche déjà l'heure */
+  .status-bar { display: none; }
+  /* On décale le contenu sous l'encoche / Dynamic Island */
+  .app-content { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .screen { padding-top: calc(env(safe-area-inset-top, 0px) + 14px); }
+  #screen-ai { padding-top: 0; }
+  .chat-header { padding-top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  /* La barre du bas respecte la barre d'accueil iPhone */
+  .bottom-nav { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+}
+</style>
+</head>
+<body>
+
+<div class="desktop-stage">
+  <div class="desktop-label">DÉMO INTERACTIVE · <strong>Gin Khao Manager</strong></div>
+
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="icons">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 5a8 8 0 0 1 12 0M3 7a5 5 0 0 1 8 0M5 9a2 2 0 0 1 4 0"/></svg>
+        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x="0.5" y="0.5" width="18" height="9" rx="2" stroke="currentColor" fill="none"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/><rect x="19.5" y="3" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+      </div>
+    </div>
+
+    <!-- APP CONTENT -->
+    <div class="app-content" id="app-content">
+
+      <!-- ====== SCREEN: HOME ====== -->
+      <section class="screen active" id="screen-home">
+        <header class="app-header">
+          <div class="greeting-block">
+            <div class="hello">Mardi 19 mai · 14h12</div>
+            <div class="name">Bonjour Lucas</div>
+            <div class="resto">Gin Khao · Saint Just</div>
+          </div>
+          <button class="bell" aria-label="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span class="bell-dot"></span>
+          </button>
+        </header>
+
+        <!-- HERO -->
+        <div class="hero">
+          <div class="hero-label">Chiffre d'affaires · Aujourd'hui</div>
+          <div class="hero-amount"><span id="hero-amount">847</span><span class="currency">€</span></div>
+          <div class="hero-delta">
+            <span class="up">↑ +12,4%</span>
+            <span class="label">vs hier · objectif 950€</span>
+          </div>
+          <svg class="hero-spark" viewBox="0 0 320 50" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sparkGrad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#E4B860" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#E4B860" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,40 L20,35 L40,38 L60,30 L80,32 L100,20 L120,22 L140,15 L160,18 L180,10 L200,14 L220,8 L240,12 L260,6 L280,10 L300,4 L320,8 L320,50 L0,50 Z" fill="url(#sparkGrad)"/>
+            <path d="M0,40 L20,35 L40,38 L60,30 L80,32 L100,20 L120,22 L140,15 L160,18 L180,10 L200,14 L220,8 L240,12 L260,6 L280,10 L300,4 L320,8" fill="none" stroke="#E4B860" stroke-width="1.5"/>
+          </svg>
+        </div>
+
+        <!-- KPI ROW -->
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-label">Commandes</div>
+            <div class="kpi-value">52</div>
+            <div class="kpi-sub up">↑ 8</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Ticket moy.</div>
+            <div class="kpi-value">16,30€</div>
+            <div class="kpi-sub up">↑ 0,80€</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Note</div>
+            <div class="kpi-value">4,2★</div>
+            <div class="kpi-sub down">↓ 0,1</div>
+          </div>
+        </div>
+
+        <!-- ALERTES IA -->
+        <div class="alerts-card">
+          <div class="alerts-head">
+            <span class="pulse"></span>
+            <span class="label">3 Alertes IA</span>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </div>
+            <div class="alert-body">
+              <div class="alert-title">Rupture imminente — Pad Thaï poulet</div>
+              <div class="alert-desc">8 portions restantes. Rythme actuel : épuisé d'ici 16h. Commander pour ce soir.</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="alert-body">
+              <div class="alert-title">Marge Bo Bun en baisse · −4 pts</div>
+              <div class="alert-desc">Hausse boeuf chez Metro (+18%). Suggestion : ajuster prix de 12€ à 12,90€.</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="alert-body">
+              <div class="alert-title">Pic d'affluence prévu 19h–20h30</div>
+              <div class="alert-desc">Soleil + jeudi soir = +30% commandes vs jeudi standard. Prévoir un cuisinier.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="openMarketing()">
+            <div class="icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            </div>
+            <div class="title">Générer un post</div>
+            <div class="desc">Instagram · TikTok</div>
+          </button>
+          <button class="quick-btn accent" onclick="switchScreen('ai')">
+            <div class="icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="title">Demander à l'IA</div>
+            <div class="desc">Analyse en 1 question</div>
+          </button>
+        </div>
+
+        <!-- HOURLY CHART -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Ventes par heure</h3>
+            <a class="section-link" href="#" onclick="switchScreen('sales'); return false;">Détails →</a>
+          </div>
+          <div class="chart-card">
+            <div class="bars" id="bars">
+              <div class="bar mid" style="height: 18%"></div>
+              <div class="bar mid" style="height: 12%"></div>
+              <div class="bar high" style="height: 42%"></div>
+              <div class="bar peak" style="height: 88%"></div>
+              <div class="bar peak" style="height: 95%"></div>
+              <div class="bar high" style="height: 55%"></div>
+              <div class="bar mid" style="height: 25%"></div>
+              <div class="bar mid" style="height: 20%"></div>
+              <div class="bar high" style="height: 48%"></div>
+              <div class="bar peak" style="height: 72%"></div>
+              <div class="bar peak" style="height: 80%"></div>
+              <div class="bar high" style="height: 50%"></div>
+            </div>
+            <div class="bar-labels">
+              <span>11h</span><span></span><span>13h</span><span></span><span>15h</span><span></span><span>17h</span><span></span><span>19h</span><span></span><span>21h</span><span>22h</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TOP PLATS -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Top plats du jour</h3>
+            <a class="section-link" href="#" onclick="switchScreen('sales'); return false;">Tout voir →</a>
+          </div>
+          <div class="plats-list">
+            <div class="plat-row">
+              <div class="plat-rank">01</div>
+              <div class="plat-info">
+                <div class="plat-name">Pad Thaï poulet</div>
+                <div class="plat-meta">18 vendus · 13,00€</div>
+              </div>
+              <div>
+                <div class="plat-amount">234€</div>
+                <div class="plat-margin">marge 68%</div>
+              </div>
+            </div>
+            <div class="plat-row">
+              <div class="plat-rank">02</div>
+              <div class="plat-info">
+                <div class="plat-name">Bo Bun crevettes</div>
+                <div class="plat-meta">11 vendus · 14,00€</div>
+              </div>
+              <div>
+                <div class="plat-amount">154€</div>
+                <div class="plat-margin warn">marge 54%</div>
+              </div>
+            </div>
+            <div class="plat-row">
+              <div class="plat-rank">03</div>
+              <div class="plat-info">
+                <div class="plat-name">Curry vert poulet</div>
+                <div class="plat-meta">9 vendus · 13,50€</div>
+              </div>
+              <div>
+                <div class="plat-amount">121€</div>
+                <div class="plat-margin">marge 71%</div>
+              </div>
+            </div>
+            <div class="plat-row">
+              <div class="plat-rank">04</div>
+              <div class="plat-info">
+                <div class="plat-name">Mango sticky rice</div>
+                <div class="plat-meta">14 vendus · 6,00€</div>
+              </div>
+              <div>
+                <div class="plat-amount">84€</div>
+                <div class="plat-margin">marge 76%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 40px;"></div>
+      </section>
+
+      <!-- ====== SCREEN: SALES ====== -->
+      <section class="screen" id="screen-sales">
+        <header class="app-header">
+          <div>
+            <h1 class="screen-title">Ventes</h1>
+            <p class="screen-sub">Analyse en temps réel · 19 mai 2026</p>
+          </div>
+          <button class="bell" aria-label="Filtres">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+          </button>
+        </header>
+
+        <div class="tabs">
+          <button class="tab active" data-period="today">Aujourd'hui</button>
+          <button class="tab" data-period="7d">7 jours</button>
+          <button class="tab" data-period="30d">30 jours</button>
+        </div>
+
+        <!-- Big CA card -->
+        <div class="hero" style="margin-bottom: 16px;">
+          <div class="hero-label">Chiffre d'affaires</div>
+          <div class="hero-amount">847<span class="currency">€</span></div>
+          <div class="hero-delta">
+            <span class="up">↑ +12,4%</span>
+            <span class="label">vs même jour semaine dernière</span>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-label">Marge brute</div>
+            <div class="kpi-value">589€</div>
+            <div class="kpi-sub up">69,5%</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Couverts</div>
+            <div class="kpi-value">52</div>
+            <div class="kpi-sub up">↑ 18%</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Annul.</div>
+            <div class="kpi-value">2</div>
+            <div class="kpi-sub down">3,8%</div>
+          </div>
+        </div>
+
+        <!-- Donut: répartition par plateforme -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Répartition canaux</h3>
+          </div>
+          <div class="donut-card">
+            <svg class="donut-svg" viewBox="0 0 42 42">
+              <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#251F19" stroke-width="6"/>
+              <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#E63946" stroke-width="6" stroke-dasharray="45 100" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#E4B860" stroke-width="6" stroke-dasharray="30 100" stroke-dashoffset="-20" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#A8E10C" stroke-width="6" stroke-dasharray="25 100" stroke-dashoffset="-50" transform="rotate(-90 21 21)"/>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-row">
+                <span><span class="dot" style="background:#E63946"></span><span class="name">Sur place</span></span>
+                <span class="val">381€ · 45%</span>
+              </div>
+              <div class="legend-row">
+                <span><span class="dot" style="background:#E4B860"></span><span class="name">Uber Eats</span></span>
+                <span class="val">254€ · 30%</span>
+              </div>
+              <div class="legend-row">
+                <span><span class="dot" style="background:#A8E10C"></span><span class="name">Deliveroo</span></span>
+                <span class="val">212€ · 25%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top plats avec marges -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Tous les plats du jour</h3>
+          </div>
+          <div class="plats-list">
+            <div class="plat-row">
+              <div class="plat-rank">01</div>
+              <div class="plat-info">
+                <div class="plat-name">Pad Thaï poulet</div>
+                <div class="plat-meta">18 vendus · marge 8,84€/unité</div>
+              </div>
+              <div>
+                <div class="plat-amount">234€</div>
+                <div class="plat-margin">68%</div>
+              </div>
+            </div>
+            <div class="plat-row">
+              <div class="plat-rank">02</div>
+              <div class="plat-info">
+                <div class="plat-name">Bo Bun crevettes</div>
+                <div class="plat-meta">11 vendus · marge 7,56€/unité</div>
+              </div>
+              <div>
+                <div class="plat-amount">154€</div>
+                <div class="plat-margin warn">54%</div>
+              </div>
+            </div>
+            <div class="plat-row">
+              <div class="plat-rank">03</div>
+              <div class="plat-info">
+                <div class="plat-name">Curry vert poulet</div>
+                <div class="plat-meta">9 vendus · marge 9,58€/unité</div>
+              </div>
+              <div>
+                <div class="plat-amount">121€</div>
+                <div class="plat-margin">71%</div>
+              </div>
+            </div>
+            <div class="plat-row">
+              <div class="plat-rank">04</div>
+              <div class="plat-info">
+                <div class="plat-name">Mango sticky rice</div>
+                <div class="plat-meta">14 vendus · marge 4,56€/unité</div>
+              </div>
+              <div>
+                <div class="plat-amount">84€</div>
+                <div class="plat-margin">76%</div>
+              </div>
+            </div>
+            <div class="plat-row">
+              <div class="plat-rank">05</div>
+              <div class="plat-info">
+                <div class="plat-name">Nems poulet (x4)</div>
+                <div class="plat-meta">10 vendus · marge 3,90€/unité</div>
+              </div>
+              <div>
+                <div class="plat-amount">65€</div>
+                <div class="plat-margin warn">60%</div>
+              </div>
+            </div>
+            <div class="plat-row" style="border-color: rgba(230, 57, 70, 0.3);">
+              <div class="plat-rank" style="color: var(--sriracha);">⚠</div>
+              <div class="plat-info">
+                <div class="plat-name">Salade papaye (Som Tam)</div>
+                <div class="plat-meta">1 vendu en 14 jours</div>
+              </div>
+              <div>
+                <div class="plat-amount">9€</div>
+                <div class="plat-margin bad">à retirer</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 40px;"></div>
+      </section>
+
+      <!-- ====== SCREEN: REVIEWS ====== -->
+      <section class="screen" id="screen-reviews">
+        <header class="app-header">
+          <div>
+            <h1 class="screen-title">Avis clients</h1>
+            <p class="screen-sub">147 avis · 30 derniers jours</p>
+          </div>
+          <button class="bell" aria-label="Source">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </header>
+
+        <div class="rating-block">
+          <div class="rating-num">4,2</div>
+          <div class="rating-info">
+            <div class="rating-stars">★★★★☆</div>
+            <div class="rating-count">147 avis · Google, Uber, Deliveroo</div>
+            <div class="rating-trend">↓ 0,1 vs mois dernier</div>
+          </div>
+        </div>
+
+        <!-- Thèmes détectés -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Thèmes détectés par l'IA</h3>
+          </div>
+          <div class="themes-grid">
+            <div class="theme-chip pos">
+              <div class="top">
+                <span class="label">Saveurs</span>
+                <span class="count">+89</span>
+              </div>
+              <div class="desc">"goût authentique", "épices justes"</div>
+            </div>
+            <div class="theme-chip pos">
+              <div class="top">
+                <span class="label">Accueil</span>
+                <span class="count">+45</span>
+              </div>
+              <div class="desc">"souriants", "rapide", "agréable"</div>
+            </div>
+            <div class="theme-chip neg">
+              <div class="top">
+                <span class="label">Lenteur livraison</span>
+                <span class="count">−12</span>
+              </div>
+              <div class="desc">"arrivé froid", "trop long"</div>
+            </div>
+            <div class="theme-chip neg">
+              <div class="top">
+                <span class="label">Trop sucré</span>
+                <span class="count">−7</span>
+              </div>
+              <div class="desc">Pad Thaï mentionné 5 fois</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avis individuels -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">À traiter en priorité</h3>
+            <span class="section-link" style="color: var(--text-mute);">3 nouveaux</span>
+          </div>
+
+          <div class="review-card">
+            <div class="review-head">
+              <div class="review-source">
+                <span class="src-badge deliveroo">Deliveroo</span>
+                <span class="stars">★★☆☆☆</span>
+              </div>
+              <span class="review-date">il y a 2h</span>
+            </div>
+            <div class="review-author">Karim B.</div>
+            <div class="review-text">Plats arrivés tièdes, livraison qui a pris 1h. Dommage car le Pad Thaï est très bon d'habitude.</div>
+            <div class="review-ai">
+              <div class="ai-label">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                Réponse suggérée
+              </div>
+              <div class="ai-text">"Bonjour Karim, merci pour votre fidélité au Pad Thaï 🙏 Je suis vraiment désolé pour le délai de livraison — c'est inacceptable que vos plats arrivent tièdes. Je remonte le problème à Deliveroo et je vous offre 15% sur votre prochaine commande chez nous. Merci de votre retour, c'est précieux."</div>
+              <div class="review-ai-actions">
+                <button class="btn-mini">Publier</button>
+                <button class="btn-mini ghost">Modifier</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="review-card">
+            <div class="review-head">
+              <div class="review-source">
+                <span class="src-badge google">Google</span>
+                <span class="stars">★★★☆☆</span>
+              </div>
+              <span class="review-date">hier</span>
+            </div>
+            <div class="review-author">Sophie M.</div>
+            <div class="review-text">Bon, mais le Pad Thaï est un peu trop sucré à mon goût. La salle est sympa et l'équipe accueillante !</div>
+            <div class="review-ai">
+              <div class="ai-label">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                Réponse suggérée
+              </div>
+              <div class="ai-text">"Merci Sophie pour votre retour ! Vous n'êtes pas la première à le mentionner sur le Pad Thaï — on est en train d'ajuster la recette pour proposer une version moins sucrée à la demande. La prochaine fois, demandez-le à l'équipe, on adapte sans souci !"</div>
+              <div class="review-ai-actions">
+                <button class="btn-mini">Publier</button>
+                <button class="btn-mini ghost">Modifier</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="review-card">
+            <div class="review-head">
+              <div class="review-source">
+                <span class="src-badge uber">Uber Eats</span>
+                <span class="stars">★★★★★</span>
+              </div>
+              <span class="review-date">il y a 3 jours</span>
+            </div>
+            <div class="review-author">Mehdi A.</div>
+            <div class="review-text">Le meilleur thaï du 13ème ! Curry vert au top, je commande chaque semaine.</div>
+            <div class="review-ai">
+              <div class="ai-label">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                Réponse suggérée
+              </div>
+              <div class="ai-text">"Mehdi, merci infiniment 🙏 Les clients fidèles comme vous, c'est notre carburant. À la semaine prochaine, et n'hésitez pas à tester le Massaman, on l'a ajouté à la carte !"</div>
+              <div class="review-ai-actions">
+                <button class="btn-mini">Publier</button>
+                <button class="btn-mini ghost">Modifier</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 40px;"></div>
+      </section>
+
+      <!-- ====== SCREEN: STOCKS ====== -->
+      <section class="screen" id="screen-stock">
+        <header class="app-header">
+          <div>
+            <h1 class="screen-title">Stocks</h1>
+            <p class="screen-sub">Mis à jour à 14h05</p>
+          </div>
+          <button class="bell" aria-label="Ajouter">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </header>
+
+        <!-- Suggestions IA -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Suggestions de l'IA</h3>
+            <span class="section-link">3 actions</span>
+          </div>
+
+          <div class="ia-suggestion">
+            <div class="top">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E4B860" stroke-width="2.5"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+              <span class="badge">À commander demain</span>
+            </div>
+            <p><strong>Nouilles de riz · 8 kg</strong> chez Asia Market. Au rythme actuel, rupture jeudi midi. Coût estimé : 28€.</p>
+            <div class="impact">+ Évite 23 commandes refusées · ~340€ de CA préservé</div>
+          </div>
+
+          <div class="ia-suggestion">
+            <div class="top">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E4B860" stroke-width="2.5"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+              <span class="badge">Réduire la commande</span>
+            </div>
+            <p><strong>Basilic thaï</strong> : 15% jeté chaque semaine. Passer de 1,5 kg à 1 kg.</p>
+            <div class="impact">− 12€/semaine de gaspillage · 624€/an</div>
+          </div>
+
+          <div class="ia-suggestion">
+            <div class="top">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E4B860" stroke-width="2.5"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+              <span class="badge">Négocier fournisseur</span>
+            </div>
+            <p>Hausse de <strong>+18% sur le boeuf</strong> chez Metro depuis avril. Tester Promocash (estimation : −9%).</p>
+            <div class="impact">~140€/mois économisés sur Bo Bun</div>
+          </div>
+        </div>
+
+        <!-- Liste stocks -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Niveaux actuels</h3>
+            <span class="section-link" style="color: var(--text-mute);">12 articles</span>
+          </div>
+
+          <div class="stock-item critical">
+            <div class="stock-info">
+              <div class="stock-name">Pad Thaï poulet (préparé)</div>
+              <div class="stock-meta">8 portions · ~3h de stock</div>
+              <div class="stock-gauge"><div class="stock-gauge-fill critical" style="width: 12%"></div></div>
+            </div>
+            <button class="stock-action">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+
+          <div class="stock-item warning">
+            <div class="stock-info">
+              <div class="stock-name">Nouilles de riz</div>
+              <div class="stock-meta">2,1 kg · ~1 jour de stock</div>
+              <div class="stock-gauge"><div class="stock-gauge-fill warning" style="width: 28%"></div></div>
+            </div>
+            <button class="stock-action">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+
+          <div class="stock-item warning">
+            <div class="stock-info">
+              <div class="stock-name">Crevettes décortiquées</div>
+              <div class="stock-meta">1,8 kg · ~2 jours</div>
+              <div class="stock-gauge"><div class="stock-gauge-fill warning" style="width: 35%"></div></div>
+            </div>
+            <button class="stock-action">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+
+          <div class="stock-item">
+            <div class="stock-info">
+              <div class="stock-name">Lait de coco</div>
+              <div class="stock-meta">14 boîtes · ~5 jours</div>
+              <div class="stock-gauge"><div class="stock-gauge-fill" style="width: 68%"></div></div>
+            </div>
+          </div>
+
+          <div class="stock-item">
+            <div class="stock-info">
+              <div class="stock-name">Sauce poisson Nam Pla</div>
+              <div class="stock-meta">3 bouteilles · ~8 jours</div>
+              <div class="stock-gauge"><div class="stock-gauge-fill" style="width: 82%"></div></div>
+            </div>
+          </div>
+
+          <div class="stock-item">
+            <div class="stock-info">
+              <div class="stock-name">Basilic thaï frais</div>
+              <div class="stock-meta">800 g · ~2 jours · <span style="color: var(--gold);">surconsommation</span></div>
+              <div class="stock-gauge"><div class="stock-gauge-fill warning" style="width: 45%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 40px;"></div>
+      </section>
+
+      <!-- ====== SCREEN: COMPTA ====== -->
+      <section class="screen" id="screen-compta">
+        <header class="app-header">
+          <div>
+            <h1 class="screen-title">Compta</h1>
+            <p class="screen-sub">Mai 2026 · données arrêtées au 19/05</p>
+          </div>
+          <button class="bell" aria-label="Exporter">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </header>
+
+        <!-- 1. MARGE NETTE (le chiffre qui compte) -->
+        <div class="finance-hero">
+          <div class="hero-label">Marge nette estimée · ce mois</div>
+          <div class="hero-amount">3 240<span class="currency">€</span></div>
+          <div class="hero-delta">
+            <span class="up">↑ +6,2%</span>
+            <span class="label">vs avril · soit 14,8% du CA</span>
+          </div>
+          <div class="sub-line">CA 21 900€ — Charges 18 660€. <strong style="color: var(--gold);">L'IA estime que tu pourrais atteindre 4 100€</strong> en corrigeant les 2 fuites ci-dessous.</div>
+        </div>
+
+        <!-- Cascade financière -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Où part l'argent</h3>
+            <span class="section-link" style="color: var(--text-mute);">ce mois</span>
+          </div>
+          <div class="chart-card">
+            <div class="waterfall">
+              <div class="wf-row">
+                <div class="wf-bar-wrap">
+                  <div class="wf-top"><span class="wf-name">Chiffre d'affaires</span><span class="wf-val pos">+21 900€</span></div>
+                  <div class="wf-track"><div class="wf-fill ca" style="width: 100%"></div></div>
+                </div>
+              </div>
+              <div class="wf-row">
+                <div class="wf-bar-wrap">
+                  <div class="wf-top"><span class="wf-name">Matières premières</span><span class="wf-val neg">−6 350€</span></div>
+                  <div class="wf-track"><div class="wf-fill cost" style="width: 29%"></div></div>
+                </div>
+              </div>
+              <div class="wf-row">
+                <div class="wf-bar-wrap">
+                  <div class="wf-top"><span class="wf-name">Commissions Uber + Deliveroo</span><span class="wf-val neg">−3 420€</span></div>
+                  <div class="wf-track"><div class="wf-fill cost" style="width: 16%"></div></div>
+                </div>
+              </div>
+              <div class="wf-row">
+                <div class="wf-bar-wrap">
+                  <div class="wf-top"><span class="wf-name">Salaires</span><span class="wf-val neg">−4 800€</span></div>
+                  <div class="wf-track"><div class="wf-fill cost" style="width: 22%"></div></div>
+                </div>
+              </div>
+              <div class="wf-row">
+                <div class="wf-bar-wrap">
+                  <div class="wf-top"><span class="wf-name">Loyer + énergie</span><span class="wf-val neg">−2 650€</span></div>
+                  <div class="wf-track"><div class="wf-fill cost" style="width: 12%"></div></div>
+                </div>
+              </div>
+              <div class="wf-row">
+                <div class="wf-bar-wrap">
+                  <div class="wf-top"><span class="wf-name">Emballages + divers</span><span class="wf-val neg">−1 440€</span></div>
+                  <div class="wf-track"><div class="wf-fill cost" style="width: 7%"></div></div>
+                </div>
+              </div>
+              <div class="wf-divider"></div>
+              <div class="wf-row">
+                <div class="wf-bar-wrap">
+                  <div class="wf-top"><span class="wf-name total">Reste (marge nette)</span><span class="wf-val pos">+3 240€</span></div>
+                  <div class="wf-track"><div class="wf-fill net" style="width: 15%"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. FUITES D'ARGENT (alertes financières) -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Fuites d'argent détectées</h3>
+            <span class="section-link" style="color: var(--sriracha);">2 actives</span>
+          </div>
+
+          <div class="fin-alert">
+            <div class="fin-alert-head">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sriracha)" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+              <span class="tag">Alerte financière</span>
+              <span class="amount">−1 280€/mois</span>
+            </div>
+            <div class="fin-row"><span class="k">Problème</span><span class="v">Dépendance livraison : <strong>26% du CA</strong> part en commissions Uber/Deliveroo (norme saine : &lt;18%).</span></div>
+            <div class="fin-row"><span class="k">Impact</span><span class="v"><strong>−1 280€/mois</strong> vs un mix sain. Les plats livrés rapportent 2× moins que sur place.</span></div>
+            <div class="fin-row"><span class="k">Cause</span><span class="v">Pas d'incitation au retrait / sur place. Aucune commande directe (site, téléphone).</span></div>
+            <div class="fin-row"><span class="k">Action</span><span class="v">Lancer "Click & Collect" (0% commission) + offre −10% en retrait. Objectif : basculer 30% des commandes.</span></div>
+            <button class="fin-action">Voir le plan détaillé →</button>
+          </div>
+
+          <div class="fin-alert warn">
+            <div class="fin-alert-head">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span class="tag">Alerte financière</span>
+              <span class="amount">−165€/mois</span>
+            </div>
+            <div class="fin-row"><span class="k">Problème</span><span class="v">Hausse <strong>+18% sur le boeuf</strong> chez Metro depuis avril. Marge Bo Bun tombée à 54%.</span></div>
+            <div class="fin-row"><span class="k">Impact</span><span class="v"><strong>−165€/mois</strong> sur les ventes de Bo Bun au rythme actuel.</span></div>
+            <div class="fin-row"><span class="k">Cause</span><span class="v">Prix fournisseur non renégocié + prix de vente Bo Bun figé à 12€ depuis l'ouverture.</span></div>
+            <div class="fin-row"><span class="k">Action</span><span class="v">Passer Bo Bun à 12,90€ (+0,90€) ou tester Promocash (−9% estimé sur le boeuf).</span></div>
+            <button class="fin-action">Appliquer le nouveau prix</button>
+          </div>
+        </div>
+
+        <!-- 3. SCAN FACTURE -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Factures fournisseurs</h3>
+            <span class="section-link" style="color: var(--text-mute);">14 ce mois</span>
+          </div>
+          <div class="scan-card" onclick="toggleInvoice()">
+            <div class="scan-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            </div>
+            <div class="scan-title">📸 Scanner une facture</div>
+            <div class="scan-desc">L'IA extrait fournisseur, HT, TVA, TTC et la classe automatiquement</div>
+          </div>
+
+          <!-- Exemple de facture déjà extraite -->
+          <div class="invoice-extract" id="invoice-demo">
+            <div class="ie-head">
+              <span class="ie-badge">✓ Extrait par l'IA</span>
+              <span class="ie-supplier" style="margin-left: auto;">Metro Marseille</span>
+            </div>
+            <div class="ie-grid">
+              <div class="ie-field"><div class="lbl">Date</div><div class="val">14/05/2026</div></div>
+              <div class="ie-field"><div class="lbl">Catégorie</div><div class="val cat">Matières premières</div></div>
+              <div class="ie-field"><div class="lbl">Montant HT</div><div class="val">387,42€</div></div>
+              <div class="ie-field"><div class="lbl">TVA (5,5%)</div><div class="val">21,31€</div></div>
+              <div class="ie-field"><div class="lbl">Montant TTC</div><div class="val" style="color: var(--gold);">408,73€</div></div>
+              <div class="ie-field"><div class="lbl">Paiement</div><div class="val" style="font-family: var(--body); font-size: 12px;">CB pro</div></div>
+            </div>
+            <div class="ie-flag">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+              <span>Anomalie : +18% sur le poste boeuf vs facture du 02/05. À vérifier.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. TRÉSORERIE -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Trésorerie</h3>
+            <span class="section-link" style="color: var(--lime);">saine</span>
+          </div>
+          <div class="treso-card">
+            <div class="treso-label">Solde estimé actuel</div>
+            <div class="treso-now">8 450€</div>
+            <div class="hero-delta" style="margin-top: 8px;">
+              <span class="up">↑ +1 240€</span>
+              <span class="label">sur 30 jours · ~42 jours d'avance de charges</span>
+            </div>
+            <div class="treso-bars">
+              <div class="tb flat" style="height: 55%"></div>
+              <div class="tb flat" style="height: 48%"></div>
+              <div class="tb up" style="height: 62%"></div>
+              <div class="tb up" style="height: 70%"></div>
+              <div class="tb up" style="height: 78%"></div>
+              <div class="tb up" style="height: 88%"></div>
+            </div>
+            <div class="treso-bars-labels">
+              <span>déc</span><span>jan</span><span>fév</span><span>mar</span><span>avr</span><span>mai</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Préparation comptable -->
+        <div class="section">
+          <button class="btn-secondary" style="margin-top: 0;">
+            📤 Exporter la synthèse pour l'expert-comptable
+          </button>
+          <p style="font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 10px; line-height: 1.5;">
+            TVA estimative du mois : <strong style="color: var(--text-mute);">~412€ à reverser</strong><br>
+            L'IA prépare les données, mais ne remplace pas ton expert-comptable.
+          </p>
+        </div>
+
+        <div style="height: 40px;"></div>
+      </section>
+
+      <!-- ====== SCREEN: AI CHAT ====== -->
+      <section class="screen" id="screen-ai" style="padding: 0; height: 100%;">
+        <div class="chat-screen active">
+          <div class="chat-header">
+            <div class="chat-avatar">JK</div>
+            <div>
+              <div class="chat-name">Directeur IA</div>
+              <div class="chat-status">● En ligne · répond en ~3s</div>
+            </div>
+          </div>
+
+          <div class="chat-messages" id="chat-messages">
+            <div class="msg ai">
+              <strong style="font-family: var(--display); color: var(--gold);">Bonjour Lucas 👋</strong><br>
+              Je suis ton directeur IA. Je suis connecté à ta caisse, Uber Eats, Deliveroo, Google Avis et tes fournisseurs. Pose-moi n'importe quelle question business, ou demande-moi une analyse.
+            </div>
+
+            <div class="msg user">Analyse-moi la journée</div>
+
+            <div class="msg ai">
+              <h4>📊 Résumé exécutif · Mardi 19 mai</h4>
+              <ul>
+                <li>✅ <strong>CA : 847€</strong> (+12,4% vs hier) — service midi solide</li>
+                <li>⚠️ <strong>Note clients en baisse</strong> 4,3 → 4,2 (2 avis &lt;3★ aujourd'hui sur livraison)</li>
+                <li>🔴 <strong>Rupture imminente</strong> sur Pad Thaï poulet ce soir</li>
+              </ul>
+
+              <h4>🎯 Actions prioritaires</h4>
+              <ul>
+                <li><strong>Maintenant</strong> · Lancer une 2ᵉ fournée Pad Thaï poulet (12 portions) <span class="impact-tag">+150€</span></li>
+                <li><strong>Ce soir</strong> · Répondre aux 2 avis Deliveroo (modèles prêts dans l'onglet Avis)</li>
+                <li><strong>Demain</strong> · Commander nouilles de riz 8kg chez Asia Market <span class="impact-tag">+340€ CA</span></li>
+              </ul>
+
+              <h4>💡 Opportunité</h4>
+              <ul>
+                <li>Tu as 14 commandes Uber sans dessert ajouté. Pousser le Mango sticky en suggestion (marge 76%) = <strong>+15€/jour</strong> minimum.</li>
+              </ul>
+            </div>
+
+            <div class="msg user">Génère-moi un post Insta pour ce soir</div>
+
+            <div class="msg ai">
+              Voici une proposition pour <strong>ce soir 18h</strong> (heure de pic d'engagement Saint Just) :
+              <br><br>
+              <em style="color: var(--text); font-style: normal; line-height: 1.6;">"🌶️ Soirée Curry vert chez Gin Khao 🌿<br>
+              Lait de coco onctueux, basilic thaï du matin, poulet fermier. Le plat préféré de Mehdi (et il commande chaque semaine, il sait).<br><br>
+              On vous attend ce soir, ou livraison Uber/Deliveroo · Saint Just, Marseille"</em>
+              <br><br>
+              <span style="color: var(--gold); font-size: 12px;">#streetfoodthai #marseille13 #curryvert #ginkhao #saintjust</span>
+              <br><br>
+              <button class="btn-mini" style="width: auto; padding: 6px 14px; margin-top: 6px;">Publier sur Insta</button>
+            </div>
+          </div>
+
+          <div class="chat-suggestions">
+            <button class="sugg" onclick="sendSugg('Pourquoi mes lundis sont morts ?')">Pourquoi mes lundis sont morts ?</button>
+            <button class="sugg" onclick="sendSugg('Comment augmenter mon panier moyen ?')">Augmenter mon panier moyen ?</button>
+            <button class="sugg" onclick="sendSugg('Compare mes ventes vs mois dernier')">Comparer vs mois dernier</button>
+            <button class="sugg" onclick="sendSugg('Recette pour ajuster Pad Thaï')">Ajuster Pad Thaï</button>
+          </div>
+
+          <div class="chat-input-bar">
+            <input type="text" class="chat-input" placeholder="Pose ta question..." id="chat-input">
+            <button class="send-btn" onclick="sendMessage()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ====== MARKETING MODAL ====== -->
+    <div class="modal-overlay" id="modal-marketing">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <h2 class="modal-title">Post Instagram généré</h2>
+        <p class="modal-sub">Optimisé pour 18h, audience Saint Just · Marseille 13</p>
+
+        <div class="post-preview">
+          <div class="img-placeholder">Gin Khao</div>
+          <div class="post-caption">🌶️ Soirée Curry vert chez Gin Khao 🌿
+
+Lait de coco onctueux, basilic thaï du matin, poulet fermier. Le plat préféré de Mehdi (et il commande chaque semaine, il sait).
+
+On vous attend ce soir, ou livraison Uber/Deliveroo</div>
+          <div class="post-hashtags">#streetfoodthai #marseille13 #curryvert #ginkhao #saintjust #padthai #thaifood #marseille</div>
+        </div>
+
+        <button class="btn-primary">Publier maintenant</button>
+        <button class="btn-secondary" onclick="closeModal()">Régénérer une variante</button>
+      </div>
+    </div>
+
+    <!-- ====== BOTTOM NAV ====== -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-screen="home">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label">Accueil</span>
+      </button>
+      <button class="nav-btn" data-screen="sales">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nav-label">Ventes</span>
+      </button>
+      <button class="nav-btn" data-screen="compta">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/></svg>
+        <span class="nav-label">Compta</span>
+      </button>
+      <button class="nav-btn" data-screen="reviews">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="nav-label">Avis</span>
+      </button>
+      <button class="nav-btn" data-screen="stock">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span class="nav-label">Stocks</span>
+      </button>
+      <button class="nav-btn ia-tab" data-screen="ai">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+        <span class="nav-label">IA</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <div class="desktop-hint">↑ Cliquez sur les onglets en bas pour naviguer · Démo interactive</div>
+</div>
+
+<script>
+// ===== TAB NAVIGATION =====
+const navBtns = document.querySelectorAll('.nav-btn');
+const screens = document.querySelectorAll('.screen');
+const appContent = document.getElementById('app-content');
+
+function switchScreen(screenKey) {
+  navBtns.forEach(b => b.classList.toggle('active', b.dataset.screen === screenKey));
+  screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + screenKey));
+  appContent.scrollTop = 0;
+}
+
+navBtns.forEach(btn => {
+  btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
+});
+
+// ===== PERIOD TABS =====
+document.querySelectorAll('.tabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    tab.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+// ===== HERO NUMBER COUNTER =====
+const heroEl = document.getElementById('hero-amount');
+if (heroEl) {
+  let target = 847;
+  let current = 0;
+  let step = target / 40;
+  const interval = setInterval(() => {
+    current += step;
+    if (current >= target) { current = target; clearInterval(interval); }
+    heroEl.textContent = Math.round(current);
+  }, 18);
+}
+
+// ===== MARKETING MODAL =====
+const modal = document.getElementById('modal-marketing');
+function openMarketing() { modal.classList.add('active'); }
+function closeModal() { modal.classList.remove('active'); }
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+// ===== SCAN FACTURE (démo) =====
+function toggleInvoice() {
+  const demo = document.getElementById('invoice-demo');
+  if (demo) {
+    demo.style.display = (demo.style.display === 'none') ? 'block' : 'none';
+    if (demo.style.display === 'block') demo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// ===== CHAT MOCK =====
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+
+function appendMessage(text, role) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendSugg(text) {
+  chatInput.value = text;
+  sendMessage();
+}
+
+function sendMessage() {
+  const val = chatInput.value.trim();
+  if (!val) return;
+  appendMessage(val, 'user');
+  chatInput.value = '';
+  setTimeout(() => {
+    const typing = document.createElement('div');
+    typing.className = 'msg ai';
+    typing.innerHTML = '<em style="color: var(--text-mute); font-style: normal;">Le Directeur IA analyse tes données…</em>';
+    chatMessages.appendChild(typing);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    setTimeout(() => {
+      typing.innerHTML = `<h4>🎯 Réponse rapide</h4>
+        <ul>
+          <li>Question reçue : <strong>"${val}"</strong></li>
+          <li>Dans la vraie app, je croiserais : caisse, Uber Eats, Deliveroo, météo, agenda local, et historique 90 jours.</li>
+          <li>Je sortirais une analyse structurée avec actions chiffrées et impact € estimé.</li>
+        </ul>
+        <p style="font-size: 12px; color: var(--text-mute); margin-top: 8px;">💡 Cette démo branche l'IA sur des données fictives. Une fois connectée à la caisse réelle de Gin Khao, les réponses deviennent ultra-précises.</p>`;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 1100);
+  }, 200);
+}
+
+chatInput?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendMessage();
+});
+</script>
+</body>
+</html>
