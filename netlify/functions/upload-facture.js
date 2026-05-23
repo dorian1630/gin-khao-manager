@@ -37,7 +37,8 @@ export default async (req) => {
         parents: [process.env.GDRIVE_FOLDER_ID]
       },
       media: { mimeType: mediaType || "image/jpeg", body: stream },
-      fields: "id, name, webViewLink"
+      fields: "id, name, webViewLink",
+      supportsAllDrives: true
     });
 
     console.log("5. SUCCÈS ! Fichier ID:", fichier.data.id);
