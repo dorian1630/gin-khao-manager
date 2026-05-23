@@ -2543,28 +2543,36 @@ function sendSugg(text) {
   sendMessage();
 }
 
-function sendMessage() {
+async function sendMessage() {
   const val = chatInput.value.trim();
   if (!val) return;
   appendMessage(val, 'user');
   chatInput.value = '';
-  setTimeout(() => {
-    const typing = document.createElement('div');
-    typing.className = 'msg ai';
-    typing.innerHTML = '<em style="color: var(--text-mute); font-style: normal;">Le Directeur IA analyse tes données…</em>';
-    chatMessages.appendChild(typing);
+
+  // Message "en train d'écrire"
+  const typing = document.createElement('div');
+  typing.className = 'msg ai';
+  typing.innerHTML = '<em style="color: var(--text-mute); font-style: normal;">Le Directeur IA analyse…</em>';
+  chatMessages.appendChild(typing);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  try {
+    // On appelle la vraie IA via la fonction Netlify
+    const res = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: val })
+    });
+    const data = await res.json();
+
+    // On affiche la vraie réponse de l'IA
+    const texte = (data.reponse || 'Pas de réponse.')
+      .replace(/\n/g, '<br>');
+    typing.innerHTML = texte;
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    setTimeout(() => {
-      typing.innerHTML = `<h4>🎯 Réponse rapide</h4>
-        <ul>
-          <li>Question reçue : <strong>"${val}"</strong></li>
-          <li>Dans la vraie app, je croiserais : caisse, Uber Eats, Deliveroo, météo, agenda local, et historique 90 jours.</li>
-          <li>Je sortirais une analyse structurée avec actions chiffrées et impact € estimé.</li>
-        </ul>
-        <p style="font-size: 12px; color: var(--text-mute); margin-top: 8px;">💡 Cette démo branche l'IA sur des données fictives. Une fois connectée à la caisse réelle de Gin Khao, les réponses deviennent ultra-précises.</p>`;
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }, 1100);
-  }, 200);
+  } catch (err) {
+    typing.innerHTML = '<em style="color: var(--sriracha); font-style: normal;">Erreur de connexion. Réessaie.</em>';
+  }
 }
 
 chatInput?.addEventListener('keydown', e => {
