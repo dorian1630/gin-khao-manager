@@ -2578,24 +2578,17 @@ chatInput?.addEventListener('keydown', e => {
 async function scanFacture(input) {
   const file = input.files[0];
   if (!file) return;
-
   const carte = document.getElementById('invoice-demo');
   carte.style.display = 'block';
   document.getElementById('ie-supplier').textContent = 'Lecture en cours…';
   ['ie-date','ie-cat','ie-ht','ie-tva','ie-ttc'].forEach(id => document.getElementById(id).textContent = '…');
 
-  // Compression de la photo (sinon trop lourde)
+  // Compression de la photo
   const img = await compresserImage(file);
-// Archivage sur Google Drive (en parallèle, sans bloquer la lecture)
-  const nomFichier = `facture-${new Date().toISOString().slice(0,10)}-${Date.now()}.jpg`;
-  fetch('/.netlify/functions/upload-facture', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: img.data, mediaType: img.type, nom: nomFichier })
-  })
-  .then(r => r.json())
-  .then(d => { if (d.ok) console.log('Facture archivée:', d.lien); else console.log('Réponse Drive:', d); })
-  .catch(e => console.log('Archivage échoué:', e));
+
+  let factureLue = null;
+
+  // 1) L'IA lit la facture
   try {
     const res = await fetch('/.netlify/functions/scan-facture', {
       method: 'POST',
@@ -2606,22 +2599,33 @@ async function scanFacture(input) {
 
     if (data.erreur || !data.facture) {
       document.getElementById('ie-supplier').textContent = 'Lecture impossible';
-      return;
+    } else {
+      factureLue = data.facture;
+      const f = factureLue;
+      document.getElementById('ie-supplier').textContent = f.fournisseur || '—';
+      document.getElementById('ie-date').textContent = f.date || '—';
+      document.getElementById('ie-cat').textContent = f.categorie || '—';
+      document.getElementById('ie-ht').textContent = f.montant_ht != null ? f.montant_ht.toFixed(2) + '€' : '—';
+      document.getElementById('ie-tva').textContent = f.tva != null ? f.tva.toFixed(2) + '€' : '—';
+      document.getElementById('ie-ttc').textContent = f.montant_ttc != null ? f.montant_ttc.toFixed(2) + '€' : '—';
     }
-
-    const f = data.facture;
-    document.getElementById('ie-supplier').textContent = f.fournisseur || '—';
-    document.getElementById('ie-date').textContent = f.date || '—';
-    document.getElementById('ie-cat').textContent = f.categorie || '—';
-    document.getElementById('ie-ht').textContent = f.montant_ht != null ? f.montant_ht.toFixed(2) + '€' : '—';
-    document.getElementById('ie-tva').textContent = f.tva != null ? f.tva.toFixed(2) + '€' : '—';
-    document.getElementById('ie-ttc').textContent = f.montant_ttc != null ? f.montant_ttc.toFixed(2) + '€' : '—';
   } catch (err) {
     document.getElementById('ie-supplier').textContent = 'Erreur de connexion';
   }
+
+  // 2) Archivage Drive + ligne dans le Sheet (avec les montants lus)
+  const nomFichier = `facture-${new Date().toISOString().slice(0,10)}-${Date.now()}.jpg`;
+  fetch('/.netlify/functions/upload-facture', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: img.data, mediaType: img.type, nom: nomFichier, facture: factureLue })
+  })
+  .then(r => r.json())
+  .then(d => { if (d.ok) console.log('Archivée + tableau:', d.lien); else console.log('Réponse:', d); })
+  .catch(e => console.log('Échec archivage:', e));
+
   input.value = '';
 }
-
 // Compresse et convertit l'image en base64
 function compresserImage(file) {
   return new Promise((resolve) => {
