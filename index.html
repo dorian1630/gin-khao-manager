@@ -2276,35 +2276,31 @@ html, body {
             <h3 class="section-title">Factures fournisseurs</h3>
             <span class="section-link" style="color: var(--text-mute);">14 ce mois</span>
           </div>
-          <div class="scan-card" onclick="toggleInvoice()">
+          <!-- Bouton scan réel : ouvre l'appareil photo -->
+          <label class="scan-card" for="invoice-input" style="cursor:pointer;">
             <div class="scan-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
             </div>
             <div class="scan-title">📸 Scanner une facture</div>
             <div class="scan-desc">L'IA extrait fournisseur, HT, TVA, TTC et la classe automatiquement</div>
-          </div>
+          </label>
+          <input type="file" id="invoice-input" accept="image/*" capture="environment" style="display:none;" onchange="scanFacture(this)">
 
-          <!-- Exemple de facture déjà extraite -->
-          <div class="invoice-extract" id="invoice-demo">
+          <!-- Carte résultat (remplie par l'IA après scan) -->
+          <div class="invoice-extract" id="invoice-demo" style="display:none;">
             <div class="ie-head">
               <span class="ie-badge">✓ Extrait par l'IA</span>
-              <span class="ie-supplier" style="margin-left: auto;">Metro Marseille</span>
+              <span class="ie-supplier" id="ie-supplier" style="margin-left: auto;">—</span>
             </div>
             <div class="ie-grid">
-              <div class="ie-field"><div class="lbl">Date</div><div class="val">14/05/2026</div></div>
-              <div class="ie-field"><div class="lbl">Catégorie</div><div class="val cat">Matières premières</div></div>
-              <div class="ie-field"><div class="lbl">Montant HT</div><div class="val">387,42€</div></div>
-              <div class="ie-field"><div class="lbl">TVA (5,5%)</div><div class="val">21,31€</div></div>
-              <div class="ie-field"><div class="lbl">Montant TTC</div><div class="val" style="color: var(--gold);">408,73€</div></div>
-              <div class="ie-field"><div class="lbl">Paiement</div><div class="val" style="font-family: var(--body); font-size: 12px;">CB pro</div></div>
-            </div>
-            <div class="ie-flag">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-              <span>Anomalie : +18% sur le poste boeuf vs facture du 02/05. À vérifier.</span>
+              <div class="ie-field"><div class="lbl">Date</div><div class="val" id="ie-date">—</div></div>
+              <div class="ie-field"><div class="lbl">Catégorie</div><div class="val cat" id="ie-cat">—</div></div>
+              <div class="ie-field"><div class="lbl">Montant HT</div><div class="val" id="ie-ht">—</div></div>
+              <div class="ie-field"><div class="lbl">TVA</div><div class="val" id="ie-tva">—</div></div>
+              <div class="ie-field"><div class="lbl">Montant TTC</div><div class="val" id="ie-ttc" style="color: var(--gold);">—</div></div>
+              <div class="ie-field"><div class="lbl">Statut</div><div class="val" style="font-family: var(--body); font-size: 12px;">Lu par IA</div></div>
             </div>
           </div>
-        </div>
-
         <!-- 4. TRÉSORERIE -->
         <div class="section">
           <div class="section-head">
@@ -2578,6 +2574,69 @@ async function sendMessage() {
 chatInput?.addEventListener('keydown', e => {
   if (e.key === 'Enter') sendMessage();
 });
+  // ===== SCAN DE FACTURE (IA vision) =====
+async function scanFacture(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const carte = document.getElementById('invoice-demo');
+  carte.style.display = 'block';
+  document.getElementById('ie-supplier').textContent = 'Lecture en cours…';
+  ['ie-date','ie-cat','ie-ht','ie-tva','ie-ttc'].forEach(id => document.getElementById(id).textContent = '…');
+
+  // Compression de la photo (sinon trop lourde)
+  const img = await compresserImage(file);
+
+  try {
+    const res = await fetch('/.netlify/functions/scan-facture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: img.data, mediaType: img.type })
+    });
+    const data = await res.json();
+
+    if (data.erreur || !data.facture) {
+      document.getElementById('ie-supplier').textContent = 'Lecture impossible';
+      return;
+    }
+
+    const f = data.facture;
+    document.getElementById('ie-supplier').textContent = f.fournisseur || '—';
+    document.getElementById('ie-date').textContent = f.date || '—';
+    document.getElementById('ie-cat').textContent = f.categorie || '—';
+    document.getElementById('ie-ht').textContent = f.montant_ht != null ? f.montant_ht.toFixed(2) + '€' : '—';
+    document.getElementById('ie-tva').textContent = f.tva != null ? f.tva.toFixed(2) + '€' : '—';
+    document.getElementById('ie-ttc').textContent = f.montant_ttc != null ? f.montant_ttc.toFixed(2) + '€' : '—';
+  } catch (err) {
+    document.getElementById('ie-supplier').textContent = 'Erreur de connexion';
+  }
+  input.value = '';
+}
+
+// Compresse et convertit l'image en base64
+function compresserImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const image = new Image();
+      image.onload = () => {
+        const maxDim = 1568;
+        let { width, height } = image;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = height * maxDim / width; width = maxDim; }
+          else { width = width * maxDim / height; height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve({ data: dataUrl.split(',')[1], type: 'image/jpeg' });
+      };
+      image.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 </script>
 </body>
 </html>
