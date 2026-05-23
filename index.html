@@ -2586,7 +2586,16 @@ async function scanFacture(input) {
 
   // Compression de la photo (sinon trop lourde)
   const img = await compresserImage(file);
-
+// Archivage sur Google Drive (en parallèle, sans bloquer la lecture)
+  const nomFichier = `facture-${new Date().toISOString().slice(0,10)}-${Date.now()}.jpg`;
+  fetch('/.netlify/functions/upload-facture', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: img.data, mediaType: img.type, nom: nomFichier })
+  })
+  .then(r => r.json())
+  .then(d => { if (d.ok) console.log('Facture archivée:', d.lien); else console.log('Réponse Drive:', d); })
+  .catch(e => console.log('Archivage échoué:', e));
   try {
     const res = await fetch('/.netlify/functions/scan-facture', {
       method: 'POST',
