@@ -2685,6 +2685,15 @@ async function envoyerComptable() {
     setTimeout(() => { btn.innerHTML = texteInitial; btn.disabled = false; }, 3000);
   }
 }
+  // Modifier l'email du comptable
+function modifierEmailComptable() {
+  const actuel = localStorage.getItem('emailComptable') || '';
+  const nouveau = prompt("Email de l'expert-comptable :", actuel);
+  if (nouveau !== null && nouveau.trim() !== '') {
+    localStorage.setItem('emailComptable', nouveau.trim());
+    alert("Email du comptable mis à jour : " + nouveau.trim());
+  }
+}
 </script>
 </body>
 </html>
