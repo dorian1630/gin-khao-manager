@@ -2330,7 +2330,7 @@ html, body {
 
         <!-- Préparation comptable -->
         <div class="section">
-          <button class="btn-secondary" style="margin-top: 0;">
+          <button class="btn-secondary" style="margin-top: 0;" id="btn-comptable" onclick="envoyerComptable()">
             📤 Exporter la synthèse pour l'expert-comptable
           </button>
           <p style="font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 10px; line-height: 1.5;">
@@ -2649,6 +2649,41 @@ function compresserImage(file) {
     };
     reader.readAsDataURL(file);
   });
+}
+  // ===== ENVOI AU COMPTABLE =====
+async function envoyerComptable() {
+  // Demander l'email du comptable (mémorisé pour les fois suivantes)
+  let email = localStorage.getItem('emailComptable');
+  if (!email) {
+    email = prompt("Email de l'expert-comptable :");
+    if (!email) return;
+    localStorage.setItem('emailComptable', email);
+  }
+
+  const btn = document.getElementById('btn-comptable');
+  const texteInitial = btn.innerHTML;
+  btn.innerHTML = '⏳ Envoi en cours...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/.netlify/functions/envoi-comptable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emailComptable: email })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      btn.innerHTML = '✅ Envoyé à ' + email;
+      setTimeout(() => { btn.innerHTML = texteInitial; btn.disabled = false; }, 3000);
+    } else {
+      btn.innerHTML = '❌ Erreur, réessaie';
+      setTimeout(() => { btn.innerHTML = texteInitial; btn.disabled = false; }, 3000);
+    }
+  } catch (err) {
+    btn.innerHTML = '❌ Erreur de connexion';
+    setTimeout(() => { btn.innerHTML = texteInitial; btn.disabled = false; }, 3000);
+  }
 }
 </script>
 </body>
