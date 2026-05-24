@@ -2801,8 +2801,7 @@ async function sendMessage() {
     const res = await fetch('/.netlify/functions/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ message: `Rédige un SMS court (max 160 caractères) pour relancer ${prenom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Offre à proposer : ${getOffre()}. Inclus un code promo. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })    });
-    const data = await res.json();
+body: JSON.stringify({ message: `Rédige un SMS court (max 160 caractères) pour relancer ${prenom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Offre à proposer : ${getOffre()}. Inclus un code promo. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })    const data = await res.json();
 
     // On affiche la vraie réponse de l'IA
     const texte = (data.reponse || 'Pas de réponse.')
