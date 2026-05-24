@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0A0908">
+<link rel="manifest" href="manifest-caisse.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gin Khao Caisse">
+<title>Gin Khao · Caisse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #0A0908;
+  --surface: #1C1814;
+  --surface-2: #251F19;
+  --border: #2D261E;
+  --sriracha: #E63946;
+  --gold: #E4B860;
+  --gold-soft: #B8924E;
+  --lime: #A8E10C;
+  --lime-soft: #82B509;
+  --text: #F5EDE2;
+  --text-soft: #C7B9A5;
+  --text-mute: #8B7E6F;
+  --text-dim: #5A5045;
+  --display: 'Fraunces', Georgia, serif;
+  --body: 'Manrope', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(168,225,12,0.10), transparent 55%),
+    linear-gradient(180deg, #0a0908 0%, #0d0a07 100%);
+  font-family: var(--body);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { width: 100%; max-width: 460px; display: flex; flex-direction: column; min-height: 100%; }
+
+.brand { text-align: center; margin-bottom: 8px; }
+.brand .mark {
+  font-family: var(--display); font-size: 11px; letter-spacing: 0.35em;
+  text-transform: uppercase; color: var(--lime); font-weight: 600;
+}
+.brand .name {
+  font-family: var(--display); font-size: 30px; font-weight: 500;
+  color: var(--text); line-height: 1; margin-top: 4px;
+}
+.brand .role {
+  display: inline-block; margin-top: 8px; font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-mute); font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px;
+}
+
+.hero-instruction {
+  text-align: center; margin: 26px 0 18px;
+}
+.hero-instruction h1 {
+  font-family: var(--display); font-size: 22px; font-weight: 500; color: var(--text); line-height: 1.2;
+}
+.hero-instruction p { font-size: 13px; color: var(--text-mute); margin-top: 6px; }
+
+/* Bouton scan principal */
+.scan-btn {
+  width: 100%; border: none; border-radius: 18px;
+  background: linear-gradient(135deg, var(--lime), var(--lime-soft));
+  color: var(--bg-deep); padding: 22px; font-size: 17px; font-weight: 800;
+  font-family: var(--body); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 12px; transition: transform 0.15s;
+  box-shadow: 0 16px 40px -12px rgba(168,225,12,0.4);
+}
+.scan-btn:active { transform: scale(0.98); }
+.scan-btn svg { width: 26px; height: 26px; }
+
+/* Zone caméra */
+#reader-zone { margin-top: 22px; display: none; }
+#qr-reader { width: 100%; border-radius: 20px; overflow: hidden; border: 1px solid var(--border); }
+.reader-controls { display: flex; justify-content: center; margin-top: 14px; }
+.stop-btn {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text-soft);
+  padding: 12px 22px; border-radius: 12px; font-size: 14px; font-weight: 600;
+  font-family: var(--body); cursor: pointer;
+}
+
+/* Résultat */
+#result {
+  margin-top: 24px; text-align: center; min-height: 90px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.result-card {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 24px; animation: pop 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes pop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.result-card.win { border-color: var(--lime); background: linear-gradient(135deg, rgba(168,225,12,0.1), rgba(168,225,12,0.02)); }
+.result-card.reward { border-color: var(--sriracha); background: linear-gradient(135deg, rgba(230,57,70,0.12), rgba(230,57,70,0.03)); }
+.result-card.info { border-color: var(--gold); }
+.result-card.err { border-color: var(--sriracha); }
+.result-card .big { font-family: var(--display); font-size: 24px; font-weight: 600; line-height: 1.1; }
+.result-card .name { font-size: 16px; color: var(--text); font-weight: 700; margin-bottom: 8px; }
+.result-card .detail { font-size: 14px; color: var(--text-soft); margin-top: 6px; }
+.result-card .stamps-mini { display: flex; gap: 5px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.dot-mini { width: 18px; height: 18px; border-radius: 50%; border: 1.5px dashed var(--text-dim); }
+.dot-mini.on { background: var(--gold); border: 1.5px solid var(--gold); }
+
+.idle-hint { color: var(--text-dim); font-size: 13px; }
+
+.spin { display: inline-block; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.footer-note {
+  margin-top: auto; padding-top: 24px; text-align: center;
+  font-size: 11px; color: var(--text-dim); line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <div class="mark">Street Food Thaï</div>
+    <div class="name">Gin Khao</div>
+    <div class="role">📟 Caisse · Fidélité</div>
+  </div>
+
+  <div class="hero-instruction">
+    <h1>Scanner la carte d'un client</h1>
+    <p>Demandez au client d'ouvrir sa carte de fidélité</p>
+  </div>
+
+  <button class="scan-btn" id="scan-btn" onclick="demarrerScan()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+    Scanner une carte
+  </button>
+
+  <div id="reader-zone">
+    <div id="qr-reader"></div>
+    <div class="reader-controls">
+      <button class="stop-btn" onclick="arreterScan()">Arrêter la caméra</button>
+    </div>
+  </div>
+
+  <div id="result">
+    <span class="idle-hint">Le résultat s'affichera ici après le scan</span>
+  </div>
+
+  <div class="footer-note">
+    Gin Khao Manager · Espace caisse<br>Réservé au personnel
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ===== CONFIG =====
+const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
+const OBJECTIF = 10;
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let scanner = null;
+let traitement = false;
+
+function demarrerScan() {
+  document.getElementById('scan-btn').style.display = 'none';
+  document.getElementById('reader-zone').style.display = 'block';
+  document.getElementById('result').innerHTML = '<span class="idle-hint">Visez le QR de la carte du client…</span>';
+  traitement = false;
+
+  scanner = new Html5Qrcode('qr-reader');
+  scanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 240, height: 240 } },
+    onScan,
+    () => {}
+  ).catch(err => {
+    document.getElementById('result').innerHTML = '<div class="result-card err"><div class="detail">Impossible d\'ouvrir la caméra : ' + err + '</div></div>';
+  });
+}
+
+function arreterScan() {
+  if (scanner) {
+    scanner.stop().then(() => scanner.clear()).catch(() => {});
+    scanner = null;
+  }
+  document.getElementById('reader-zone').style.display = 'none';
+  document.getElementById('scan-btn').style.display = 'flex';
+}
+
+function stampsMini(points) {
+  let html = '<div class="stamps-mini">';
+  for (let i = 1; i <= OBJECTIF; i++) html += '<div class="dot-mini' + (i <= points ? ' on' : '') + '"></div>';
+  return html + '</div>';
+}
+
+async function onScan(texte) {
+  if (traitement) return;
+  if (!texte.startsWith('GINKHAO:')) {
+    document.getElementById('result').innerHTML = '<div class="result-card err"><div class="big">QR non reconnu</div><div class="detail">Utilisez la carte fidélité Gin Khao.</div></div>';
+    return;
+  }
+  traitement = true;
+  const clientId = texte.replace('GINKHAO:', '').trim();
+  const res = document.getElementById('result');
+  res.innerHTML = '<div class="result-card info"><div class="detail"><span class="spin">⏳</span> Validation…</div></div>';
+
+  try {
+    const { data: c, error } = await sb.from('clients').select('*').eq('id', clientId).single();
+    if (error || !c) throw new Error('Client introuvable');
+
+    const aujourdhui = new Date().toISOString().slice(0, 10);
+    if (c.derniere_visite === aujourdhui) {
+      res.innerHTML = '<div class="result-card info"><div class="name">' + c.nom + '</div><div class="detail">Tampon déjà ajouté aujourd\'hui ✓</div>' + stampsMini(c.points) + '</div>';
+      finScan();
+      return;
+    }
+
+    let points = (c.points || 0) + 1;
+    if (points > OBJECTIF) points = 1;
+    const recompense = (points === OBJECTIF);
+
+    const { error: upErr } = await sb.from('clients').update({
+      points,
+      total_points_gagnes: (c.total_points_gagnes || 0) + 1,
+      nb_visites: (c.nb_visites || 0) + 1,
+      derniere_visite: aujourdhui
+    }).eq('id', clientId);
+    if (upErr) throw upErr;
+
+    if (recompense) {
+      res.innerHTML = '<div class="result-card reward"><div class="big" style="color:var(--sriracha);">🎉 Plat offert !</div><div class="name" style="margin-top:8px;">' + c.nom + '</div><div class="detail">10/10 tampons · offrez le plat 🍜</div>' + stampsMini(points) + '</div>';
+    } else {
+      res.innerHTML = '<div class="result-card win"><div class="big" style="color:var(--lime);">✓ +1 tampon</div><div class="name" style="margin-top:8px;">' + c.nom + '</div><div class="detail">' + points + '/10 · plus que ' + (OBJECTIF - points) + ' avant le plat offert</div>' + stampsMini(points) + '</div>';
+    }
+    finScan();
+  } catch (e) {
+    res.innerHTML = '<div class="result-card err"><div class="big">Erreur</div><div class="detail">' + e.message + '</div></div>';
+    setTimeout(() => { traitement = false; }, 2500);
+  }
+}
+
+function finScan() {
+  // Laisse le résultat affiché 4s, puis prêt pour le client suivant
+  setTimeout(() => {
+    traitement = false;
+    if (scanner) {
+      const res = document.getElementById('result');
+      // garde le dernier résultat visible mais réautorise le scan
+    }
+  }, 3500);
+}
+</script>
+</body>
+</html>
