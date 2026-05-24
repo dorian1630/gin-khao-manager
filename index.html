@@ -2442,7 +2442,14 @@ html, body {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
           </button>
         </header>
-
+<!-- Configurateur d'offre -->
+        <div class="activate-row" style="margin-bottom:16px;">
+          <div class="ar-info">
+            <div class="ar-title">🎁 Mon offre de relance</div>
+            <div class="ar-desc" id="offre-actuelle">−15% sur la prochaine commande</div>
+          </div>
+          <button class="client-cta send" onclick="configurerOffre()">Modifier</button>
+        </div>
         <div class="clients-hero">
           <div class="hero-label">CA récupérable · clients à réactiver</div>
           <div class="hero-amount">+1 920<span class="currency">€</span></div>
@@ -2794,8 +2801,7 @@ async function sendMessage() {
     const res = await fetch('/.netlify/functions/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: val })
-    });
+body: JSON.stringify({ message: `Rédige un SMS court (max 160 caractères) pour relancer ${prenom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Offre à proposer : ${getOffre()}. Inclus un code promo. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })    });
     const data = await res.json();
 
     // On affiche la vraie réponse de l'IA
@@ -2888,7 +2894,43 @@ function compresserImage(file) {
   });
 }
   // ===== CLIENTS : génération de SMS personnalisé par l'IA =====
-async function envoyerSMS(prenom, btn) {
+// ===== CONFIGURATION DE L'OFFRE DE FIDÉLITÉ =====
+function getOffre() {
+  return localStorage.getItem('offreFidelite') || '−15% sur la prochaine commande';
+}
+
+function configurerOffre() {
+  const choix = prompt(
+    "Choisis ton offre de relance (tape le numéro ou écris la tienne) :\n\n" +
+    "1 = −15% sur la prochaine commande\n" +
+    "2 = Une boisson offerte\n" +
+    "3 = Un dessert offert (Mango sticky)\n" +
+    "4 = −10% + livraison gratuite\n" +
+    "5 = Le 2ème plat à −50%\n\n" +
+    "Ou écris directement ton offre personnalisée :",
+    getOffre()
+  );
+  if (choix === null) return;
+
+  const offres = {
+    '1': '−15% sur la prochaine commande',
+    '2': 'une boisson offerte',
+    '3': 'un dessert offert (Mango sticky rice)',
+    '4': '−10% + livraison gratuite',
+    '5': 'le 2ème plat à −50%'
+  };
+  const offre = offres[choix.trim()] || choix.trim();
+  localStorage.setItem('offreFidelite', offre);
+  document.getElementById('offre-actuelle').textContent = offre;
+  alert('✅ Offre enregistrée : ' + offre + '\n\nTous les SMS utiliseront cette offre.');
+}
+
+// Afficher l'offre au chargement
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('offre-actuelle');
+  if (el) el.textContent = getOffre();
+});
+  async function envoyerSMS(prenom, btn) {
   const texteInitial = btn.innerHTML;
   btn.innerHTML = '⏳';
   btn.disabled = true;
