@@ -1184,7 +1184,7 @@ html, body {
 }
 .nav-btn .nav-icon { width: 21px; height: 21px; }
 .nav-btn .nav-label {
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -1509,6 +1509,92 @@ html, body {
   margin-top: 6px;
 }
 
+/* ===== CLIENTS / FIDÉLITÉ ===== */
+.clients-hero {
+  position: relative;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(228, 184, 96, 0.22), transparent 55%),
+    linear-gradient(135deg, #2a221a 0%, #1a1612 100%);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.clients-hero .hero-label { color: var(--gold); }
+.clients-hero .sub-line {
+  font-size: 12px; color: var(--text-mute); margin-top: 10px; line-height: 1.5;
+}
+.clients-hero .sub-line strong { color: var(--gold); }
+.segment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.segment-card {
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); padding: 14px;
+}
+.segment-card.star { border-color: rgba(228, 184, 96, 0.3); background: rgba(228, 184, 96, 0.04); }
+.segment-card.risk { border-color: rgba(230, 57, 70, 0.3); background: rgba(230, 57, 70, 0.04); }
+.segment-card .seg-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.segment-card .seg-emoji { font-size: 18px; }
+.segment-card .seg-count { font-family: var(--display); font-size: 24px; font-weight: 500; color: var(--text); line-height: 1; }
+.segment-card .seg-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.segment-card .seg-desc { font-size: 10px; color: var(--text-mute); margin-top: 3px; line-height: 1.3; }
+.client-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px;
+}
+.client-avatar {
+  width: 42px; height: 42px; border-radius: 13px; display: flex;
+  align-items: center; justify-content: center; font-family: var(--display);
+  font-size: 16px; font-weight: 600; flex-shrink: 0; color: var(--bg-deep);
+}
+.client-avatar.gold { background: linear-gradient(135deg, var(--gold), var(--gold-soft)); }
+.client-avatar.red { background: linear-gradient(135deg, var(--sriracha), var(--sriracha-soft)); color: #fff; }
+.client-avatar.neutral { background: var(--surface-2); color: var(--text-soft); }
+.client-info { flex: 1; min-width: 0; }
+.client-name { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.client-tag { font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+.client-tag.vip { background: rgba(228, 184, 96, 0.15); color: var(--gold); }
+.client-tag.lost { background: rgba(230, 57, 70, 0.15); color: var(--sriracha); }
+.client-meta { font-size: 11px; color: var(--text-mute); margin-top: 3px; }
+.client-meta strong { color: var(--text-soft); }
+.client-cta {
+  flex-shrink: 0; border: none; padding: 8px 12px; border-radius: 9px;
+  font-size: 11px; font-weight: 700; font-family: var(--body); cursor: pointer; white-space: nowrap;
+}
+.client-cta.send { background: var(--gold); color: var(--bg-deep); }
+.client-cta.ghost { background: var(--surface-2); color: var(--text-soft); border: 1px solid var(--border); }
+.loyalty-card {
+  position: relative; background: linear-gradient(135deg, #2d2218 0%, #1a1410 100%);
+  border: 1px solid rgba(228, 184, 96, 0.3); border-radius: 18px; padding: 20px; overflow: hidden;
+}
+.loyalty-card .lc-brand { font-family: var(--display); font-size: 16px; font-weight: 600; color: var(--gold); }
+.loyalty-card .lc-sub { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+.loyalty-stamps { display: flex; gap: 7px; margin-top: 16px; }
+.stamp {
+  flex: 1; aspect-ratio: 1; border-radius: 50%; border: 1.5px dashed rgba(228, 184, 96, 0.4);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-dim);
+}
+.stamp.filled { background: linear-gradient(135deg, var(--gold), var(--gold-soft)); border-style: solid; border-color: var(--gold); color: var(--bg-deep); }
+.stamp.reward { border-color: var(--sriracha); border-style: solid; color: var(--sriracha); font-size: 15px; }
+.activate-row {
+  display: flex; align-items: center; gap: 12px; background: var(--surface);
+  border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px;
+}
+.activate-row .ar-info { flex: 1; }
+.activate-row .ar-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.activate-row .ar-desc { font-size: 11px; color: var(--text-mute); margin-top: 2px; line-height: 1.4; }
+.toggle {
+  width: 46px; height: 27px; border-radius: 14px; background: var(--surface-2);
+  border: 1px solid var(--border); position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.25s;
+}
+.toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px;
+  border-radius: 50%; background: var(--text-mute); transition: all 0.25s;
+}
+.toggle.on { background: var(--lime-soft); border-color: var(--lime-soft); }
+.toggle.on::after { left: 21px; background: var(--bg-deep); }
+
 /* ===== MOBILE OVERRIDE ===== */
 @media (max-width: 600px) {
   .desktop-stage {
@@ -1567,7 +1653,7 @@ html, body {
         <header class="app-header">
           <div class="greeting-block">
             <div class="hello">Mardi 19 mai · 14h12</div>
-            <div class="name">Bonjour Lucas</div>
+            <div class="name">Bonjour Omar</div>
             <div class="resto">Gin Khao · Saint Just</div>
           </div>
           <button class="bell" aria-label="Notifications">
@@ -2345,6 +2431,150 @@ html, body {
         <div style="height: 40px;"></div>
       </section>
 
+      <!-- ====== SCREEN: CLIENTS / FIDÉLITÉ ====== -->
+      <section class="screen" id="screen-clients">
+        <header class="app-header">
+          <div>
+            <h1 class="screen-title">Clients</h1>
+            <p class="screen-sub">Fidélité &amp; réactivation</p>
+          </div>
+          <button class="bell" aria-label="Ajouter un client">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </button>
+        </header>
+
+        <div class="clients-hero">
+          <div class="hero-label">CA récupérable · clients à réactiver</div>
+          <div class="hero-amount">+1 920<span class="currency">€</span></div>
+          <div class="hero-delta">
+            <span class="up">38 clients</span>
+            <span class="label">n'ont pas commandé depuis +3 semaines</span>
+          </div>
+          <div class="sub-line">Tu as <strong>312 clients</strong> dans ta base, mais seulement <strong>47% reviennent</strong>. Réactiver un habitué coûte 6× moins cher que trouver un nouveau client.</div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Ta base clients</h3>
+            <span class="section-link" style="color: var(--text-mute);">312 clients</span>
+          </div>
+          <div class="segment-grid">
+            <div class="segment-card star">
+              <div class="seg-top"><span class="seg-emoji">🌟</span><span class="seg-count">41</span></div>
+              <div class="seg-name">Fidèles</div>
+              <div class="seg-desc">3+ commandes/mois · ton trésor</div>
+            </div>
+            <div class="segment-card">
+              <div class="seg-top"><span class="seg-emoji">👋</span><span class="seg-count">147</span></div>
+              <div class="seg-name">Occasionnels</div>
+              <div class="seg-desc">1-2 commandes/mois · à fidéliser</div>
+            </div>
+            <div class="segment-card risk">
+              <div class="seg-top"><span class="seg-emoji">⚠️</span><span class="seg-count">38</span></div>
+              <div class="seg-name">En train de partir</div>
+              <div class="seg-desc">silence 3-6 sem · à relancer vite</div>
+            </div>
+            <div class="segment-card">
+              <div class="seg-top"><span class="seg-emoji">💤</span><span class="seg-count">86</span></div>
+              <div class="seg-name">Endormis</div>
+              <div class="seg-desc">+2 mois sans commande</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">À relancer en priorité</h3>
+            <span class="section-link" style="color: var(--sriracha);">SMS prêts</span>
+          </div>
+
+          <div class="client-row">
+            <div class="client-avatar red">KB</div>
+            <div class="client-info">
+              <div class="client-name">Karim B. <span class="client-tag lost">part</span></div>
+              <div class="client-meta">Habitué Pad Thaï · <strong>9 commandes</strong> · dernier passage il y a <strong>23 jours</strong></div>
+            </div>
+            <button class="client-cta send" onclick="envoyerSMS('Karim', this)">SMS −15%</button>
+          </div>
+
+          <div class="client-row">
+            <div class="client-avatar neutral">SL</div>
+            <div class="client-info">
+              <div class="client-name">Sophie L.</div>
+              <div class="client-meta">6 commandes · panier moyen <strong>24€</strong> · silence <strong>4 semaines</strong></div>
+            </div>
+            <button class="client-cta send" onclick="envoyerSMS('Sophie', this)">SMS −15%</button>
+          </div>
+
+          <div class="client-row">
+            <div class="client-avatar neutral">TR</div>
+            <div class="client-info">
+              <div class="client-name">Thomas R.</div>
+              <div class="client-meta">Commandait chaque vendredi · <strong>rien depuis 3 vendredis</strong></div>
+            </div>
+            <button class="client-cta send" onclick="envoyerSMS('Thomas', this)">SMS −15%</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Carte de fidélité</h3>
+            <span class="section-link" style="color: var(--lime);">active</span>
+          </div>
+          <div class="loyalty-card">
+            <div class="lc-brand">Gin Khao · Fidélité</div>
+            <div class="lc-sub">Le 10ᵉ plat offert · automatique</div>
+            <div class="loyalty-stamps">
+              <div class="stamp filled">🍜</div><div class="stamp filled">🍜</div><div class="stamp filled">🍜</div>
+              <div class="stamp filled">🍜</div><div class="stamp filled">🍜</div><div class="stamp filled">🍜</div>
+              <div class="stamp filled">🍜</div><div class="stamp">8</div><div class="stamp">9</div><div class="stamp reward">🎁</div>
+            </div>
+          </div>
+          <p style="font-size: 11px; color: var(--text-mute); margin-top: 10px; line-height: 1.5;"><strong style="color: var(--lime);">+23% de fréquence de visite</strong> en moyenne avec une carte de fidélité.</p>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h3 class="section-title">Automatisations clients</h3></div>
+          <div class="activate-row">
+            <div class="ar-info"><div class="ar-title">🎂 Offre anniversaire</div><div class="ar-desc">SMS auto avec dessert offert le jour J</div></div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="activate-row">
+            <div class="ar-info"><div class="ar-title">😴 Relance client endormi</div><div class="ar-desc">SMS auto après 30 jours sans commande</div></div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="activate-row">
+            <div class="ar-info"><div class="ar-title">⭐ Demande d'avis après commande</div><div class="ar-desc">Aux clients satisfaits uniquement</div></div>
+            <div class="toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Tes meilleurs clients</h3>
+            <span class="section-link" style="color: var(--gold);">à choyer</span>
+          </div>
+          <div class="client-row">
+            <div class="client-avatar gold">MA</div>
+            <div class="client-info">
+              <div class="client-name">Mehdi A. <span class="client-tag vip">VIP</span></div>
+              <div class="client-meta">Commande chaque semaine · <strong>187€</strong> ce mois · avis 5★</div>
+            </div>
+            <button class="client-cta ghost" onclick="envoyerSMS('Mehdi', this)">Récompenser</button>
+          </div>
+          <div class="client-row">
+            <div class="client-avatar gold">LP</div>
+            <div class="client-info">
+              <div class="client-name">Léa P. <span class="client-tag vip">VIP</span></div>
+              <div class="client-meta">12 commandes ce mois · adore le Curry vert</div>
+            </div>
+            <button class="client-cta ghost" onclick="envoyerSMS('Léa', this)">Récompenser</button>
+          </div>
+        </div>
+
+        <div style="height: 40px;"></div>
+      </section>
+
       <!-- ====== SCREEN: AI CHAT ====== -->
       <section class="screen" id="screen-ai" style="padding: 0; height: 100%;">
         <div class="chat-screen active">
@@ -2358,7 +2588,7 @@ html, body {
 
           <div class="chat-messages" id="chat-messages">
             <div class="msg ai">
-              <strong style="font-family: var(--display); color: var(--gold);">Bonjour Lucas 👋</strong><br>
+              <strong style="font-family: var(--display); color: var(--gold);">Bonjour Omar 👋</strong><br>
               Je suis ton directeur IA. Je suis connecté à ta caisse, Uber Eats, Deliveroo, Google Avis et tes fournisseurs. Pose-moi n'importe quelle question business, ou demande-moi une analyse.
             </div>
 
@@ -2457,6 +2687,10 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
       <button class="nav-btn" data-screen="reviews">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span class="nav-label">Avis</span>
+      </button>
+      <button class="nav-btn" data-screen="clients">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="nav-label">Clients</span>
       </button>
       <button class="nav-btn" data-screen="stock">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
@@ -2653,7 +2887,29 @@ function compresserImage(file) {
     reader.readAsDataURL(file);
   });
 }
-  // ===== ENVOI AU COMPTABLE =====
+  // ===== CLIENTS : génération de SMS personnalisé par l'IA =====
+async function envoyerSMS(prenom, btn) {
+  const texteInitial = btn.innerHTML;
+  btn.innerHTML = '⏳';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: `Rédige un SMS court (max 160 caractères) pour relancer ${prenom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Propose -15% sur sa prochaine commande avec un code promo. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })
+    });
+    const data = await res.json();
+    const sms = (data.reponse || 'Erreur de génération').trim();
+    btn.innerHTML = '✅ Généré';
+    alert('📱 SMS généré par l\'IA pour ' + prenom + ' :\n\n' + sms + '\n\n— — —\n(Pour l\'envoyer vraiment, on branche Brevo à l\'étape suivante.)');
+  } catch (e) {
+    btn.innerHTML = '❌';
+    alert('Erreur : ' + e.message);
+  }
+  setTimeout(() => { btn.innerHTML = texteInitial; btn.disabled = false; }, 2500);
+}
+
+
 async function envoyerComptable() {
   // Demander l'email du comptable (mémorisé pour les fois suivantes)
   let email = localStorage.getItem('emailComptable');
