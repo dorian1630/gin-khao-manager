@@ -2442,7 +2442,8 @@ html, body {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
           </button>
         </header>
-<!-- Configurateur d'offre -->
+
+        <!-- Configurateur d'offre -->
         <div class="activate-row" style="margin-bottom:16px;">
           <div class="ar-info">
             <div class="ar-title">🎁 Mon offre de relance</div>
@@ -2450,6 +2451,7 @@ html, body {
           </div>
           <button class="client-cta send" onclick="configurerOffre()">Modifier</button>
         </div>
+
         <div class="clients-hero">
           <div class="hero-label">CA récupérable · clients à réactiver</div>
           <div class="hero-amount">+1 920<span class="currency">€</span></div>
@@ -2801,7 +2803,9 @@ async function sendMessage() {
     const res = await fetch('/.netlify/functions/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ message: `Rédige un SMS court (max 160 caractères) pour relancer ${prenom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Offre à proposer : ${getOffre()}. Inclus un code promo. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })    const data = await res.json();
+      body: JSON.stringify({ message: val })
+    });
+    const data = await res.json();
 
     // On affiche la vraie réponse de l'IA
     const texte = (data.reponse || 'Pas de réponse.')
@@ -2892,8 +2896,7 @@ function compresserImage(file) {
     reader.readAsDataURL(file);
   });
 }
-  // ===== CLIENTS : génération de SMS personnalisé par l'IA =====
-// ===== CONFIGURATION DE L'OFFRE DE FIDÉLITÉ =====
+  // ===== CONFIGURATION DE L'OFFRE DE FIDÉLITÉ =====
 function getOffre() {
   return localStorage.getItem('offreFidelite') || '−15% sur la prochaine commande';
 }
@@ -2910,7 +2913,6 @@ function configurerOffre() {
     getOffre()
   );
   if (choix === null) return;
-
   const offres = {
     '1': '−15% sur la prochaine commande',
     '2': 'une boisson offerte',
@@ -2920,16 +2922,18 @@ function configurerOffre() {
   };
   const offre = offres[choix.trim()] || choix.trim();
   localStorage.setItem('offreFidelite', offre);
-  document.getElementById('offre-actuelle').textContent = offre;
+  const el = document.getElementById('offre-actuelle');
+  if (el) el.textContent = offre;
   alert('✅ Offre enregistrée : ' + offre + '\n\nTous les SMS utiliseront cette offre.');
 }
 
-// Afficher l'offre au chargement
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('offre-actuelle');
   if (el) el.textContent = getOffre();
 });
-  async function envoyerSMS(prenom, btn) {
+
+  // ===== CLIENTS : génération de SMS personnalisé par l'IA =====
+async function envoyerSMS(prenom, btn) {
   const texteInitial = btn.innerHTML;
   btn.innerHTML = '⏳';
   btn.disabled = true;
@@ -2937,7 +2941,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const res = await fetch('/.netlify/functions/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: `Rédige un SMS court (max 160 caractères) pour relancer ${prenom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Propose -15% sur sa prochaine commande avec un code promo. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })
+      body: JSON.stringify({ message: `Rédige un SMS court (max 160 caractères) pour relancer ${prenom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Offre à proposer : ${getOffre()}. Inclus un code promo. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })
     });
     const data = await res.json();
     const sms = (data.reponse || 'Erreur de génération').trim();
