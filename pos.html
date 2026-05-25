@@ -937,6 +937,53 @@ html, body {
   border: 2px solid #c0392b; border-radius: 6px; padding: 6px; margin-bottom: 12px;
   text-transform: uppercase; letter-spacing: 0.1em; font-size: 12px;
 }
+
+/* ===== BON CUISINE ===== */
+.bon-cuisine {
+  background: #fff;
+  color: #111;
+  font-family: var(--mono);
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto 18px;
+  padding: 22px 20px;
+  border-radius: 6px;
+}
+.bc-head {
+  text-align: center;
+  border-bottom: 2px solid #111;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+.bc-title { font-size: 16px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.bc-meta { font-size: 13px; font-weight: 700; margin-top: 6px; }
+.bc-meta .num { font-size: 22px; }
+.bc-mode {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1.5px solid #111;
+  border-radius: 4px;
+  padding: 2px 10px;
+}
+.bc-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed #ccc;
+  font-size: 16px;
+  font-weight: 700;
+}
+.bc-item .qte {
+  font-size: 20px;
+  font-weight: 800;
+  min-width: 34px;
+}
+.bc-vide { text-align: center; color: #888; font-size: 13px; padding: 16px 0; }
 .hv-badge-annulee {
   font-size: 10px;
   font-weight: 700;
@@ -1376,7 +1423,8 @@ function ajouter(produitId) {
       prix: parseFloat(p.prix),
       quantite: 1,
       stock_actif: p.stock_actif,
-      stock: p.stock
+      stock: p.stock,
+      categorie_id: p.categorie_id
     });
   }
   afficherTicket();
@@ -1718,6 +1766,14 @@ async function validerVente() {
     });
   }
 
+  // Copie des lignes du ticket courant (avec catégorie) pour le bon cuisine
+  const lignesPourCuisine = ticket.map(l => ({
+    produit_id: l.produit_id,
+    nom: l.nom,
+    quantite: l.quantite,
+    categorie_id: l.categorie_id
+  }));
+
   try {
     const { data, error } = await sb.rpc('enregistrer_vente', {
       p_restaurant_id: RESTO_ID,
@@ -1764,8 +1820,9 @@ async function validerVente() {
     afficherTicket();
     await chargerMenu(); // recharge le stock à jour
 
-    // Affiche l'aperçu du ticket de la vente qu'on vient d'encaisser
-    document.getElementById('ticket-contenu').innerHTML = genererTicketHTML(venteLocale);
+    // Affiche le bon cuisine PUIS le ticket client de la vente qu'on vient d'encaisser
+    const bonHTML = genererBonCuisineHTML(lignesPourCuisine, numero, modePaiement);
+    document.getElementById('ticket-contenu').innerHTML = bonHTML + genererTicketHTML(venteLocale);
     document.getElementById('overlay-ticket').classList.add('show');
   } catch (e) {
     alert('Erreur lors de l\'enregistrement : ' + e.message);
@@ -2198,6 +2255,45 @@ function voirTicket(venteId) {
 
 function fermerTicket() {
   document.getElementById('overlay-ticket').classList.remove('show');
+}
+
+// Détermine les ids de catégories considérées comme "Boissons" (exclues du bon cuisine)
+function categoriesBoissons() {
+  return categories
+    .filter(c => /boisson/i.test(c.nom))
+    .map(c => c.id);
+}
+
+// Construit le bon cuisine à partir des lignes du ticket courant (avant réinitialisation).
+// N'inclut QUE les plats à préparer (exclut les boissons).
+function genererBonCuisineHTML(lignesTicket, numero, modePaiement, modeService) {
+  const idsBoissons = categoriesBoissons();
+  const aPreparer = lignesTicket.filter(l =>
+    l.produit_id &&                          // pas les lignes remise/plat offert
+    !idsBoissons.includes(l.categorie_id)    // pas les boissons
+  );
+
+  const h = new Date();
+  const heure = String(h.getHours()).padStart(2,'0') + ':' + String(h.getMinutes()).padStart(2,'0');
+  const modeLbl = modePaiement === 'carte' ? 'Carte' : (modePaiement === 'especes' ? 'Espèces' : (modePaiement || ''));
+
+  const itemsHTML = aPreparer.length > 0
+    ? aPreparer.map(l => `
+        <div class="bc-item">
+          <span class="qte">${l.quantite}×</span>
+          <span>${l.nom}</span>
+        </div>`).join('')
+    : '<div class="bc-vide">Aucun plat à préparer (boissons uniquement)</div>';
+
+  return `
+    <div class="bon-cuisine" id="bon-cuisine">
+      <div class="bc-head">
+        <div class="bc-title">🍳 Bon de préparation</div>
+        <div class="bc-meta">Commande <span class="num">#${numero}</span></div>
+        <div class="bc-meta" style="font-weight:600;">${heure}</div>
+      </div>
+      ${itemsHTML}
+    </div>`;
 }
 
 // Impression : pour l'instant en attente de l'API myPOS.
