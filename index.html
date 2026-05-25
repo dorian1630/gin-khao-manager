@@ -1702,7 +1702,7 @@ html, body {
         <header class="app-header">
           <div class="greeting-block">
             <div class="hello">Mardi 19 mai · 14h12</div>
-            <div class="name">Bonjour Lucas</div>
+            <div class="name">Bonjour Omar</div>
             <div class="resto">Gin Khao · Saint Just</div>
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
@@ -2052,6 +2052,9 @@ html, body {
 
         <div style="height: 40px;"></div>
       </section>
+
+      <!-- ====== SCREEN: REVIEWS ====== -->
+      <section class="screen" id="screen-reviews">
         <header class="app-header">
           <div>
             <h1 class="screen-title">Avis clients</h1>
@@ -2619,7 +2622,7 @@ html, body {
 
           <div class="chat-messages" id="chat-messages">
             <div class="msg ai">
-              <strong style="font-family: var(--display); color: var(--gold);">Bonjour Lucas 👋</strong><br>
+              <strong style="font-family: var(--display); color: var(--gold);">Bonjour Omar 👋</strong><br>
               Je suis ton directeur IA. Je suis connecté à ta caisse, Uber Eats, Deliveroo, Google Avis et tes fournisseurs. Pose-moi n'importe quelle question business, ou demande-moi une analyse.
             </div>
 
@@ -2766,15 +2769,21 @@ document.querySelectorAll('.tabs .tab').forEach(tab => {
 });
 
 // ===== HERO NUMBER COUNTER =====
-const heroEl = document.getElementById('hero-amount');
-if (heroEl) {
-  let target = 847;
-  let current = 0;
-  let step = target / 40;
-  const interval = setInterval(() => {
-    current += step;
-    if (current >= target) { current = target; clearInterval(interval); }
+// Anime le compteur du CA depuis sa valeur actuelle jusqu'à une cible réelle.
+// Appelée par chargerStatsJour() avec le vrai CA (plus de valeur en dur).
+function animerHero(target) {
+  const heroEl = document.getElementById('hero-amount');
+  if (!heroEl) return;
+  clearInterval(window._heroAnim);
+  let current = parseInt(heroEl.textContent.replace(/\D/g, ''), 10) || 0;
+  target = Math.round(target);
+  if (current === target) { heroEl.textContent = target; return; }
+  const step = Math.max(1, Math.abs(target - current) / 40);
+  window._heroAnim = setInterval(() => {
+    if (current < target) { current += step; if (current >= target) current = target; }
+    else { current -= step; if (current <= target) current = target; }
     heroEl.textContent = Math.round(current);
+    if (current === target) clearInterval(window._heroAnim);
   }, 18);
 }
 
@@ -3004,10 +3013,9 @@ async function chargerStatsJour() {
     const ticketMoyen = nb > 0 ? ca / nb : 0;
 
     // Mise à jour du hero (dashboard d'accueil)
-    const elCA = document.getElementById('hero-amount');
     const elNb = document.getElementById('kpi-commandes');
     const elTM = document.getElementById('kpi-ticket-moyen');
-    if (elCA) elCA.textContent = Math.round(ca);
+    if (typeof animerHero === 'function') animerHero(ca); // anime vers le vrai CA
     if (elNb) elNb.textContent = nb;
     if (elTM) elTM.textContent = ticketMoyen.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
 
