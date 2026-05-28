@@ -2682,13 +2682,34 @@ async function imprimerTicket() {
 
 // Prépare les données d'impression pour la prochaine vente.
 // Appelé à la fin de validerVente() avec les lignes de la commande.
+// Catégories qui partent au POSTE SUSHI (tout ce qui est froid/cru préparé par le sushiman).
+// Le matching se fait sur le NOM de la catégorie (insensible à la casse).
+// Ajoute ici tes futures catégories : 'Californias', 'Makis', 'Crispys', 'Tigers', etc.
+const CATEGORIES_SUSHI = ['sushi', 'pokébowl', 'pokebowl', 'california', 'maki', 'crispy', 'tiger'];
+
+function estCategorieSushi(categorieId) {
+  const cat = categories.find(c => c.id === categorieId);
+  if (!cat) return false;
+  const nom = cat.nom.toLowerCase();
+  return CATEGORIES_SUSHI.some(motcle => nom.includes(motcle));
+}
+
 function preparerImpression(lignesTicket, venteLocale) {
   const idsBoissons = categories
     .filter(c => /boisson/i.test(c.nom))
     .map(c => c.id);
-  // Bon cuisine : on n'envoie que les plats à préparer (exclut remises, boissons, etc.)
-  const items = lignesTicket
-    .filter(l => l.produit_id && !idsBoissons.includes(l.categorie_id))
+
+  // Items "à préparer" = tout sauf boissons, remises, plats sans produit_id
+  const itemsAPreparer = lignesTicket
+    .filter(l => l.produit_id && !idsBoissons.includes(l.categorie_id));
+
+  // Répartition par poste
+  const itemsSushi = itemsAPreparer
+    .filter(l => estCategorieSushi(l.categorie_id))
+    .map(l => ({ quantite: l.quantite, nom: l.nom }));
+
+  const itemsCuisine = itemsAPreparer
+    .filter(l => !estCategorieSushi(l.categorie_id))
     .map(l => ({ quantite: l.quantite, nom: l.nom }));
 
   const d = new Date(venteLocale.cree_le);
@@ -2696,12 +2717,18 @@ function preparerImpression(lignesTicket, venteLocale) {
   const dateStr = d.toLocaleDateString('fr-FR') + ' à ' + heure;
 
   derniereImpression = {
-    bonCuisine: {
+    // Bon CUISINE : uniquement s'il y a des plats chauds
+    bonCuisine: itemsCuisine.length > 0 ? {
       numero: venteLocale.numero,
       heure: heure,
-      items: items
-      // modeService: tu peux ajouter 'sur place' / 'à emporter' ici quand tu auras le sélecteur
-    },
+      items: itemsCuisine
+    } : null,
+    // Bon SUSHI : uniquement s'il y a des sushis/pokébowls
+    bonSushi: itemsSushi.length > 0 ? {
+      numero: venteLocale.numero,
+      heure: heure,
+      items: itemsSushi
+    } : null,
     ticketClient: {
       numero: venteLocale.numero,
       date: dateStr,
