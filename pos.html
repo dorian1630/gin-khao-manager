@@ -2694,8 +2694,7 @@ async function imprimerTicket() {
 // Catégories qui partent au POSTE SUSHI (tout ce qui est froid/cru préparé par le sushiman).
 // Le matching se fait sur le NOM de la catégorie (insensible à la casse).
 // Ajoute ici tes futures catégories : 'Californias', 'Makis', 'Crispys', 'Tigers', etc.
-const CATEGORIES_SUSHI = ['Sushi', 'Pokébowl', 'Pokebowl', 'California', 'Maki', 'Crispy', 'Tiger'];
-
+const CATEGORIES_SUSHI = ['sushi', 'pokébowl', 'pokebowl', 'california', 'maki', 'crispy', 'tiger'];
 
 function estCategorieSushi(categorieId) {
   const cat = categories.find(c => c.id === categorieId);
