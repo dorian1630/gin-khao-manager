@@ -1594,10 +1594,23 @@ async function init() {
     }
     gate.classList.add('hidden');
     await chargerMenu();
+    abonnerCatalogueRealtime();
   } catch (e) {
     gateMsg.textContent = 'Erreur de connexion : ' + e.message;
     gate.querySelector('.spinner').style.display = 'none';
   }
+}
+
+// Realtime : quand un produit ou une catégorie change dans Supabase
+// (par exemple modifié depuis l'app de gestion), on recharge le menu
+// automatiquement sans rafraîchir la page.
+function abonnerCatalogueRealtime() {
+  sb.channel('caisse-catalogue')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'produits' },
+        () => { chargerMenu(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' },
+        () => { chargerMenu(); })
+    .subscribe();
 }
 
 // ============================================
