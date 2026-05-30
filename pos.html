@@ -57,7 +57,7 @@ html, body {
 .caisse {
   height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 340px;
   background:
     radial-gradient(circle at 15% 20%, rgba(230, 57, 70, 0.06), transparent 45%),
     radial-gradient(circle at 85% 80%, rgba(228, 184, 96, 0.05), transparent 45%),
@@ -124,6 +124,27 @@ html, body {
 .link-btn:hover { color: var(--text); border-color: var(--gold-soft); }
 
 /* Filtres catégories */
+.cats-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.cats-wrap::before, .cats-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30px;
+  pointer-events: none;
+  z-index: 2;
+}
+.cats-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-deep), transparent);
+}
+.cats-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-deep), transparent);
+}
 .cats {
   display: flex;
   gap: 10px;
@@ -131,6 +152,7 @@ html, body {
   overflow-x: auto;
   flex-shrink: 0;
   scrollbar-width: none;
+  scroll-behavior: smooth;
 }
 .cats::-webkit-scrollbar { display: none; }
 .cat-chip {
@@ -159,7 +181,7 @@ html, body {
   overflow-y: auto;
   padding: 4px 28px 28px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 14px;
   align-content: start;
   scrollbar-width: thin;
@@ -172,13 +194,13 @@ html, body {
   background: linear-gradient(160deg, var(--surface-2) 0%, var(--surface) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px 16px;
+  padding: 16px 14px;
   cursor: pointer;
   transition: all 0.18s;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 110px;
+  min-height: 130px;
   overflow: hidden;
 }
 .produit-card::after {
@@ -198,32 +220,42 @@ html, body {
   pointer-events: none;
 }
 .produit-nom {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.3;
   color: var(--text);
   position: relative;
   z-index: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .produit-bas {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-top: 14px;
+  gap: 6px;
+  margin-top: 12px;
   position: relative;
   z-index: 1;
+  flex-wrap: nowrap;
 }
 .produit-prix {
   font-family: var(--display);
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 500;
   color: var(--gold);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .produit-stock {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text-mute);
   font-family: var(--mono);
+  text-align: right;
+  line-height: 1.2;
 }
 .produit-stock.warn { color: var(--warning); }
 .produit-stock.crit { color: var(--danger); }
@@ -1246,7 +1278,9 @@ html, body {
       </div>
     </div>
 
-    <div class="cats" id="cats"></div>
+    <div class="cats-wrap">
+      <div class="cats" id="cats"></div>
+    </div>
 
     <div class="produits-grid" id="produits-grid">
       <div class="empty-state">
@@ -1616,7 +1650,7 @@ function afficherProduits() {
       let cls = '';
       if (p.stock <= 0) cls = 'crit';
       else if (p.stock <= p.seuil_alerte) cls = 'warn';
-      stockHtml = `<div class="produit-stock ${cls}">${p.stock > 0 ? p.stock + ' en stock' : 'rupture'}</div>`;
+      stockHtml = `<div class="produit-stock ${cls}">${p.stock > 0 ? 'stock<br>' + p.stock : 'rupture'}</div>`;
     }
     return `
       <div class="produit-card ${rupture?'rupture':''}" onclick="ajouter('${p.id}')">
