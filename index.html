@@ -1643,6 +1643,309 @@ html, body {
   /* La barre du bas respecte la barre d'accueil iPhone */
   .bottom-nav { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
 }
+/* ===== ÉCRAN PRODUITS ===== */
+.prod-toolbar {
+  padding: 0 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.prod-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.prod-search svg {
+  position: absolute;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: var(--text-mute, #8B7E6F);
+  pointer-events: none;
+}
+.prod-search input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background: var(--surface, #1C1814);
+  border: 1px solid var(--border, #2D261E);
+  border-radius: 14px;
+  color: var(--text, #F5EDE2);
+  font-size: 14px;
+  font-family: inherit;
+}
+.prod-search input:focus { outline: none; border-color: var(--gold, #E4B860); }
+
+.prod-cats {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.prod-cats::-webkit-scrollbar { display: none; }
+.prod-cat-chip {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #2D261E);
+  background: var(--surface, #1C1814);
+  color: var(--text-soft, #C7B9A5);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.prod-cat-chip:hover { border-color: var(--gold-soft, #B8924E); }
+.prod-cat-chip.active {
+  background: var(--sriracha, #E63946);
+  border-color: var(--sriracha, #E63946);
+  color: #fff;
+}
+
+.prod-liste {
+  padding: 0 20px 100px;
+}
+.prod-cat-titre {
+  font-family: var(--display, 'Fraunces', serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold, #E4B860);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 20px 4px 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border, #2D261E);
+}
+.prod-cat-titre:first-child { margin-top: 4px; }
+
+.prod-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface, #1C1814);
+  border: 1px solid var(--border, #2D261E);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.prod-row:hover { border-color: var(--gold-soft, #B8924E); }
+.prod-row:active { transform: scale(0.98); }
+.prod-row.inactif { opacity: 0.45; }
+.prod-row-info { flex: 1; min-width: 0; }
+.prod-row-nom {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #F5EDE2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prod-row-meta {
+  font-size: 11px;
+  color: var(--text-mute, #8B7E6F);
+  margin-top: 2px;
+  font-family: var(--mono, monospace);
+}
+.prod-row-meta.crit { color: var(--danger, #E63946); }
+.prod-row-meta.warn { color: var(--warning, #E4B860); }
+.prod-row-prix {
+  font-family: var(--display, 'Fraunces', serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--gold, #E4B860);
+  white-space: nowrap;
+}
+.prod-row-arrow {
+  color: var(--text-mute, #8B7E6F);
+  font-size: 18px;
+}
+.prod-badge-inactif {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-mute, #8B7E6F);
+  border: 1px solid var(--border, #2D261E);
+  padding: 3px 7px;
+  border-radius: 999px;
+}
+
+.prod-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-mute, #8B7E6F);
+}
+.prod-empty p { font-size: 13px; }
+.spinner-mini {
+  width: 24px; height: 24px;
+  border: 3px solid var(--border, #2D261E);
+  border-top-color: var(--sriracha, #E63946);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+/* Éditeur plein écran (slide-in depuis la droite) */
+.prod-editeur {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-deep, #0A0908);
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+.prod-editeur.show { transform: translateX(0); }
+.prod-editeur-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border, #2D261E);
+  flex-shrink: 0;
+}
+.prod-editeur-head h2 {
+  flex: 1;
+  font-family: var(--display, 'Fraunces', serif);
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+.prod-back {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border, #2D261E);
+  background: var(--surface, #1C1814);
+  color: var(--text, #F5EDE2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.prod-back svg { width: 18px; height: 18px; }
+.prod-save {
+  padding: 9px 14px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--lime, #A8E10C) 0%, var(--lime-soft, #82B509) 100%);
+  color: #0a0908;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.prod-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.prod-editeur-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 18px 40px;
+}
+.prod-field {
+  margin-bottom: 16px;
+}
+.prod-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-mute, #8B7E6F);
+  margin-bottom: 6px;
+}
+.prod-field input, .prod-field select {
+  width: 100%;
+  padding: 13px 14px;
+  background: var(--surface, #1C1814);
+  border: 1px solid var(--border, #2D261E);
+  border-radius: 12px;
+  color: var(--text, #F5EDE2);
+  font-size: 15px;
+  font-family: inherit;
+}
+.prod-field input:focus, .prod-field select:focus { outline: none; border-color: var(--gold, #E4B860); }
+
+.prod-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface, #1C1814);
+  border: 1px solid var(--border, #2D261E);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.prod-toggle label { font-size: 14px; font-weight: 600; color: var(--text, #F5EDE2); }
+.prod-toggle-help { font-size: 11px; color: var(--text-mute, #8B7E6F); margin-top: 2px; display: block; }
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--border, #2D261E);
+  border-radius: 999px;
+  transition: 0.3s;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px; width: 18px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+.switch input:checked + .slider { background-color: var(--lime, #A8E10C); }
+.switch input:checked + .slider:before { transform: translateX(20px); }
+
+.prod-delete-btn {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  border: 1px solid var(--danger, #E63946);
+  background: rgba(230,57,70,0.08);
+  color: var(--danger, #E63946);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.prod-delete-btn:hover { background: rgba(230,57,70,0.15); }
+
+/* Toast pour produits */
+.prod-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  background: var(--surface, #1C1814);
+  border: 1px solid var(--lime-soft, #82B509);
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #F5EDE2);
+  z-index: 9500;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
+}
+.prod-toast.show { transform: translateX(-50%) translateY(0); }
+.prod-toast.err { border-color: var(--danger, #E63946); }
+
 </style>
 </head>
 <body>
@@ -1702,7 +2005,7 @@ html, body {
         <header class="app-header">
           <div class="greeting-block">
             <div class="hello">Mardi 19 mai · 14h12</div>
-            <div class="name">Bonjour Omar</div>
+            <div class="name">Bonjour Lucas</div>
             <div class="resto">Gin Khao · Saint Just</div>
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
@@ -2609,6 +2912,99 @@ html, body {
         <div style="height: 40px;"></div>
       </section>
 
+      <!-- ====== SCREEN: PRODUITS ====== -->
+      <section class="screen" id="screen-produits">
+        <div class="header">
+          <div>
+            <h1 class="screen-title">Produits</h1>
+            <p class="screen-sub" id="produits-sub">Chargement…</p>
+          </div>
+          <button class="btn-primary" onclick="ouvrirEditeurProduit()">+ Ajouter</button>
+        </div>
+
+        <!-- Toolbar : recherche + filtres -->
+        <div class="prod-toolbar">
+          <div class="prod-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="prod-search-input" placeholder="Rechercher un produit…" oninput="filtrerProduits()">
+          </div>
+          <div class="prod-cats" id="prod-cats"></div>
+        </div>
+
+        <!-- Liste des produits regroupés par catégorie -->
+        <div class="prod-liste" id="prod-liste">
+          <div class="prod-empty">
+            <div class="spinner-mini"></div>
+            <p>Chargement des produits…</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== ÉDITEUR PRODUIT PLEIN ÉCRAN ====== -->
+      <div class="prod-editeur" id="prod-editeur">
+        <div class="prod-editeur-head">
+          <button class="prod-back" onclick="fermerEditeurProduit()" title="Retour">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <h2 id="prod-editeur-titre">Nouveau produit</h2>
+          <button class="prod-save" id="prod-save-btn" onclick="sauverProduit()">💾 Enregistrer</button>
+        </div>
+
+        <div class="prod-editeur-body">
+          <div class="prod-field">
+            <label>Nom du produit</label>
+            <input type="text" id="ed-nom" placeholder="Ex: Pad Thaï poulet">
+          </div>
+
+          <div class="prod-field">
+            <label>Catégorie</label>
+            <select id="ed-categorie"></select>
+          </div>
+
+          <div class="prod-field">
+            <label>Prix (€)</label>
+            <input type="number" id="ed-prix" step="0.10" min="0" placeholder="0.00">
+          </div>
+
+          <div class="prod-toggle">
+            <div>
+              <label>Gérer le stock</label>
+              <span class="prod-toggle-help">Décrémenter automatiquement à chaque vente</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="ed-stock-actif" onchange="majAffichageStock()">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div id="ed-stock-zone">
+            <div class="prod-field">
+              <label>Stock actuel</label>
+              <input type="number" id="ed-stock" min="0" placeholder="50">
+            </div>
+            <div class="prod-field">
+              <label>Seuil d'alerte stock bas</label>
+              <input type="number" id="ed-seuil" min="0" placeholder="10">
+            </div>
+          </div>
+
+          <div class="prod-toggle">
+            <div>
+              <label>Produit actif</label>
+              <span class="prod-toggle-help">Visible et vendable à la caisse</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="ed-actif" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <button class="prod-delete-btn" id="prod-delete-btn" onclick="supprimerProduit()" style="display:none;">
+            🗑️ Supprimer ce produit
+          </button>
+        </div>
+      </div>
+
       <!-- ====== SCREEN: AI CHAT ====== -->
       <section class="screen" id="screen-ai" style="padding: 0; height: 100%;">
         <div class="chat-screen active">
@@ -2622,7 +3018,7 @@ html, body {
 
           <div class="chat-messages" id="chat-messages">
             <div class="msg ai">
-              <strong style="font-family: var(--display); color: var(--gold);">Bonjour Omar 👋</strong><br>
+              <strong style="font-family: var(--display); color: var(--gold);">Bonjour Lucas 👋</strong><br>
               Je suis ton directeur IA. Je suis connecté à ta caisse, Uber Eats, Deliveroo, Google Avis et tes fournisseurs. Pose-moi n'importe quelle question business, ou demande-moi une analyse.
             </div>
 
@@ -2729,6 +3125,10 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
       <button class="nav-btn" data-screen="stock">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         <span class="nav-label">Stocks</span>
+      </button>
+      <button class="nav-btn" data-screen="produits">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span class="nav-label">Produits</span>
       </button>
       <button class="nav-btn ia-tab" data-screen="ai">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
@@ -3333,6 +3733,336 @@ function modifierEmailComptable() {
     localStorage.setItem('emailComptable', nouveau.trim());
     alert("Email du comptable mis à jour : " + nouveau.trim());
   }
+}
+
+// ============================================================
+//  ÉCRAN PRODUITS — GESTION COMPLÈTE (admin only)
+// ============================================================
+
+// État local
+let prodCatalogue = [];        // tous les produits chargés
+let prodCategories = [];       // toutes les catégories
+let prodFiltreCategorie = 'tout';
+let prodRecherche = '';
+let prodEnEdition = null;      // produit en cours d'édition (null = nouveau)
+let prodEstAdmin = false;      // vérifie qu'on est bien admin
+
+// Vérification admin au démarrage de l'écran
+async function verifierAdmin() {
+  try {
+    const { data: { user } } = await sbClient.auth.getUser();
+    if (!user) return false;
+    const { data, error } = await sbClient.from('profils')
+      .select('role').eq('id', user.id).single();
+    if (error || !data) return false;
+    prodEstAdmin = (data.role === 'admin');
+    return prodEstAdmin;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Chargement initial des produits + catégories
+async function chargerCatalogue() {
+  try {
+    const { data: cats } = await sbClient.from('categories')
+      .select('*').eq('restaurant_id', RESTO_ID).order('ordre');
+    prodCategories = cats || [];
+
+    // Tous les produits (actifs ET inactifs) pour la gestion
+    const { data: prods, error } = await sbClient.from('produits')
+      .select('*').eq('restaurant_id', RESTO_ID).order('ordre');
+    if (error) throw error;
+    prodCatalogue = prods || [];
+
+    afficherChipsCategories();
+    afficherListeProduits();
+  } catch (e) {
+    document.getElementById('prod-liste').innerHTML =
+      `<div class="prod-empty"><p>⚠️ Erreur : ${e.message}</p></div>`;
+  }
+}
+
+function afficherChipsCategories() {
+  const zone = document.getElementById('prod-cats');
+  let html = `<div class="prod-cat-chip ${prodFiltreCategorie==='tout'?'active':''}" onclick="filtrerCategorieProduit('tout')">Tout</div>`;
+  prodCategories.forEach(c => {
+    html += `<div class="prod-cat-chip ${prodFiltreCategorie===c.id?'active':''}" onclick="filtrerCategorieProduit('${c.id}')">${c.nom}</div>`;
+  });
+  zone.innerHTML = html;
+}
+
+function filtrerCategorieProduit(id) {
+  prodFiltreCategorie = id;
+  afficherChipsCategories();
+  afficherListeProduits();
+}
+
+function filtrerProduits() {
+  prodRecherche = (document.getElementById('prod-search-input').value || '').toLowerCase();
+  afficherListeProduits();
+}
+
+function afficherListeProduits() {
+  const liste = document.getElementById('prod-liste');
+  const sub = document.getElementById('produits-sub');
+
+  // Filtre par catégorie + recherche
+  let filtres = prodCatalogue.slice();
+  if (prodFiltreCategorie !== 'tout') {
+    filtres = filtres.filter(p => p.categorie_id === prodFiltreCategorie);
+  }
+  if (prodRecherche) {
+    filtres = filtres.filter(p => p.nom.toLowerCase().includes(prodRecherche));
+  }
+
+  sub.textContent = `${prodCatalogue.length} produits · ${prodCategories.length} catégories`;
+
+  if (filtres.length === 0) {
+    liste.innerHTML = `<div class="prod-empty"><p>Aucun produit trouvé.</p></div>`;
+    return;
+  }
+
+  // Regroupement par catégorie (sauf si on est sur une seule catégorie)
+  let html = '';
+  if (prodFiltreCategorie === 'tout' && !prodRecherche) {
+    prodCategories.forEach(cat => {
+      const dansCat = filtres.filter(p => p.categorie_id === cat.id);
+      if (dansCat.length === 0) return;
+      html += `<div class="prod-cat-titre">${cat.nom}</div>`;
+      html += dansCat.map(p => rendreLigneProduit(p)).join('');
+    });
+  } else {
+    // Liste plate
+    html = filtres.map(p => rendreLigneProduit(p)).join('');
+  }
+  liste.innerHTML = html;
+}
+
+function rendreLigneProduit(p) {
+  const prix = Number(p.prix).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let meta = '';
+  let metaCls = '';
+  if (p.stock_actif) {
+    meta = `Stock : ${p.stock}`;
+    if (p.stock <= 0) { meta = 'Rupture'; metaCls = 'crit'; }
+    else if (p.stock <= (p.seuil_alerte || 0)) metaCls = 'warn';
+  } else {
+    meta = 'Stock non géré';
+  }
+  const badgeInactif = !p.actif ? '<span class="prod-badge-inactif">Inactif</span>' : '';
+
+  return `
+    <div class="prod-row ${!p.actif ? 'inactif' : ''}" onclick="ouvrirEditeurProduit('${p.id}')">
+      <div class="prod-row-info">
+        <div class="prod-row-nom">${escapeHtml(p.nom)} ${badgeInactif}</div>
+        <div class="prod-row-meta ${metaCls}">${meta}</div>
+      </div>
+      <div class="prod-row-prix">${prix} €</div>
+      <div class="prod-row-arrow">›</div>
+    </div>`;
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+// ============================================================
+//  ÉDITEUR PRODUIT (plein écran)
+// ============================================================
+
+// Ouvre l'éditeur. Si id passé : édition. Sinon : création.
+function ouvrirEditeurProduit(produitId) {
+  if (!prodEstAdmin) {
+    afficherProdToast("Accès réservé à l'administrateur", true);
+    return;
+  }
+
+  prodEnEdition = produitId ? prodCatalogue.find(p => p.id === produitId) : null;
+
+  // Titre
+  document.getElementById('prod-editeur-titre').textContent =
+    prodEnEdition ? 'Modifier le produit' : 'Nouveau produit';
+
+  // Liste des catégories dans le select
+  const select = document.getElementById('ed-categorie');
+  select.innerHTML = prodCategories.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+
+  // Remplir les champs
+  if (prodEnEdition) {
+    document.getElementById('ed-nom').value = prodEnEdition.nom;
+    document.getElementById('ed-categorie').value = prodEnEdition.categorie_id || prodCategories[0]?.id;
+    document.getElementById('ed-prix').value = Number(prodEnEdition.prix).toFixed(2);
+    document.getElementById('ed-stock-actif').checked = !!prodEnEdition.stock_actif;
+    document.getElementById('ed-stock').value = prodEnEdition.stock || 0;
+    document.getElementById('ed-seuil').value = prodEnEdition.seuil_alerte || 10;
+    document.getElementById('ed-actif').checked = prodEnEdition.actif !== false;
+    document.getElementById('prod-delete-btn').style.display = 'block';
+  } else {
+    // Valeurs par défaut pour un nouveau produit
+    document.getElementById('ed-nom').value = '';
+    document.getElementById('ed-categorie').value = prodFiltreCategorie !== 'tout' ? prodFiltreCategorie : (prodCategories[0]?.id || '');
+    document.getElementById('ed-prix').value = '';
+    document.getElementById('ed-stock-actif').checked = true;
+    document.getElementById('ed-stock').value = 50;
+    document.getElementById('ed-seuil').value = 10;
+    document.getElementById('ed-actif').checked = true;
+    document.getElementById('prod-delete-btn').style.display = 'none';
+  }
+
+  majAffichageStock();
+  document.getElementById('prod-editeur').classList.add('show');
+}
+
+function fermerEditeurProduit() {
+  document.getElementById('prod-editeur').classList.remove('show');
+  prodEnEdition = null;
+}
+
+// Affiche/cache la zone Stock + Seuil selon le toggle "Gérer le stock"
+function majAffichageStock() {
+  const actif = document.getElementById('ed-stock-actif').checked;
+  document.getElementById('ed-stock-zone').style.display = actif ? 'block' : 'none';
+}
+
+// Sauvegarde un produit (création ou modification)
+async function sauverProduit() {
+  if (!prodEstAdmin) {
+    afficherProdToast("Accès réservé à l'administrateur", true);
+    return;
+  }
+
+  const nom = document.getElementById('ed-nom').value.trim();
+  const categorieId = document.getElementById('ed-categorie').value;
+  const prix = parseFloat(document.getElementById('ed-prix').value);
+  const stockActif = document.getElementById('ed-stock-actif').checked;
+  const stock = parseInt(document.getElementById('ed-stock').value) || 0;
+  const seuil = parseInt(document.getElementById('ed-seuil').value) || 0;
+  const actif = document.getElementById('ed-actif').checked;
+
+  if (!nom) { afficherProdToast("Le nom est obligatoire", true); return; }
+  if (!categorieId) { afficherProdToast("La catégorie est obligatoire", true); return; }
+  if (isNaN(prix) || prix < 0) { afficherProdToast("Prix invalide", true); return; }
+
+  const btn = document.getElementById('prod-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement…';
+
+  try {
+    if (prodEnEdition) {
+      // UPDATE
+      const { error } = await sbClient.from('produits').update({
+        nom, categorie_id: categorieId, prix,
+        stock_actif: stockActif, stock, seuil_alerte: seuil, actif
+      }).eq('id', prodEnEdition.id);
+      if (error) throw error;
+      afficherProdToast("✓ Produit mis à jour");
+    } else {
+      // INSERT (cherche le prochain ordre dans la catégorie)
+      const ordres = prodCatalogue
+        .filter(p => p.categorie_id === categorieId)
+        .map(p => p.ordre || 0);
+      const ordre = ordres.length > 0 ? Math.max(...ordres) + 1 : 1;
+
+      const { error } = await sbClient.from('produits').insert({
+        restaurant_id: RESTO_ID, nom, categorie_id: categorieId, prix,
+        stock_actif: stockActif, stock, seuil_alerte: seuil, actif, ordre
+      });
+      if (error) throw error;
+      afficherProdToast("✓ Produit créé");
+    }
+    fermerEditeurProduit();
+    await chargerCatalogue();
+  } catch (e) {
+    afficherProdToast("Erreur : " + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Enregistrer';
+  }
+}
+
+// Soft delete : passe actif à false (le produit disparait de la caisse mais reste en base)
+async function supprimerProduit() {
+  if (!prodEnEdition) return;
+  if (!confirm(`Supprimer "${prodEnEdition.nom}" ?\n\nLe produit sera caché de la caisse. Tu pourras le réactiver plus tard depuis cet écran.`)) return;
+
+  try {
+    const { error } = await sbClient.from('produits').update({ actif: false })
+      .eq('id', prodEnEdition.id);
+    if (error) throw error;
+    afficherProdToast("✓ Produit supprimé");
+    fermerEditeurProduit();
+    await chargerCatalogue();
+  } catch (e) {
+    afficherProdToast("Erreur : " + e.message, true);
+  }
+}
+
+// Toast de feedback
+function afficherProdToast(msg, isErreur) {
+  let toast = document.getElementById('prod-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'prod-toast';
+    toast.className = 'prod-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.toggle('err', !!isErreur);
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ============================================================
+//  REALTIME — Propagation instantanée vers la caisse
+// ============================================================
+// Quand l'app modifie un produit ou une catégorie, Supabase Realtime
+// diffuse l'event à toutes les sessions ouvertes (dont la caisse au resto).
+// La caisse écoute aussi et rafraichit son menu automatiquement.
+function abonnerRealtimeCatalogue() {
+  // Abonnement aux changements de produits ET de catégories
+  sbClient.channel('catalogue-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'produits' },
+        () => { chargerCatalogue(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' },
+        () => { chargerCatalogue(); })
+    .subscribe();
+}
+
+// ============================================================
+//  INITIALISATION ÉCRAN PRODUITS
+// ============================================================
+// Charge tout quand l'utilisateur clique sur l'onglet Produits
+let prodInitialise = false;
+async function initProduits() {
+  if (prodInitialise) return;
+  prodInitialise = true;
+
+  const estAdmin = await verifierAdmin();
+  if (!estAdmin) {
+    document.getElementById('prod-liste').innerHTML =
+      `<div class="prod-empty"><p>⛔ Accès réservé à l'administrateur</p></div>`;
+    document.getElementById('produits-sub').textContent = 'Accès refusé';
+    return;
+  }
+
+  await chargerCatalogue();
+  abonnerRealtimeCatalogue();
+}
+
+// Hook : déclenche initProduits quand on clique sur l'onglet
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-screen="produits"]').forEach(btn => {
+    btn.addEventListener('click', initProduits);
+  });
+});
+// Si DOM déjà chargé (script en bas de page)
+if (document.readyState !== 'loading') {
+  document.querySelectorAll('[data-screen="produits"]').forEach(btn => {
+    btn.addEventListener('click', initProduits);
+  });
 }
 </script>
 </body>
