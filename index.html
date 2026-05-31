@@ -1672,6 +1672,10 @@ html, body {
   padding: 18px 18px 14px;
   border-bottom: 1px solid var(--border, #2D261E);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: var(--bg-deep, #0A0908);
+  z-index: 10;
 }
 .charges-head h2 {
   flex: 1;
@@ -1684,6 +1688,39 @@ html, body {
   flex: 1;
   overflow-y: auto;
   padding: 16px 18px 40px;
+}
+/* Barre de boutons en bas du formulaire (toujours accessible) */
+.charges-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #2D261E);
+}
+.charges-form-actions button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.18s;
+}
+.charges-form-actions .btn-cancel {
+  background: var(--surface-2, #251F19);
+  color: var(--text-soft, #C7B9A5);
+  border: 1px solid var(--border, #2D261E);
+}
+.charges-form-actions .btn-save {
+  background: linear-gradient(135deg, var(--lime, #A8E10C) 0%, var(--lime-soft, #82B509) 100%);
+  color: #0a0908;
+}
+.charges-form-actions .btn-delete-inline {
+  background: rgba(230,57,70,0.1);
+  color: var(--danger, #E63946);
+  border: 1px solid var(--danger, #E63946);
 }
 
 .charges-filtres {
@@ -1815,6 +1852,28 @@ html, body {
   color: var(--sriracha, #E63946);
   white-space: nowrap;
 }
+.charge-supprimer-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border, #2D261E);
+  background: var(--surface-2, #251F19);
+  color: var(--text-mute, #8B7E6F);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.charge-supprimer-btn:hover {
+  color: var(--danger, #E63946);
+  border-color: var(--danger, #E63946);
+  background: rgba(230,57,70,0.1);
+}
+.charge-supprimer-btn:active { transform: scale(0.9); }
 
 .btn-mini-action {
   background: transparent;
@@ -2784,6 +2843,13 @@ html, body {
             <div class="prod-field">
               <label>Notes (optionnel)</label>
               <input type="text" id="ch-notes" placeholder="Note interne (n'apparaît pas dans la compta)">
+            </div>
+
+            <!-- Barre d'actions en bas, toujours visible -->
+            <div class="charges-form-actions">
+              <button class="btn-cancel" onclick="retourListeCharges()">Annuler</button>
+              <button class="btn-delete-inline" id="ch-delete-inline" onclick="supprimerCharge()" style="display:none;">🗑️ Supprimer</button>
+              <button class="btn-save" onclick="sauverCharge()">💾 Enregistrer</button>
             </div>
 
             <button class="prod-delete-btn" id="ch-delete-btn" onclick="supprimerCharge()" style="display:none;">
@@ -3840,13 +3906,14 @@ function afficherChargesListe() {
     const nom = c.fournisseur || cat;
     const recurrent = c.recurrent ? '<span class="charge-recurrent-badge">↻ récurrent</span>' : '';
     html += `
-      <div class="charge-row" onclick="ouvrirEditeurCharge('${c.id}')">
-        <div class="charge-icone">${icone}</div>
-        <div class="charge-info">
+      <div class="charge-row">
+        <div class="charge-icone" onclick="ouvrirEditeurCharge('${c.id}')">${icone}</div>
+        <div class="charge-info" onclick="ouvrirEditeurCharge('${c.id}')">
           <div class="charge-fournisseur">${escapeHtmlSimple(nom)}</div>
           <div class="charge-meta">${cat} · ${dateFmt} ${recurrent}</div>
         </div>
-        <div class="charge-montant">${ttc} €</div>
+        <div class="charge-montant" onclick="ouvrirEditeurCharge('${c.id}')">${ttc} €</div>
+        <button class="charge-supprimer-btn" onclick="event.stopPropagation(); supprimerChargeRapide('${c.id}')" title="Supprimer">🗑️</button>
       </div>`;
   });
   liste.innerHTML = html;
@@ -3902,6 +3969,7 @@ function ouvrirEditeurCharge(id) {
     document.getElementById('ch-recurrent').checked = !!chargesEnEdition.recurrent;
     document.getElementById('ch-notes').value = chargesEnEdition.notes || '';
     document.getElementById('ch-delete-btn').style.display = 'block';
+    document.getElementById('ch-delete-inline').style.display = 'block';
   } else {
     // Nouveau : valeurs par défaut
     document.getElementById('ch-categorie').value = 'matieres_premieres';
@@ -3914,6 +3982,7 @@ function ouvrirEditeurCharge(id) {
     document.getElementById('ch-recurrent').checked = false;
     document.getElementById('ch-notes').value = '';
     document.getElementById('ch-delete-btn').style.display = 'none';
+    document.getElementById('ch-delete-inline').style.display = 'none';
   }
   document.getElementById('charges-modal').classList.add('editeur');
 }
@@ -3984,6 +4053,21 @@ async function supprimerCharge() {
     const { error } = await sbClient.from('charges').delete().eq('id', chargesEnEdition.id);
     if (error) throw error;
     retourListeCharges();
+    await chargerChargesData();
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  }
+}
+
+// Suppression rapide depuis la liste (clic sur la corbeille)
+async function supprimerChargeRapide(id) {
+  const c = chargesData.find(x => x.id === id);
+  if (!c) return;
+  const nom = c.fournisseur || CAT_LIBELLES[c.categorie] || 'cette charge';
+  if (!confirm(`Supprimer : ${nom} · ${Number(c.montant_ttc).toFixed(2)}€ ?`)) return;
+  try {
+    const { error } = await sbClient.from('charges').delete().eq('id', id);
+    if (error) throw error;
     await chargerChargesData();
   } catch (e) {
     alert('Erreur : ' + e.message);
