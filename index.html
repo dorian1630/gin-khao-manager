@@ -3174,6 +3174,34 @@ async function scanFacture(input) {
   input.value = '';
 }
 
+// Convertit une date au format ISO YYYY-MM-DD, peu importe le format d'entrée
+// Gère : "31/05/2026", "31-05-2026", "2026-05-31", "05/31/2026", "31/05/26", etc.
+function normaliserDate(dateStr) {
+  if (!dateStr) return new Date().toISOString().slice(0, 10);
+  const s = String(dateStr).trim();
+
+  // Déjà au format ISO ?
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // Format français JJ/MM/AAAA ou JJ-MM-AAAA
+  const matchFR = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+  if (matchFR) {
+    let [, jour, mois, annee] = matchFR;
+    // Si l'année est sur 2 chiffres, on suppose 20XX
+    if (annee.length === 2) annee = '20' + annee;
+    return `${annee}-${mois.padStart(2, '0')}-${jour.padStart(2, '0')}`;
+  }
+
+  // Fallback : tenter de parser via Date()
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Si rien ne marche, utiliser aujourd'hui
+  return new Date().toISOString().slice(0, 10);
+}
+
 // Convertit une catégorie texte (de l'IA / Google Sheets) vers les 8 catégories Supabase
 function mapperCategorieIA(categorieIA) {
   if (!categorieIA) return 'autres';
@@ -3243,7 +3271,7 @@ async function insererFactureDansSupabase(facture) {
 
   // Valeurs nettoyées
   const fournisseur = facture.fournisseur || 'Fournisseur inconnu';
-  const date_charge = facture.date || new Date().toISOString().slice(0, 10);
+  const date_charge = normaliserDate(facture.date);
   const montant_ht = Number(facture.montant_ht) || 0;
   const tva = Number(facture.tva) || 0;
   const montant_ttc = Number(facture.montant_ttc) || 0;
