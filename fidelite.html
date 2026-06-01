@@ -188,6 +188,13 @@ body {
       <label for="tel">Votre téléphone</label>
       <input type="tel" id="tel" placeholder="06 12 34 56 78" autocomplete="tel">
     </div>
+    <div class="field">
+      <label for="anniversaire">Votre date d'anniversaire 🎂</label>
+      <input type="date" id="anniversaire" autocomplete="bday" max="2026-12-31" min="1925-01-01">
+      <div style="font-size:11px; color:var(--gold); margin-top:6px; line-height:1.4;">
+        🎁 Recevez un cadeau offert le jour de votre anniversaire
+      </div>
+    </div>
 
     <button class="btn btn-gold" id="btn-signup" onclick="inscrire()">Rejoindre le programme</button>
     <p class="note">En vous inscrivant, vous acceptez de recevoir nos offres par SMS. Désinscription à tout moment.</p>
@@ -247,6 +254,10 @@ function toast(msg, type = '') {
 
 // ===== AU CHARGEMENT : carte existante ? =====
 document.addEventListener('DOMContentLoaded', async () => {
+  // Date max anniversaire = aujourd'hui (pas de futur possible)
+  const dInput = document.getElementById('anniversaire');
+  if (dInput) dInput.max = new Date().toISOString().slice(0, 10);
+
   // 1) un id client dans l'URL ? (?c=xxxx)
   const params = new URLSearchParams(location.search);
   let clientId = params.get('c') || localStorage.getItem('ginkhao_client_id');
@@ -260,8 +271,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function inscrire() {
   const nom = document.getElementById('nom').value.trim();
   const tel = document.getElementById('tel').value.trim();
+  const anniversaire = document.getElementById('anniversaire').value; // YYYY-MM-DD
   if (!nom) { toast('Indiquez votre prénom 🙏', 'err'); return; }
   if (!tel || tel.replace(/\D/g, '').length < 8) { toast('Numéro de téléphone invalide', 'err'); return; }
+  if (!anniversaire) { toast('Votre date d\'anniversaire est obligatoire 🎂', 'err'); return; }
+
+  // Validation : pas dans le futur, pas avant 1925
+  const dAnniv = new Date(anniversaire);
+  const aujourd = new Date();
+  if (dAnniv > aujourd) { toast('La date d\'anniversaire ne peut pas être dans le futur', 'err'); return; }
+  const annee = dAnniv.getFullYear();
+  if (annee < 1925) { toast('Date d\'anniversaire invalide', 'err'); return; }
 
   const btn = document.getElementById('btn-signup');
   btn.disabled = true;
@@ -270,15 +290,20 @@ async function inscrire() {
   try {
     // Déjà inscrit avec ce téléphone ?
     const { data: existant } = await sb.from('clients')
-      .select('id').eq('telephone', tel).eq('restaurant_id', RESTO_ID).maybeSingle();
+      .select('id, date_anniversaire').eq('telephone', tel).eq('restaurant_id', RESTO_ID).maybeSingle();
 
     let clientId;
     if (existant) {
       clientId = existant.id;
+      // Si le client existait déjà sans anniversaire, on met à jour
+      if (!existant.date_anniversaire) {
+        await sb.from('clients').update({ date_anniversaire: anniversaire }).eq('id', clientId);
+      }
       toast('Vous étiez déjà inscrit, content de vous revoir ! 👋', 'ok');
     } else {
       const { data, error } = await sb.from('clients').insert({
         nom, telephone: tel, restaurant_id: RESTO_ID,
+        date_anniversaire: anniversaire,
         points: 0, total_points_gagnes: 0, nb_visites: 0
       }).select('id').single();
       if (error) throw error;
