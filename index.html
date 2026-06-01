@@ -1720,7 +1720,7 @@ html, body {
 }
 .anniv-row-btn:active { transform: scale(0.95); }
 
-/* ===== MODALES CLIENTS (réutilise styles charges-modal) ===== */
+/* ===== MODALES CLIENTS (mobile-first, scrollables jusqu'en bas) ===== */
 .clients-modal {
   position: fixed;
   inset: 0;
@@ -1730,10 +1730,41 @@ html, body {
   flex-direction: column;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  overflow: hidden;
 }
 .clients-modal.show {
   display: flex;
   transform: translateX(0);
+}
+/* Header sticky en haut + respect notch iPhone */
+.clients-modal .charges-head {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-deep, #0A0908);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+}
+/* Body scrollable avec safe-area en bas pour iPhone */
+.clients-modal .charges-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 14px calc(env(safe-area-inset-bottom, 0px) + 80px);
+  min-height: 0;
+}
+
+/* Vues internes (fiche / édition) prennent toute la hauteur */
+#client-detail-vue-fiche,
+#client-detail-vue-edit {
+  display: none;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+#client-detail-vue-fiche {
+  display: flex;
 }
 
 /* Lignes clients dans la modale liste */
@@ -3068,7 +3099,7 @@ html, body {
       <!-- ====== MODALE FICHE CLIENT (détail + édition) ====== -->
       <div class="clients-modal" id="client-detail-modal">
         <!-- VUE FICHE -->
-        <div id="client-detail-vue-fiche" style="height:100%; display:flex; flex-direction:column; overflow:hidden;">
+        <div id="client-detail-vue-fiche">
           <div class="charges-head">
             <button class="prod-back" onclick="fermerDetailClient()" title="Retour">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -3083,7 +3114,7 @@ html, body {
         </div>
 
         <!-- VUE ÉDITION -->
-        <div id="client-detail-vue-edit" style="display:none; height:100%; flex-direction:column; overflow:hidden;">
+        <div id="client-detail-vue-edit">
           <div class="charges-head">
             <button class="prod-back" onclick="retourFicheClient()" title="Retour">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -4277,8 +4308,6 @@ async function ouvrirDetailClient(clientId) {
   m.classList.add('show');
   document.getElementById('client-detail-vue-fiche').style.display = 'flex';
   document.getElementById('client-detail-vue-edit').style.display = 'none';
-
-  // Recharge le client depuis cache (ou base)
   let c = clientsCache.find(x => x.id === clientId);
   if (!c) {
     const { data } = await sbClient.from('clients').select('*').eq('id', clientId).single();
