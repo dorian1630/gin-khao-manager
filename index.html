@@ -1767,7 +1767,222 @@ html, body {
   display: flex;
 }
 
-/* Lignes clients dans la modale liste — design pro aéré */
+/* ===== MODALE LISTE CLIENTS - DESIGN PREMIUM ===== */
+
+/* Bouton recherche icône dans le header */
+.search-trigger {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface, #1C1814);
+  color: var(--text, #F5EDE2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.18s;
+}
+.search-trigger:active { transform: scale(0.92); }
+.search-trigger.active {
+  background: var(--gold, #E4B860);
+  color: var(--bg-deep);
+  border-color: var(--gold, #E4B860);
+}
+.search-trigger svg { width: 16px; height: 16px; }
+
+/* Barre de recherche rétractable */
+.search-bar-wrap {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.16,1,0.3,1);
+  margin: 0 -2px;
+}
+.search-bar-wrap.show {
+  max-height: 80px;
+  margin-bottom: 14px;
+}
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--surface, #1C1814);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 0 14px;
+  transition: border-color 0.2s;
+}
+.search-bar:focus-within { border-color: var(--gold, #E4B860); }
+.search-bar-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-mute, #8B7E6F);
+  flex-shrink: 0;
+}
+.search-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 14px 10px;
+  font-size: 15px;
+  color: var(--text);
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+.search-bar input::placeholder { color: var(--text-mute); }
+.search-bar-close {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-2, #251F19);
+  color: var(--text-mute);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.search-bar-close:hover { color: var(--text); }
+.search-bar-close svg { width: 12px; height: 12px; }
+
+/* Pill bar des segments - design premium */
+.seg-pills-wrap {
+  margin: 0 -14px 14px;
+  padding: 0 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.seg-pills-wrap::-webkit-scrollbar { display: none; }
+.seg-pills {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 2px;
+  width: max-content;
+  min-width: 100%;
+}
+.seg-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: var(--surface, #1C1814);
+  border: 1.5px solid var(--border, #2D261E);
+  border-radius: 999px;
+  color: var(--text-mute, #8B7E6F);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.seg-pill:active { transform: scale(0.95); }
+.seg-pill.active {
+  background: linear-gradient(135deg, var(--gold, #E4B860), var(--gold-soft, #B8924E));
+  border-color: var(--gold, #E4B860);
+  color: var(--bg-deep);
+  box-shadow: 0 4px 12px rgba(228,184,96,0.25);
+}
+.seg-pill.active .seg-pill-icon {
+  filter: brightness(1.1);
+}
+.seg-pill-icon { font-size: 14px; line-height: 1; }
+.seg-pill-text { font-weight: 700; }
+
+/* Barre de tri - chips inline */
+.tri-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 4px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tri-bar::-webkit-scrollbar { display: none; }
+.tri-bar-label {
+  font-size: 11px;
+  color: var(--text-mute, #8B7E6F);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tri-chips {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tri-chips::-webkit-scrollbar { display: none; }
+.tri-chip {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-mute);
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tri-chip:active { transform: scale(0.94); }
+.tri-chip.active {
+  background: var(--surface-2);
+  color: var(--gold, #E4B860);
+  border-color: var(--gold-soft, #B8924E);
+}
+
+/* Compteur de clients */
+.clients-count {
+  font-size: 11px;
+  color: var(--text-mute, #8B7E6F);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+/* FAB (Floating Action Button) Ajouter */
+.fab-add-client {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold, #E4B860), var(--gold-soft, #B8924E));
+  border: none;
+  color: var(--bg-deep);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(228,184,96,0.4), 0 0 0 1px rgba(228,184,96,0.1);
+  z-index: 100;
+  transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+  -webkit-tap-highlight-color: transparent;
+}
+.fab-add-client:active {
+  transform: scale(0.92);
+  box-shadow: 0 4px 12px rgba(228,184,96,0.5);
+}
+.fab-add-client svg { width: 22px; height: 22px; }
+
+
 .client-list-row {
   display: flex;
   align-items: center;
@@ -3257,42 +3472,71 @@ html, body {
           <button class="prod-back" onclick="fermerListeClients()" title="Retour">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
-          <h2 id="clients-modal-titre">Tous mes clients</h2>
-          <button class="prod-save" onclick="ouvrirCreationClientApp()">+ Ajouter</button>
+          <h2 id="clients-modal-titre">Mes clients</h2>
+          <button class="search-trigger" id="search-trigger" onclick="toggleRecherche()" title="Rechercher">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></svg>
+          </button>
         </div>
 
         <div class="charges-body">
-          <!-- Recherche -->
-          <div class="prod-search" style="margin-bottom: 12px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="clients-search-input" placeholder="Rechercher par nom ou téléphone…" oninput="filtrerClientsModal()">
-          </div>
-
-          <!-- Filtres segments -->
-          <div class="charges-filtres" style="margin-bottom: 12px;">
-            <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">
-              <div class="prod-cat-chip active" data-seg="all" onclick="filtrerSegmentModal('all')">Tous</div>
-              <div class="prod-cat-chip" data-seg="fidele" onclick="filtrerSegmentModal('fidele')">🌟 Fidèles</div>
-              <div class="prod-cat-chip" data-seg="occasionnel" onclick="filtrerSegmentModal('occasionnel')">👋 Occasionnels</div>
-              <div class="prod-cat-chip" data-seg="part" onclick="filtrerSegmentModal('part')">⚠️ Partent</div>
-              <div class="prod-cat-chip" data-seg="endormi" onclick="filtrerSegmentModal('endormi')">💤 Endormis</div>
+          <!-- BARRE DE RECHERCHE rétractable (cachée par défaut) -->
+          <div class="search-bar-wrap" id="search-bar-wrap">
+            <div class="search-bar">
+              <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></svg>
+              <input type="text" id="clients-search-input" placeholder="Rechercher un client…" oninput="filtrerClientsModal()" autocomplete="off">
+              <button class="search-bar-close" onclick="effacerRecherche()" id="search-clear-btn" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
           </div>
 
-          <!-- Tri -->
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
-            <span style="font-size:11px; color:var(--text-mute); text-transform:uppercase; letter-spacing:0.06em;">Tri :</span>
-            <select id="clients-tri" onchange="filtrerClientsModal()" style="flex:1; padding:6px 10px; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:12px; font-family:inherit;">
-              <option value="recence">Récence (récent → ancien)</option>
-              <option value="visites">Plus de visites</option>
-              <option value="points">Plus de points</option>
-              <option value="alpha">A → Z</option>
-              <option value="inscription">Inscription récente</option>
-            </select>
+          <!-- FILTRES SEGMENTS — pill bar premium -->
+          <div class="seg-pills-wrap">
+            <div class="seg-pills">
+              <button class="seg-pill active" data-seg="all" onclick="filtrerSegmentModal('all')">
+                <span class="seg-pill-icon">👥</span>
+                <span class="seg-pill-text">Tous</span>
+              </button>
+              <button class="seg-pill" data-seg="fidele" onclick="filtrerSegmentModal('fidele')">
+                <span class="seg-pill-icon">🌟</span>
+                <span class="seg-pill-text">Fidèles</span>
+              </button>
+              <button class="seg-pill" data-seg="occasionnel" onclick="filtrerSegmentModal('occasionnel')">
+                <span class="seg-pill-icon">👋</span>
+                <span class="seg-pill-text">Occasionnels</span>
+              </button>
+              <button class="seg-pill" data-seg="part" onclick="filtrerSegmentModal('part')">
+                <span class="seg-pill-icon">⚠️</span>
+                <span class="seg-pill-text">Partent</span>
+              </button>
+              <button class="seg-pill" data-seg="endormi" onclick="filtrerSegmentModal('endormi')">
+                <span class="seg-pill-icon">💤</span>
+                <span class="seg-pill-text">Endormis</span>
+              </button>
+            </div>
           </div>
+
+          <!-- BARRE DE TRI premium avec chips visuels -->
+          <div class="tri-bar">
+            <span class="tri-bar-label">Trier par</span>
+            <div class="tri-chips">
+              <button class="tri-chip active" data-tri="recence" onclick="changerTri('recence')">Récent</button>
+              <button class="tri-chip" data-tri="visites" onclick="changerTri('visites')">Visites</button>
+              <button class="tri-chip" data-tri="points" onclick="changerTri('points')">Points</button>
+              <button class="tri-chip" data-tri="alpha" onclick="changerTri('alpha')">A→Z</button>
+            </div>
+          </div>
+
+          <!-- Compteur résultat -->
+          <div class="clients-count" id="clients-count">— clients</div>
 
           <!-- Liste -->
           <div id="clients-modal-liste"></div>
+
+          <!-- FAB Ajouter en bas -->
+          <button class="fab-add-client" onclick="ouvrirCreationClientApp()" title="Ajouter un client">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         </div>
       </div>
 
@@ -4434,15 +4678,24 @@ function ouvrirListeClients(segmentInitial) {
   const m = document.getElementById('clients-modal');
   m.classList.add('show');
   segmentFiltreModal = segmentInitial || 'all';
-  // Met à jour les chips
-  document.querySelectorAll('#clients-modal .prod-cat-chip[data-seg]').forEach(chip => {
+  // Met à jour les pills
+  document.querySelectorAll('#clients-modal .seg-pill[data-seg]').forEach(chip => {
     chip.classList.toggle('active', chip.dataset.seg === segmentFiltreModal);
   });
   // Reset recherche
   const search = document.getElementById('clients-search-input');
   if (search) search.value = '';
+  const wrap = document.getElementById('search-bar-wrap');
+  if (wrap) wrap.classList.remove('show');
+  const trigger = document.getElementById('search-trigger');
+  if (trigger) trigger.classList.remove('active');
+  // Reset tri par défaut
+  triActuel = 'recence';
+  document.querySelectorAll('#clients-modal .tri-chip[data-tri]').forEach(c => {
+    c.classList.toggle('active', c.dataset.tri === 'recence');
+  });
   // Titre dynamique
-  const titre = {all:'Tous mes clients', fidele:'Clients fidèles', occasionnel:'Clients occasionnels', part:'Clients qui partent', endormi:'Clients endormis'};
+  const titre = {all:'Mes clients', fidele:'Clients fidèles', occasionnel:'Clients occasionnels', part:'Clients qui partent', endormi:'Clients endormis'};
   document.getElementById('clients-modal-titre').textContent = titre[segmentFiltreModal] || 'Mes clients';
   filtrerClientsModal();
 }
@@ -4451,21 +4704,60 @@ function fermerListeClients() {
   document.getElementById('clients-modal').classList.remove('show');
 }
 
+// Toggle de la barre de recherche
+function toggleRecherche() {
+  const wrap = document.getElementById('search-bar-wrap');
+  const trigger = document.getElementById('search-trigger');
+  const input = document.getElementById('clients-search-input');
+  if (wrap.classList.contains('show')) {
+    wrap.classList.remove('show');
+    trigger.classList.remove('active');
+    input.value = '';
+    document.getElementById('search-clear-btn').style.display = 'none';
+    filtrerClientsModal();
+  } else {
+    wrap.classList.add('show');
+    trigger.classList.add('active');
+    setTimeout(() => input.focus(), 200);
+  }
+}
+
+function effacerRecherche() {
+  document.getElementById('clients-search-input').value = '';
+  document.getElementById('search-clear-btn').style.display = 'none';
+  filtrerClientsModal();
+}
+
 function filtrerSegmentModal(seg) {
   segmentFiltreModal = seg;
-  document.querySelectorAll('#clients-modal .prod-cat-chip[data-seg]').forEach(chip => {
+  document.querySelectorAll('#clients-modal .seg-pill[data-seg]').forEach(chip => {
     chip.classList.toggle('active', chip.dataset.seg === seg);
   });
-  const titre = {all:'Tous mes clients', fidele:'Clients fidèles', occasionnel:'Clients occasionnels', part:'Clients qui partent', endormi:'Clients endormis'};
+  const titre = {all:'Mes clients', fidele:'Clients fidèles', occasionnel:'Clients occasionnels', part:'Clients qui partent', endormi:'Clients endormis'};
   document.getElementById('clients-modal-titre').textContent = titre[seg] || 'Mes clients';
+  filtrerClientsModal();
+}
+
+// Tri actuel (variable globale)
+let triActuel = 'recence';
+function changerTri(tri) {
+  triActuel = tri;
+  document.querySelectorAll('#clients-modal .tri-chip[data-tri]').forEach(c => {
+    c.classList.toggle('active', c.dataset.tri === tri);
+  });
   filtrerClientsModal();
 }
 
 function filtrerClientsModal() {
   const zone = document.getElementById('clients-modal-liste');
+  const compteurEl = document.getElementById('clients-count');
   if (!zone) return;
   const search = (document.getElementById('clients-search-input').value || '').toLowerCase().trim();
-  const tri = document.getElementById('clients-tri').value;
+  const tri = triActuel || 'recence';
+
+  // Afficher / masquer le bouton ✕
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (clearBtn) clearBtn.style.display = search ? 'flex' : 'none';
 
   let filtres = clientsCache.slice();
 
@@ -4498,8 +4790,15 @@ function filtrerClientsModal() {
     }
   });
 
+  // Compteur
+  if (compteurEl) {
+    if (filtres.length === 0) compteurEl.textContent = 'Aucun client';
+    else if (filtres.length === 1) compteurEl.textContent = '1 client';
+    else compteurEl.textContent = filtres.length + ' clients';
+  }
+
   if (filtres.length === 0) {
-    zone.innerHTML = `<div class="prod-empty"><p>Aucun client ne correspond à cette recherche.</p></div>`;
+    zone.innerHTML = `<div class="prod-empty" style="padding:40px 20px;"><p style="font-size:13px; color:var(--text-mute); text-align:center;">Aucun client ne correspond à cette recherche.</p></div>`;
     return;
   }
 
