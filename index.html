@@ -2238,7 +2238,186 @@ html, body {
 }
 .cd-btn:active { transform: scale(0.97); }
 
-/* ===== INPUTS PREMIUM AVEC FLOATING LABEL ===== */
+/* ===== MODALE CONFIG OFFRE — design premium ===== */
+.oc-section {
+  margin-bottom: 24px;
+  padding: 0;
+}
+.oc-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold, #E4B860);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+.oc-help {
+  font-size: 11px;
+  color: var(--text-mute, #8B7E6F);
+  line-height: 1.5;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+.oc-help code {
+  background: var(--surface-2, #251F19);
+  color: var(--gold, #E4B860);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+}
+.oc-help em { color: var(--text-soft, #C7B9A5); font-style: normal; }
+
+/* Presets cliquables */
+.oc-presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.oc-preset-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--surface, #1C1814);
+  border: 1.5px solid var(--border, #2D261E);
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+  -webkit-tap-highlight-color: transparent;
+}
+.oc-preset-btn:active { transform: scale(0.96); }
+.oc-preset-btn.active {
+  background: linear-gradient(135deg, rgba(228,184,96,0.15), rgba(228,184,96,0.08));
+  border-color: var(--gold, #E4B860);
+  box-shadow: 0 4px 12px rgba(228,184,96,0.15);
+}
+.oc-preset-emoji {
+  font-size: 22px;
+  line-height: 1;
+}
+.oc-preset-txt {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text, #F5EDE2);
+  text-align: center;
+  line-height: 1.2;
+}
+.oc-preset-btn.active .oc-preset-txt { color: var(--gold, #E4B860); }
+
+/* Mode (IA vs Manuel) */
+.oc-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.oc-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 10px;
+  background: var(--surface, #1C1814);
+  border: 1.5px solid var(--border, #2D261E);
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+  -webkit-tap-highlight-color: transparent;
+  text-align: center;
+}
+.oc-mode-btn:active { transform: scale(0.96); }
+.oc-mode-btn.active {
+  background: linear-gradient(135deg, rgba(228,184,96,0.15), rgba(228,184,96,0.08));
+  border-color: var(--gold, #E4B860);
+  box-shadow: 0 4px 12px rgba(228,184,96,0.15);
+}
+.oc-mode-emoji {
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.oc-mode-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #F5EDE2);
+}
+.oc-mode-desc {
+  font-size: 10.5px;
+  color: var(--text-mute, #8B7E6F);
+  line-height: 1.3;
+}
+.oc-mode-btn.active .oc-mode-title { color: var(--gold, #E4B860); }
+
+/* Aperçu du SMS */
+.oc-apercu {
+  background: linear-gradient(135deg, rgba(91,191,138,0.08) 0%, rgba(91,191,138,0.03) 100%);
+  border: 1.5px solid rgba(91,191,138,0.3);
+  border-radius: 16px;
+  padding: 14px;
+}
+.oc-apercu-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--lime, #A8E10C);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+.oc-apercu-msg {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text, #F5EDE2);
+  line-height: 1.5;
+  font-family: var(--mono, monospace);
+}
+.oc-apercu-hint {
+  font-size: 10.5px;
+  color: var(--text-mute, #8B7E6F);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* Textarea premium dans la config */
+.field-premium textarea {
+  width: 100%;
+  padding: 22px 16px 10px;
+  background: var(--surface, #1C1814);
+  border: 1.5px solid var(--border, #2D261E);
+  border-radius: 14px;
+  color: var(--text, #F5EDE2);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s, background 0.2s;
+  line-height: 1.5;
+}
+.field-premium textarea::placeholder { color: transparent; }
+.field-premium textarea:focus,
+.field-premium textarea:not(:placeholder-shown) {
+  border-color: var(--gold, #E4B860);
+  background: rgba(228,184,96,0.03);
+}
+.field-premium textarea:focus + label,
+.field-premium textarea:not(:placeholder-shown) + label {
+  top: 11px;
+  transform: translateY(0);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--gold, #E4B860);
+}
+
+
 .field-premium {
   position: relative;
   margin-bottom: 18px;
@@ -3579,7 +3758,107 @@ html, body {
         </div>
       </div>
 
+      <!-- ====== MODALE CONFIGURATION DE L'OFFRE ====== -->
+      <div class="clients-modal" id="offre-config-modal">
+        <div class="charges-head">
+          <button class="prod-back" onclick="fermerConfigOffre()" title="Retour">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <h2>Mon offre de relance</h2>
+          <button class="prod-save" onclick="sauverConfigOffre()">💾</button>
+        </div>
+
+        <div class="charges-body">
+          <!-- Hero info -->
+          <div class="create-client-hero" style="background:linear-gradient(180deg, rgba(228,184,96,0.10) 0%, transparent 100%); padding:20px 14px 16px;">
+            <div class="create-client-hero-icon">🎁</div>
+            <div class="create-client-hero-title">Configurer mon offre</div>
+            <div class="create-client-hero-sub">Choisis l'offre et le code promo envoyés aux clients</div>
+          </div>
+
+          <!-- ÉTAPE 1 : Choisir l'offre (presets cliquables) -->
+          <div class="oc-section">
+            <div class="oc-label">1️⃣  Choisis ton offre</div>
+            <div class="oc-presets">
+              <button class="oc-preset-btn" data-offre="-15% sur la prochaine commande" data-code="FIDELE15" onclick="choisirPreset(this)">
+                <span class="oc-preset-emoji">💰</span>
+                <span class="oc-preset-txt">-15% sur la commande</span>
+              </button>
+              <button class="oc-preset-btn" data-offre="une boisson offerte" data-code="BOISSON" onclick="choisirPreset(this)">
+                <span class="oc-preset-emoji">🥤</span>
+                <span class="oc-preset-txt">Boisson offerte</span>
+              </button>
+              <button class="oc-preset-btn" data-offre="un dessert offert (Mango sticky rice)" data-code="DESSERT" onclick="choisirPreset(this)">
+                <span class="oc-preset-emoji">🥭</span>
+                <span class="oc-preset-txt">Dessert offert</span>
+              </button>
+              <button class="oc-preset-btn" data-offre="-10% + livraison gratuite" data-code="LIVRAISON" onclick="choisirPreset(this)">
+                <span class="oc-preset-emoji">🛵</span>
+                <span class="oc-preset-txt">-10% + livraison</span>
+              </button>
+              <button class="oc-preset-btn" data-offre="le 2ème plat à -50%" data-code="DUO50" onclick="choisirPreset(this)">
+                <span class="oc-preset-emoji">👯</span>
+                <span class="oc-preset-txt">2ème plat à -50%</span>
+              </button>
+            </div>
+
+            <div class="field-premium" style="margin-top:12px;">
+              <input type="text" id="oc-offre-text" placeholder=" " oninput="rafraichirApercu()">
+              <label for="oc-offre-text">Description de l'offre</label>
+            </div>
+          </div>
+
+          <!-- ÉTAPE 2 : Code promo -->
+          <div class="oc-section">
+            <div class="oc-label">2️⃣  Code promo à utiliser</div>
+            <div class="field-premium">
+              <input type="text" id="oc-code-text" placeholder=" " maxlength="15" oninput="rafraichirApercu()" style="text-transform:uppercase; letter-spacing:0.05em; font-family:var(--mono,monospace); font-weight:700;">
+              <label for="oc-code-text">Code promo</label>
+            </div>
+            <p class="oc-help">💡 Lettres et chiffres uniquement, 3 à 15 caractères. Ex : <code>KARIM10</code>, <code>BIENVENUE</code>, <code>NOEL2026</code></p>
+          </div>
+
+          <!-- ÉTAPE 3 : Mode (IA ou Manuel) -->
+          <div class="oc-section">
+            <div class="oc-label">3️⃣  Type de message</div>
+            <div class="oc-modes">
+              <button class="oc-mode-btn active" data-mode="ia" onclick="choisirMode(this); majModeAffichage()">
+                <div class="oc-mode-emoji">🤖</div>
+                <div class="oc-mode-title">IA personnalisée</div>
+                <div class="oc-mode-desc">Claude rédige un SMS unique pour chaque client</div>
+              </button>
+              <button class="oc-mode-btn" data-mode="manuel" onclick="choisirMode(this); majModeAffichage()">
+                <div class="oc-mode-emoji">✍️</div>
+                <div class="oc-mode-title">Message fixe</div>
+                <div class="oc-mode-desc">Texte identique pour tous</div>
+              </button>
+            </div>
+
+            <!-- Zone manuelle (cachée si mode IA) -->
+            <div id="oc-msg-manuel-wrap" style="display:none; margin-top:12px;">
+              <div class="field-premium">
+                <textarea id="oc-msg-manuel" placeholder=" " oninput="rafraichirApercu()" rows="4" style="resize:vertical; min-height:80px;"></textarea>
+                <label for="oc-msg-manuel">Ton message</label>
+              </div>
+              <p class="oc-help">
+                💡 Utilise <code>[Prénom]</code> et <code>[Code]</code> dans ton texte, ils seront remplacés automatiquement.<br>
+                Exemple : <em>"Salut [Prénom] ! On t'offre -15% chez Gin Khao avec le code [Code] 🍜"</em>
+              </p>
+            </div>
+          </div>
+
+          <!-- APERÇU EN DIRECT -->
+          <div class="oc-section">
+            <div class="oc-label">👀  Aperçu</div>
+            <div class="oc-apercu" id="oc-apercu"></div>
+          </div>
+
+          <div style="height: 40px;"></div>
+        </div>
+      </div>
+
       <!-- ====== MODALE CRÉATION CLIENT (depuis l'app) ====== -->
+      <div class="clients-modal" id="creation-client-modal">
       <div class="clients-modal" id="creation-client-modal">
         <div class="charges-head">
           <button class="prod-back" onclick="fermerCreationClientApp()" title="Retour">
@@ -4537,39 +4816,157 @@ function afficherVIP() {
 }
 
 
-function getOffre() {
-  return localStorage.getItem('offreFidelite') || '−15% sur la prochaine commande';
+// ============================================================
+//  CONFIGURATION DE L'OFFRE DE RELANCE
+// ============================================================
+
+// Lit la config complète depuis localStorage
+function getOffreConfig() {
+  const def = {
+    offre: '-15% sur la prochaine commande',
+    code: 'FIDELE15',
+    mode: 'ia' // 'ia' = généré par IA, 'manuel' = texte fixe
+  };
+  try {
+    const stored = localStorage.getItem('offreConfig');
+    if (stored) return { ...def, ...JSON.parse(stored) };
+  } catch(e) {}
+  // Migration depuis ancien système
+  const ancien = localStorage.getItem('offreFidelite');
+  if (ancien) {
+    def.offre = ancien;
+    return def;
+  }
+  return def;
 }
 
-function configurerOffre() {
-  const choix = prompt(
-    "Choisis ton offre de relance (tape le numéro ou écris la tienne) :\n\n" +
-    "1 = −15% sur la prochaine commande\n" +
-    "2 = Une boisson offerte\n" +
-    "3 = Un dessert offert (Mango sticky)\n" +
-    "4 = −10% + livraison gratuite\n" +
-    "5 = Le 2ème plat à −50%\n\n" +
-    "Ou écris directement ton offre personnalisée :",
-    getOffre()
-  );
-  if (choix === null) return;
-  const offres = {
-    '1': '−15% sur la prochaine commande',
-    '2': 'une boisson offerte',
-    '3': 'un dessert offert (Mango sticky rice)',
-    '4': '−10% + livraison gratuite',
-    '5': 'le 2ème plat à −50%'
-  };
-  const offre = offres[choix.trim()] || choix.trim();
-  localStorage.setItem('offreFidelite', offre);
+function setOffreConfig(c) {
+  localStorage.setItem('offreConfig', JSON.stringify(c));
+}
+
+// Pour rétrocompatibilité (utilisé dans envoyerSMS)
+function getOffre() {
+  return getOffreConfig().offre;
+}
+function getCodePromo() {
+  return getOffreConfig().code;
+}
+
+// Met à jour l'affichage du bandeau "Mon offre de relance"
+function rafraichirAffichageOffre() {
+  const c = getOffreConfig();
   const el = document.getElementById('offre-actuelle');
-  if (el) el.textContent = offre;
-  alert('✅ Offre enregistrée : ' + offre + '\n\nTous les SMS utiliseront cette offre.');
+  if (el) {
+    el.innerHTML = `${c.offre} <span style="color:var(--gold); font-weight:700; margin-left:6px;">· code ${c.code}</span>`;
+  }
+}
+
+// Ouvre la modale de configuration
+function configurerOffre() {
+  document.getElementById('offre-config-modal').classList.add('show');
+  const c = getOffreConfig();
+  document.getElementById('oc-offre-text').value = c.offre;
+  document.getElementById('oc-code-text').value = c.code;
+  document.querySelectorAll('.oc-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === c.mode));
+  document.querySelectorAll('.oc-preset-btn').forEach(b => b.classList.remove('active'));
+  rafraichirApercu();
+}
+
+function fermerConfigOffre() {
+  document.getElementById('offre-config-modal').classList.remove('show');
+}
+
+// Quand on clique sur un preset, remplit l'offre + suggère un code
+function choisirPreset(btn) {
+  document.querySelectorAll('.oc-preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('oc-offre-text').value = btn.dataset.offre;
+  // Suggère un code seulement si le champ est vide ou contient un ancien preset
+  const codeEl = document.getElementById('oc-code-text');
+  const codesSugg = ['FIDELE15', 'BOISSON', 'DESSERT', 'LIVRAISON', 'DUO50'];
+  if (!codeEl.value || codesSugg.includes(codeEl.value)) {
+    codeEl.value = btn.dataset.code;
+  }
+  rafraichirApercu();
+}
+
+// Change le mode (IA vs Manuel)
+function choisirMode(btn) {
+  document.querySelectorAll('.oc-mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  rafraichirApercu();
+}
+
+// Met à jour l'aperçu du SMS en temps réel
+function rafraichirApercu() {
+  const offre = document.getElementById('oc-offre-text').value || 'votre offre';
+  const code = (document.getElementById('oc-code-text').value || '').toUpperCase();
+  const mode = document.querySelector('.oc-mode-btn.active')?.dataset.mode || 'ia';
+  const apercu = document.getElementById('oc-apercu');
+
+  // Mise à jour automatique du champ code en majuscules
+  const codeInput = document.getElementById('oc-code-text');
+  if (codeInput.value !== code) {
+    const cursorPos = codeInput.selectionStart;
+    codeInput.value = code;
+    codeInput.setSelectionRange(cursorPos, cursorPos);
+  }
+
+  if (mode === 'ia') {
+    apercu.innerHTML = `
+      <div class="oc-apercu-label">📱 Aperçu d'un SMS (généré par l'IA)</div>
+      <div class="oc-apercu-msg">
+        🍜 Karim, tu nous manques ! Pour ton retour chez Gin Khao : ${offre}.<br>
+        Code <strong style="color:var(--gold);">${code || 'XXXX'}</strong>. À très vite 🥢
+      </div>
+      <div class="oc-apercu-hint">💡 L'IA personnalisera le SMS pour chaque client (prénom, ton, etc.)</div>
+    `;
+  } else {
+    // Mode manuel : on prend exactement le texte de la zone manuelle
+    const txt = document.getElementById('oc-msg-manuel').value || '🍜 [Prénom], tu nous manques ! ' + offre + '. Code ' + (code || 'XXXX') + '. À très vite chez Gin Khao 🥢';
+    apercu.innerHTML = `
+      <div class="oc-apercu-label">📱 Aperçu (le SMS sera envoyé exactement comme ça)</div>
+      <div class="oc-apercu-msg">${escapeHtmlSimple(txt).replace(/\n/g, '<br>')}</div>
+      <div class="oc-apercu-hint">💡 Tu peux utiliser [Prénom] et [Code] qui seront remplacés automatiquement</div>
+    `;
+  }
+}
+
+// Bascule affichage zone manuelle selon le mode
+function majModeAffichage() {
+  const mode = document.querySelector('.oc-mode-btn.active')?.dataset.mode || 'ia';
+  document.getElementById('oc-msg-manuel-wrap').style.display = mode === 'manuel' ? 'block' : 'none';
+}
+
+// Sauvegarde l'offre
+function sauverConfigOffre() {
+  const offre = document.getElementById('oc-offre-text').value.trim();
+  const code = document.getElementById('oc-code-text').value.trim().toUpperCase();
+  const mode = document.querySelector('.oc-mode-btn.active')?.dataset.mode || 'ia';
+  const msgManuel = document.getElementById('oc-msg-manuel').value.trim();
+
+  if (!offre) { alert('Tu dois indiquer une offre'); return; }
+  if (!code) { alert('Tu dois choisir un code promo'); return; }
+  if (code.length < 3) { alert('Le code promo doit faire au moins 3 caractères'); return; }
+  if (!/^[A-Z0-9]+$/.test(code)) { alert('Le code promo ne peut contenir que des lettres et des chiffres'); return; }
+  if (mode === 'manuel' && !msgManuel) { alert('Tu dois écrire ton message en mode manuel'); return; }
+
+  const config = { offre, code, mode };
+  if (mode === 'manuel') config.msgManuel = msgManuel;
+  setOffreConfig(config);
+
+  rafraichirAffichageOffre();
+  fermerConfigOffre();
+
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:var(--lime,#A8E10C); color:var(--bg-deep,#0a0908); padding:12px 20px; border-radius:999px; font-weight:700; font-size:13px; z-index:99999; box-shadow:0 8px 24px rgba(168,225,12,0.3);';
+  toast.textContent = '✅ Offre enregistrée';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('offre-actuelle');
-  if (el) el.textContent = getOffre();
+  rafraichirAffichageOffre();
   // Charger toggles automatisations depuis localStorage
   ['anniversaire','endormi','avis'].forEach(k => {
     const t = document.getElementById('auto-' + k);
@@ -5165,26 +5562,38 @@ async function envoyerSMS(prenom, btn, clientId) {
     return;
   }
 
+  const config = getOffreConfig();
   const texteInitial = btn.innerHTML;
   btn.innerHTML = '⏳';
   btn.disabled = true;
 
   try {
-    // 1) L'IA génère le SMS personnalisé
-    const resIA = await fetch('/.netlify/functions/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: `Rédige un SMS court (max 160 caractères) pour relancer ${prenom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Offre à proposer : ${getOffre()}. Inclus un code promo. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })
-    });
-    const dataIA = await resIA.json();
-    const sms = (dataIA.reponse || '').trim();
-    if (!sms) throw new Error('IA n\'a pas pu générer le SMS');
+    let sms;
 
-    // 2) Demande la confirmation avant d'envoyer pour de vrai
+    if (config.mode === 'manuel' && config.msgManuel) {
+      // MODE MANUEL : on prend le texte personnalisé, on remplace les variables
+      sms = config.msgManuel
+        .replace(/\[Pr[ée]nom\]/gi, client.nom)
+        .replace(/\[Code\]/gi, config.code)
+        .replace(/\[Offre\]/gi, config.offre);
+    } else {
+      // MODE IA : Claude génère un SMS personnalisé
+      const resIA = await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `Rédige un SMS de relance commercial court (max 160 caractères) pour ${client.nom}, un client du restaurant Gin Khao (street food thaï à Marseille) qui n'a pas commandé depuis quelques semaines. Offre à proposer : ${config.offre}. Code promo OBLIGATOIRE à inclure dans le SMS : ${config.code}. Ton chaleureux et direct. Réponds UNIQUEMENT avec le texte du SMS, sans guillemets ni commentaire.` })
+      });
+      const dataIA = await resIA.json();
+      sms = (dataIA.reponse || '').trim();
+      if (!sms) throw new Error('IA n\'a pas pu générer le SMS');
+    }
+
+    // Confirmation avant envoi
     const confirme = confirm(
       `📱 SMS prêt à envoyer à ${prenom} (${client.telephone}) :\n\n` +
       `"${sms}"\n\n` +
-      `Coût : ~0,05€ — Brevo gratuit jusqu'à 100 SMS\n\n` +
+      `Code promo : ${config.code}\n` +
+      `Mode : ${config.mode === 'ia' ? 'IA personnalisée' : 'Message manuel'}\n\n` +
       `Envoyer maintenant ?`
     );
     if (!confirme) {
@@ -5193,7 +5602,7 @@ async function envoyerSMS(prenom, btn, clientId) {
       return;
     }
 
-    // 3) Envoi du SMS via Brevo
+    // Envoi via Brevo
     btn.innerHTML = '📤';
     const resSMS = await fetch('/.netlify/functions/envoyer-sms', {
       method: 'POST',
