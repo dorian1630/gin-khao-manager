@@ -2238,7 +2238,187 @@ html, body {
 }
 .cd-btn:active { transform: scale(0.97); }
 
-/* ===== MODALE CONFIG OFFRE — design premium ===== */
+/* ===== CARTE HISTORIQUE SMS (sur la page Clients) ===== */
+.sms-history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(168,225,12,0.06) 0%, rgba(168,225,12,0.02) 100%);
+  border: 1px solid rgba(168,225,12,0.2);
+  border-radius: 14px;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sms-history-card:active { transform: scale(0.98); }
+.sms-history-card:hover { border-color: rgba(168,225,12,0.4); }
+.sms-history-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.sms-history-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--lime, #A8E10C), #82B509);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(168,225,12,0.2);
+}
+.sms-history-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #F5EDE2);
+  margin-bottom: 2px;
+}
+.sms-history-sub {
+  font-size: 12px;
+  color: var(--text-mute, #8B7E6F);
+}
+.sms-history-arrow {
+  width: 18px;
+  height: 18px;
+  color: var(--text-mute);
+  flex-shrink: 0;
+}
+
+/* ===== MODALE HISTORIQUE SMS ===== */
+.sms-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.sms-stat {
+  background: var(--surface, #1C1814);
+  border: 1px solid var(--border, #2D261E);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+}
+.sms-stat-val {
+  font-family: var(--display, 'Fraunces', serif);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text, #F5EDE2);
+  line-height: 1.1;
+}
+.sms-stat-lbl {
+  font-size: 9px;
+  color: var(--text-mute, #8B7E6F);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+/* Lignes SMS dans la liste */
+.sms-row {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface, #1C1814);
+  border: 1px solid var(--border, #2D261E);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.sms-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--border);
+}
+.sms-row.type-anniversaire::before { background: var(--gold, #E4B860); }
+.sms-row.type-endormi::before { background: #5B5BC2; }
+.sms-row.type-avis::before { background: var(--lime, #A8E10C); }
+.sms-row.type-manuel::before { background: var(--sriracha, #D77D55); }
+.sms-row.statut-echec { opacity: 0.65; }
+.sms-row:active { transform: scale(0.99); }
+
+.sms-row-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  background: var(--surface-2, #251F19);
+}
+.sms-row-content {
+  flex: 1;
+  min-width: 0;
+}
+.sms-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.sms-row-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #F5EDE2);
+}
+.sms-row-statut {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.sms-row-statut.envoye {
+  background: rgba(168,225,12,0.15);
+  color: var(--lime, #A8E10C);
+  border: 1px solid rgba(168,225,12,0.3);
+}
+.sms-row-statut.echec {
+  background: rgba(231,76,60,0.15);
+  color: #E74C3C;
+  border: 1px solid rgba(231,76,60,0.3);
+}
+.sms-row-texte {
+  font-size: 12px;
+  color: var(--text-soft, #C7B9A5);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sms-row-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-mute, #8B7E6F);
+  margin-top: 6px;
+}
+.sms-row-meta .sep {
+  width: 2px;
+  height: 2px;
+  background: var(--text-mute);
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+
 .oc-section {
   margin-bottom: 24px;
   padding: 0;
@@ -3632,6 +3812,20 @@ html, body {
           </div>
         </div>
 
+        <!-- HISTORIQUE SMS -->
+        <div class="section" onclick="ouvrirHistoriqueSMS()" style="cursor:pointer;">
+          <div class="sms-history-card">
+            <div class="sms-history-left">
+              <div class="sms-history-icon">📱</div>
+              <div>
+                <div class="sms-history-title">Historique SMS</div>
+                <div class="sms-history-sub" id="sms-history-resume">— SMS envoyés ce mois</div>
+              </div>
+            </div>
+            <svg class="sms-history-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
         <div class="section">
           <div class="section-head">
             <h3 class="section-title">Tes meilleurs clients</h3>
@@ -3854,6 +4048,71 @@ html, body {
           </div>
 
           <div style="height: 40px;"></div>
+        </div>
+      </div>
+
+      <!-- ====== MODALE HISTORIQUE SMS ====== -->
+      <div class="clients-modal" id="sms-history-modal">
+        <div class="charges-head">
+          <button class="prod-back" onclick="fermerHistoriqueSMS()" title="Retour">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <h2>Historique SMS</h2>
+          <div style="width:38px;"></div>
+        </div>
+
+        <div class="charges-body">
+          <!-- Stats du mois -->
+          <div class="sms-stats" id="sms-stats">
+            <div class="sms-stat">
+              <div class="sms-stat-val" id="sms-stat-total">0</div>
+              <div class="sms-stat-lbl">Envoyés</div>
+            </div>
+            <div class="sms-stat">
+              <div class="sms-stat-val" id="sms-stat-anniv">0</div>
+              <div class="sms-stat-lbl">🎂 Anniv.</div>
+            </div>
+            <div class="sms-stat">
+              <div class="sms-stat-val" id="sms-stat-endormi">0</div>
+              <div class="sms-stat-lbl">😴 Relance</div>
+            </div>
+            <div class="sms-stat">
+              <div class="sms-stat-val" id="sms-stat-cout">0€</div>
+              <div class="sms-stat-lbl">Coût ce mois</div>
+            </div>
+          </div>
+
+          <!-- Filtres par type -->
+          <div class="seg-pills-wrap" style="margin-top:14px;">
+            <div class="seg-pills">
+              <button class="seg-pill active" data-type="all" onclick="filtrerSMSHistory('all')">
+                <span class="seg-pill-icon">📱</span>
+                <span class="seg-pill-text">Tous</span>
+              </button>
+              <button class="seg-pill" data-type="anniversaire" onclick="filtrerSMSHistory('anniversaire')">
+                <span class="seg-pill-icon">🎂</span>
+                <span class="seg-pill-text">Anniversaires</span>
+              </button>
+              <button class="seg-pill" data-type="endormi" onclick="filtrerSMSHistory('endormi')">
+                <span class="seg-pill-icon">😴</span>
+                <span class="seg-pill-text">Relances</span>
+              </button>
+              <button class="seg-pill" data-type="avis" onclick="filtrerSMSHistory('avis')">
+                <span class="seg-pill-icon">⭐</span>
+                <span class="seg-pill-text">Avis</span>
+              </button>
+              <button class="seg-pill" data-type="manuel" onclick="filtrerSMSHistory('manuel')">
+                <span class="seg-pill-icon">✍️</span>
+                <span class="seg-pill-text">Manuels</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Compteur résultats -->
+          <div class="clients-count" id="sms-history-count" style="margin-top:14px;">— SMS</div>
+
+          <!-- Liste -->
+          <div id="sms-history-liste"></div>
         </div>
       </div>
 
@@ -5601,10 +5860,209 @@ async function chargerToggles() {
 }
 
 // ============================================================
+//  HISTORIQUE SMS
+// ============================================================
+let smsHistoryCache = [];
+let smsHistoryFiltre = 'all';
+
+async function chargerHistoriqueSMS() {
+  try {
+    const { data, error } = await sbClient.from('sms_logs')
+      .select('*')
+      .eq('restaurant_id', RESTO_ID)
+      .order('envoye_le', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    smsHistoryCache = data || [];
+    afficherResumeSMS();
+  } catch (e) {
+    console.error('Erreur chargement SMS:', e);
+  }
+}
+
+// Met à jour le résumé sur la page Clients
+function afficherResumeSMS() {
+  const el = document.getElementById('sms-history-resume');
+  if (!el) return;
+
+  // Compter ce mois-ci
+  const debutMois = new Date();
+  debutMois.setDate(1);
+  debutMois.setHours(0, 0, 0, 0);
+
+  const ceMois = smsHistoryCache.filter(s =>
+    new Date(s.envoye_le) >= debutMois && s.statut === 'envoye'
+  );
+
+  if (ceMois.length === 0) {
+    el.textContent = 'Aucun SMS envoyé ce mois — Tap pour voir tout l\'historique';
+  } else {
+    el.textContent = `${ceMois.length} SMS envoyé${ceMois.length > 1 ? 's' : ''} ce mois — Tap pour voir`;
+  }
+}
+
+function ouvrirHistoriqueSMS() {
+  document.getElementById('sms-history-modal').classList.add('show');
+  smsHistoryFiltre = 'all';
+  document.querySelectorAll('#sms-history-modal .seg-pill[data-type]').forEach(p => {
+    p.classList.toggle('active', p.dataset.type === 'all');
+  });
+  chargerHistoriqueSMS().then(() => {
+    afficherListeSMS();
+    afficherStatsSMS();
+  });
+}
+
+function fermerHistoriqueSMS() {
+  document.getElementById('sms-history-modal').classList.remove('show');
+}
+
+function filtrerSMSHistory(type) {
+  smsHistoryFiltre = type;
+  document.querySelectorAll('#sms-history-modal .seg-pill[data-type]').forEach(p => {
+    p.classList.toggle('active', p.dataset.type === type);
+  });
+  afficherListeSMS();
+}
+
+function afficherStatsSMS() {
+  const debutMois = new Date();
+  debutMois.setDate(1);
+  debutMois.setHours(0, 0, 0, 0);
+
+  const ceMois = smsHistoryCache.filter(s => new Date(s.envoye_le) >= debutMois && s.statut === 'envoye');
+  const totaleAnniv = ceMois.filter(s => s.type === 'anniversaire').length;
+  const totaleEndormi = ceMois.filter(s => s.type === 'endormi').length;
+  const cout = ceMois.reduce((sum, s) => sum + (s.cout_sms || 1), 0);
+
+  // Prix indicatif : ~0,05€ par SMS (variable selon ton pack Brevo)
+  const coutEuro = (cout * 0.05).toFixed(2);
+
+  document.getElementById('sms-stat-total').textContent = ceMois.length;
+  document.getElementById('sms-stat-anniv').textContent = totaleAnniv;
+  document.getElementById('sms-stat-endormi').textContent = totaleEndormi;
+  document.getElementById('sms-stat-cout').textContent = coutEuro + '€';
+}
+
+function afficherListeSMS() {
+  const zone = document.getElementById('sms-history-liste');
+  const compteur = document.getElementById('sms-history-count');
+  if (!zone) return;
+
+  // Filtre
+  let filtres = smsHistoryCache.slice();
+  if (smsHistoryFiltre !== 'all') {
+    filtres = filtres.filter(s => s.type === smsHistoryFiltre);
+  }
+
+  // Compteur
+  if (compteur) {
+    if (filtres.length === 0) compteur.textContent = 'Aucun SMS';
+    else if (filtres.length === 1) compteur.textContent = '1 SMS';
+    else compteur.textContent = filtres.length + ' SMS';
+  }
+
+  if (filtres.length === 0) {
+    zone.innerHTML = `<div class="prod-empty" style="padding:40px 20px;"><p style="font-size:13px; color:var(--text-mute); text-align:center;">📭 Aucun SMS dans cette catégorie.</p></div>`;
+    return;
+  }
+
+  // Récupérer les noms des clients depuis le cache
+  const clientsParId = {};
+  clientsCache.forEach(c => { clientsParId[c.id] = c; });
+
+  // Icônes par type
+  const icones = { anniversaire: '🎂', endormi: '😴', avis: '⭐', manuel: '✍️' };
+
+  zone.innerHTML = filtres.map(s => {
+    const client = s.client_id ? clientsParId[s.client_id] : null;
+    const nomAffiche = client ? client.nom : 'Client supprimé';
+    const tel = client ? formatTelephone(client.telephone) : formatTelephone(s.numero);
+    const date = new Date(s.envoye_le);
+    const dateAff = formatDateRelative(date);
+    const heureAff = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const icone = icones[s.type] || '📱';
+    const labelType = { anniversaire: 'Anniversaire', endormi: 'Relance', avis: 'Demande avis', manuel: 'Manuel' }[s.type] || s.type;
+    const texteAff = s.statut === 'echec' && s.erreur
+      ? `<span style="color:#E74C3C;">❌ ${escapeHtmlSimple(s.erreur)}</span><br><small style="opacity:0.6;">${escapeHtmlSimple(s.texte || '')}</small>`
+      : escapeHtmlSimple(s.texte || '');
+
+    return `
+      <div class="sms-row type-${s.type} statut-${s.statut}" onclick="voirDetailSMS('${s.id}')">
+        <div class="sms-row-icon">${icone}</div>
+        <div class="sms-row-content">
+          <div class="sms-row-head">
+            <span class="sms-row-name">${escapeHtmlSimple(nomAffiche)}</span>
+            <span class="sms-row-statut ${s.statut}">${s.statut === 'envoye' ? '✓ Envoyé' : '✕ Échec'}</span>
+          </div>
+          <div class="sms-row-texte">${texteAff}</div>
+          <div class="sms-row-meta">
+            <span>${labelType}</span>
+            <span class="sep"></span>
+            <span>${tel}</span>
+            <span class="sep"></span>
+            <span>${dateAff} à ${heureAff}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Format date relatif ("aujourd'hui", "hier", "il y a 3j")
+function formatDateRelative(date) {
+  const aujourd = new Date();
+  aujourd.setHours(0, 0, 0, 0);
+  const cible = new Date(date);
+  cible.setHours(0, 0, 0, 0);
+  const diff = Math.floor((aujourd - cible) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "aujourd'hui";
+  if (diff === 1) return 'hier';
+  if (diff < 7) return `il y a ${diff} j`;
+  if (diff < 30) return `il y a ${Math.floor(diff / 7)} sem`;
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+// Voir le détail complet d'un SMS
+function voirDetailSMS(smsId) {
+  const sms = smsHistoryCache.find(s => s.id === smsId);
+  if (!sms) return;
+  const client = clientsCache.find(c => c.id === sms.client_id);
+  const nom = client ? client.nom : 'Client supprimé';
+  const tel = formatTelephone(sms.numero);
+  const date = new Date(sms.envoye_le).toLocaleString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+  });
+
+  let detail = `📱 SMS envoyé\n\n`;
+  detail += `À : ${nom} (${tel})\n`;
+  detail += `Type : ${sms.type}\n`;
+  detail += `Date : ${date}\n`;
+  detail += `Statut : ${sms.statut === 'envoye' ? '✅ Envoyé' : '❌ Échec'}\n\n`;
+  if (sms.erreur) detail += `❌ Erreur : ${sms.erreur}\n\n`;
+  detail += `Message :\n"${sms.texte}"`;
+
+  alert(detail);
+}
+
+// Realtime sur sms_logs
+if (typeof sbClient !== 'undefined') {
+  sbClient.channel('sms-logs-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'sms_logs' },
+        () => { chargerHistoriqueSMS(); })
+    .subscribe();
+}
+
+// Charger au démarrage
+setTimeout(() => {
+  if (typeof chargerHistoriqueSMS === 'function') chargerHistoriqueSMS();
+}, 1500);
+
+// ============================================================
 //  REALTIME : recharger clients à chaque changement
 // ============================================================
 if (typeof sbClient !== 'undefined') {
   sbClient.channel('clients-changes')
+
     .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' },
         () => { if (typeof chargerClients === 'function') chargerClients(); })
     .subscribe();
