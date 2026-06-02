@@ -4988,13 +4988,30 @@ function segmentClient(c) {
 }
 
 // Charge les clients depuis Supabase et remplit l'onglet
+// Supabase limite à 1000 par requête → on pagine si plus
 async function chargerClients() {
   try {
-    const { data, error } = await sbClient.from('clients')
-      .select('*').eq('restaurant_id', RESTO_ID)
-      .order('derniere_visite', { ascending: true });
-    if (error) throw error;
-    clientsCache = data || [];
+    let tous = [];
+    let from = 0;
+    const PAGE = 1000;
+    let finPagination = false;
+
+    while (!finPagination) {
+      const { data, error } = await sbClient.from('clients')
+        .select('*')
+        .eq('restaurant_id', RESTO_ID)
+        .order('derniere_visite', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      tous = tous.concat(data);
+      if (data.length < PAGE) finPagination = true;
+      else from += PAGE;
+      // Sécurité : max 20 pages = 20 000 clients
+      if (from > 20000) break;
+    }
+
+    clientsCache = tous;
     afficherSegments();
     afficherARelancer();
     afficherVIP();
