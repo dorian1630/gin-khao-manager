@@ -127,6 +127,18 @@ exports.handler = async function (event) {
       } catch (e) {
         stats.erreurs++;
         console.log(`  ❌ ${client.nom} : ${e.message}`);
+        // Logger même les exceptions JS pour le debug
+        try {
+          await sb.from('sms_logs').insert({
+            restaurant_id: RESTO_ID,
+            client_id: client.id,
+            type: 'endormi',
+            numero: client.telephone || 'inconnu',
+            texte: '(non généré)',
+            statut: 'echec',
+            erreur: 'Exception JS : ' + e.message
+          });
+        } catch (e2) { console.error('Impossible de logger:', e2.message); }
       }
       await new Promise(r => setTimeout(r, 400));
     }
@@ -139,30 +151,52 @@ exports.handler = async function (event) {
 };
 
 async function genererSMSEndormi(prenom, offre, code, derniereVisite) {
+  // Message de secours par défaut
+  const messageDefaut = `🍜 ${prenom}, ça fait longtemps qu'on ne t'a pas vu chez Gin Khao ! On te réserve ${offre} avec le code ${code}. À très vite 🥢`;
+
   if (!ANTHROPIC_API_KEY) {
-    return `🍜 ${prenom}, ça fait longtemps qu'on ne t'a pas vu chez Gin Khao ! On te réserve ${offre} avec le code ${code}. À très vite 🥢`;
+    console.log('⚠️ Pas de ANTHROPIC_API_KEY, message par défaut');
+    return messageDefaut;
   }
 
   const moisAbsence = derniereVisite ? Math.floor((Date.now() - new Date(derniereVisite).getTime()) / (1000 * 60 * 60 * 24 * 30)) : 1;
 
   const prompt = `Tu es un assistant marketing pour le restaurant Gin Khao (street food thaï, Marseille). Rédige UN SEUL SMS court (max 160 caractères). Pour relancer ${prenom}, un client qui n'est plus venu depuis environ ${moisAbsence} mois. Offre à mentionner : ${offre}. Code promo OBLIGATOIRE : ${code}. Ton chaleureux, pas culpabilisant, ne pas dire "tu nous trompes" mais plutôt "tu nous manques". Tu peux utiliser des emojis (max 2). Réponds UNIQUEMENT avec le texte du SMS.`;
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 200,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
 
-  const data = await res.json();
-  return (data.content?.[0]?.text || '').trim();
+    if (!res.ok) {
+      const errText = await res.text();
+      console.log('⚠️ Erreur Claude API ' + res.status + ' : ' + errText);
+      return messageDefaut;
+    }
+
+    const data = await res.json();
+    const sms = (data.content?.[0]?.text || '').trim();
+
+    if (!sms || sms.length < 10) {
+      console.log('⚠️ Claude a renvoyé un texte vide → message par défaut');
+      return messageDefaut;
+    }
+
+    return sms;
+  } catch (e) {
+    console.log('⚠️ Exception Claude:', e.message);
+    return messageDefaut;
+  }
 }
 
 async function envoyerSMS(numero, texte) {
