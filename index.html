@@ -1726,15 +1726,18 @@ html, body {
   inset: 0;
   background: var(--bg-deep, #0A0908);
   z-index: 9000;
-  display: none;
+  display: flex;
   flex-direction: column;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
   overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
 }
 .clients-modal.show {
-  display: flex;
   transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
 }
 /* Header sticky en haut + respect notch iPhone */
 .clients-modal .charges-head {
