@@ -3859,7 +3859,6 @@ html, body {
 
       <!-- ====== MODALE CRÉATION CLIENT (depuis l'app) ====== -->
       <div class="clients-modal" id="creation-client-modal">
-      <div class="clients-modal" id="creation-client-modal">
         <div class="charges-head">
           <button class="prod-back" onclick="fermerCreationClientApp()" title="Retour">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -5576,20 +5575,29 @@ async function toggleAutomatisation(cle, el) {
 // Au chargement, lire l'état réel depuis Supabase (synchroniser)
 async function chargerToggles() {
   try {
-    const { data } = await sbClient.from('parametres_sms')
+    const { data, error } = await sbClient.from('parametres_sms')
       .select('auto_anniv, auto_endormi, auto_avis')
       .eq('restaurant_id', RESTO_ID).maybeSingle();
-    if (data) {
-      const map = { anniversaire: 'auto_anniv', endormi: 'auto_endormi', avis: 'auto_avis' };
-      Object.entries(map).forEach(([cle, col]) => {
-        const t = document.getElementById('auto-' + cle);
-        if (t) {
-          t.classList.toggle('on', !!data[col]);
-          localStorage.setItem('auto-' + cle, data[col] ? 'on' : 'off');
-        }
-      });
+    if (error) {
+      console.error('Erreur lecture parametres_sms:', error);
+      return; // On ne touche pas aux toggles si erreur
     }
-  } catch (e) { console.log('Pas de table parametres_sms encore:', e.message); }
+    if (!data) {
+      console.log('Aucune ligne parametres_sms encore — utilisation localStorage');
+      return; // On garde l'état localStorage
+    }
+    // Synchroniser les toggles avec Supabase
+    const map = { anniversaire: 'auto_anniv', endormi: 'auto_endormi', avis: 'auto_avis' };
+    Object.entries(map).forEach(([cle, col]) => {
+      const t = document.getElementById('auto-' + cle);
+      if (t) {
+        t.classList.toggle('on', !!data[col]);
+        localStorage.setItem('auto-' + cle, data[col] ? 'on' : 'off');
+      }
+    });
+  } catch (e) {
+    console.log('chargerToggles erreur:', e.message);
+  }
 }
 
 // ============================================================
