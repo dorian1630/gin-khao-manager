@@ -2241,7 +2241,111 @@ html, body {
 }
 .cd-btn:active { transform: scale(0.97); }
 
-/* ===== CARTE EXPORT FEC ===== */
+/* ===== HISTORIQUE D'ACHATS CLIENT ===== */
+.cd-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold, #E4B860);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 24px 4px 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border, #2D261E);
+}
+.cd-historique-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-mute);
+  font-size: 12px;
+  font-style: italic;
+}
+.cd-historique-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  background: var(--surface, #1C1814);
+  border: 1px dashed var(--border, #2D261E);
+  border-radius: 14px;
+}
+.cd-hist-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.cd-hist-stat {
+  background: linear-gradient(135deg, rgba(228,184,96,0.06) 0%, rgba(228,184,96,0.02) 100%);
+  border: 1px solid rgba(228,184,96,0.15);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+}
+.cd-hist-stat-val {
+  font-family: var(--display, 'Fraunces', serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--gold, #E4B860);
+  line-height: 1.1;
+}
+.cd-hist-stat-lbl {
+  font-size: 9.5px;
+  color: var(--text-mute, #8B7E6F);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.cd-hist-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cd-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface, #1C1814);
+  border: 1px solid var(--border, #2D261E);
+  border-radius: 12px;
+  transition: all 0.15s;
+}
+.cd-hist-row:active { transform: scale(0.99); }
+.cd-hist-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface-2, #251F19);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.cd-hist-info {
+  flex: 1;
+  min-width: 0;
+}
+.cd-hist-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #F5EDE2);
+  margin-bottom: 2px;
+}
+.cd-hist-meta {
+  font-size: 11px;
+  color: var(--text-mute, #8B7E6F);
+}
+.cd-hist-prix {
+  font-family: var(--display, 'Fraunces', serif);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--gold, #E4B860);
+  flex-shrink: 0;
+}
+
+
 .fec-card {
   display: flex;
   align-items: center;
@@ -5840,7 +5944,103 @@ function afficherFicheClient(c) {
       <button class="cd-btn primary" onclick="envoyerSMS('${(c.nom || '').replace(/'/g, "\\'")}', this, '${c.id}')">🤖 SMS IA</button>
     </div>
     ` : ''}
+
+    <!-- HISTORIQUE D'ACHATS -->
+    <div class="cd-section-title">📋 Historique d'achats</div>
+    <div id="cd-historique" class="cd-historique-loading">Chargement...</div>
   `;
+
+  // Charger l'historique d'achats du client
+  chargerHistoriqueClient(c.id);
+}
+
+// ============================================================
+//  HISTORIQUE D'ACHATS D'UN CLIENT
+// ============================================================
+async function chargerHistoriqueClient(clientId) {
+  const zone = document.getElementById('cd-historique');
+  if (!zone) return;
+
+  try {
+    const { data: ventes, error } = await sbClient.from('ventes')
+      .select('id, numero, total, mode_paiement, canal, cree_le, statut')
+      .eq('client_id', clientId)
+      .eq('statut', 'validee')
+      .order('cree_le', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+
+    if (!ventes || ventes.length === 0) {
+      zone.innerHTML = `
+        <div class="cd-historique-empty">
+          <div style="font-size:30px; opacity:0.4;">🛒</div>
+          <p style="font-size:12px; color:var(--text-mute); margin-top:8px; text-align:center;">
+            Aucun achat enregistré pour ce client dans l'application.<br>
+            <span style="font-size:11px; opacity:0.7;">Les achats s'enregistrent quand le client est attaché à une vente via la caisse.</span>
+          </p>
+        </div>`;
+      return;
+    }
+
+    // Stats globales
+    const total = ventes.reduce((s, v) => s + parseFloat(v.total || 0), 0);
+    const moyenne = total / ventes.length;
+    const dernierAchat = new Date(ventes[0].cree_le);
+    const dernierLabel = formatDateRelative(dernierAchat);
+
+    // Icônes selon canal
+    const iconesCanal = {
+      sur_place: '🍽️', emporter: '🥡', livraison: '🛵',
+      uber_eats: '🟢', deliveroo: '🩷', just_eat: '🟠',
+      cc_enligne: '💻', cc_comptoir: '🏪', click_collect: '🏪'
+    };
+
+    let html = `
+      <div class="cd-hist-stats">
+        <div class="cd-hist-stat">
+          <div class="cd-hist-stat-val">${ventes.length}</div>
+          <div class="cd-hist-stat-lbl">Achats</div>
+        </div>
+        <div class="cd-hist-stat">
+          <div class="cd-hist-stat-val">${fmtMontant(total)}</div>
+          <div class="cd-hist-stat-lbl">Total dépensé</div>
+        </div>
+        <div class="cd-hist-stat">
+          <div class="cd-hist-stat-val">${fmtMontant(moyenne)}</div>
+          <div class="cd-hist-stat-lbl">Panier moyen</div>
+        </div>
+      </div>
+      <div class="cd-hist-liste">
+    `;
+
+    for (const v of ventes) {
+      const date = new Date(v.cree_le);
+      const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+      const heureStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const icone = iconesCanal[v.canal] || '🛒';
+      const modeFmt = (v.mode_paiement === 'especes') ? '💵 Espèces' :
+                     (v.mode_paiement === 'carte') ? '💳 Carte' : '🌐 Plateforme';
+      html += `
+        <div class="cd-hist-row">
+          <div class="cd-hist-icon">${icone}</div>
+          <div class="cd-hist-info">
+            <div class="cd-hist-num">Ticket #${v.numero}</div>
+            <div class="cd-hist-meta">${dateStr} à ${heureStr} · ${modeFmt}</div>
+          </div>
+          <div class="cd-hist-prix">${fmtMontant(parseFloat(v.total))}</div>
+        </div>`;
+    }
+    html += '</div>';
+
+    zone.innerHTML = html;
+  } catch (e) {
+    console.error('Erreur historique client:', e);
+    zone.innerHTML = `<p style="color:var(--text-mute); font-size:12px; text-align:center; padding:14px;">Impossible de charger l'historique : ${e.message}</p>`;
+  }
+}
+
+function fmtMontant(n) {
+  return (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + '€';
 }
 
 function formatTelephone(tel) {
