@@ -2311,7 +2311,8 @@ async function validerVente() {
       p_mode_paiement: modePaiement,
       p_lignes: lignes,
       p_canal: canalPourBase,
-      p_taux_commission: CANAUX_COMMISSION.includes(canalVente) ? tauxCommission : null
+      p_taux_commission: CANAUX_COMMISSION.includes(canalVente) ? tauxCommission : null,
+      p_client_id: clientFid ? clientFid.id : null   // ✨ NOUVEAU : on envoie l'ID du client attaché
     });
     if (error) throw error;
 
@@ -2807,16 +2808,26 @@ function ymdAujourdhui() {
 // CAS SPÉCIAL : si le plat offert a été utilisé, on remet les tampons à 0
 // (visite "récompense") sans ajouter de nouveau tampon.
 // Renvoie un message à afficher, ou null si rien à signaler.
+// ============================================
+//  TAMPON FIDELITE
+// ============================================
+//  ⚠️ Depuis le SQL NF525, la fonction enregistrer_vente gère
+//  automatiquement nb_visites, derniere_visite, points et total_points_gagnes
+//  quand p_client_id est fourni.
+//
+//  Cette fonction sert UNIQUEMENT à :
+//  - Afficher le toast informatif au caissier
+//  - Gérer le cas "plat offert utilisé" (reset des points)
+//  - Gérer les cas spéciaux (montant min, anti-doublon visuel)
 async function appliquerTampon(totalVente) {
   if (!clientFid) return null;
 
-  // CAS RÉCOMPENSE : le client a utilisé son plat offert → remise à 0
+  // CAS RÉCOMPENSE : le client a utilisé son plat offert → reset à 0
+  // Comme la fonction SQL ajoute +1 point automatiquement, on doit RE-resetter à 0 ici
   if (platOffertApplique) {
     try {
       const { error } = await sb.from('clients').update({
-        points: 0,
-        nb_visites: (clientFid.nb_visites || 0) + 1,
-        derniere_visite: ymdAujourdhui()
+        points: 0
       }).eq('id', clientFid.id);
       if (error) throw error;
       return { titre: '🎁 Plat offert utilisé', sous: `${clientFid.nom} : carte repartie à 0/10` };
@@ -2827,36 +2838,29 @@ async function appliquerTampon(totalVente) {
 
   // Condition minimum de commande
   if (totalVente < MIN_TAMPON) {
+    // ⚠️ La fonction SQL a déjà ajouté +1 point. On doit le RETIRER puisque la commande est trop petite
+    try {
+      const newPoints = Math.max(0, (clientFid.points || 0));
+      const newVisites = Math.max(0, (clientFid.nb_visites || 0));
+      const newTotal = Math.max(0, (clientFid.total_points_gagnes || 0));
+      await sb.from('clients').update({
+        points: newPoints,
+        nb_visites: newVisites,
+        total_points_gagnes: newTotal
+      }).eq('id', clientFid.id);
+    } catch (e) { /* silencieux */ }
     return { titre: 'Vente enregistrée', sous: `${clientFid.nom} : pas de tampon (min. ${fmt(MIN_TAMPON)})` };
   }
 
-  // Anti-doublon : 1 tampon par jour max
-  const aujourdhui = ymdAujourdhui();
-  if (clientFid.derniere_visite === aujourdhui) {
-    return { titre: 'Vente enregistrée', sous: `${clientFid.nom} : tampon déjà ajouté aujourd'hui` };
+  // ✅ Cas normal : le SQL a déjà fait l'incrément
+  // On affiche juste le toast de confirmation au caissier
+  const nouveauxPoints = ((clientFid.points || 0) + 1) > 10 ? 1 : ((clientFid.points || 0) + 1);
+  const recompense = (nouveauxPoints === OBJECTIF_FID);
+
+  if (recompense) {
+    return { titre: '🎉 Plat offert débloqué !', sous: `${clientFid.nom} a atteint 10 tampons` };
   }
-
-  // Calcul du nouveau total de points (même logique que le scanner)
-  let points = (clientFid.points || 0) + 1;
-  if (points > OBJECTIF_FID) points = 1;
-  const recompense = (points === OBJECTIF_FID);
-
-  try {
-    const { error } = await sb.from('clients').update({
-      points,
-      total_points_gagnes: (clientFid.total_points_gagnes || 0) + 1,
-      nb_visites: (clientFid.nb_visites || 0) + 1,
-      derniere_visite: aujourdhui
-    }).eq('id', clientFid.id);
-    if (error) throw error;
-
-    if (recompense) {
-      return { titre: '🎉 Plat offert débloqué !', sous: `${clientFid.nom} a atteint 10 tampons` };
-    }
-    return { titre: 'Vente enregistrée', sous: `${clientFid.nom} : +1 tampon (${points}/10)` };
-  } catch (e) {
-    return { titre: 'Vente enregistrée', sous: 'Tampon non ajouté : ' + e.message };
-  }
+  return { titre: 'Vente enregistrée', sous: `${clientFid.nom} : +1 tampon (${nouveauxPoints}/10)` };
 }
 
 // ============================================
