@@ -2241,7 +2241,56 @@ html, body {
 }
 .cd-btn:active { transform: scale(0.97); }
 
-/* ===== CARTE HISTORIQUE SMS (sur la page Clients) ===== */
+/* ===== CARTE EXPORT FEC ===== */
+.fec-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(168,225,12,0.06) 0%, rgba(168,225,12,0.02) 100%);
+  border: 1px solid rgba(168,225,12,0.25);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.fec-card:active { transform: scale(0.98); }
+.fec-card:hover { border-color: rgba(168,225,12,0.45); }
+.fec-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--lime, #A8E10C), #82B509);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(168,225,12,0.2);
+}
+.fec-content {
+  flex: 1;
+  min-width: 0;
+}
+.fec-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #F5EDE2);
+  margin-bottom: 3px;
+}
+.fec-desc {
+  font-size: 11.5px;
+  color: var(--text-mute, #8B7E6F);
+  line-height: 1.4;
+}
+.fec-arrow {
+  width: 18px;
+  height: 18px;
+  color: var(--text-mute);
+  flex-shrink: 0;
+}
+
+
 .sms-history-card {
   display: flex;
   align-items: center;
@@ -3661,6 +3710,24 @@ html, body {
           </div>
         </div>
 
+        <!-- ============================================================
+             CONFORMITÉ FISCALE — Export FEC (NF525 / NF Z 42-013)
+             ============================================================ -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Conformité fiscale</h3>
+            <span class="section-link" style="color: var(--lime, #A8E10C);">🛡️ NF525</span>
+          </div>
+          <div class="fec-card" onclick="ouvrirExportFEC()">
+            <div class="fec-icon">📦</div>
+            <div class="fec-content">
+              <div class="fec-title">Export FEC</div>
+              <div class="fec-desc">Fichier des Écritures Comptables (norme NF Z 42-013) à fournir en cas de contrôle fiscal</div>
+            </div>
+            <svg class="fec-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
         <!-- 4. TRÉSORERIE -->
         <div class="section">
           <div class="section-head">
@@ -3952,6 +4019,102 @@ html, body {
 
             <button class="prod-delete-btn" onclick="supprimerClient()">🗑️ Supprimer ce client</button>
           </div>
+        </div>
+      </div>
+
+      <!-- ====== MODALE EXPORT FEC (conformité fiscale) ====== -->
+      <div class="clients-modal" id="fec-modal">
+        <div class="charges-head">
+          <button class="prod-back" onclick="fermerExportFEC()" title="Retour">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <h2>Export FEC</h2>
+          <div style="width:38px;"></div>
+        </div>
+
+        <div class="charges-body">
+          <!-- Hero info -->
+          <div class="create-client-hero" style="background:linear-gradient(180deg, rgba(168,225,12,0.10) 0%, transparent 100%); padding:20px 14px 16px;">
+            <div class="create-client-hero-icon">📦</div>
+            <div class="create-client-hero-title">Fichier des Écritures Comptables</div>
+            <div class="create-client-hero-sub">Norme NF Z 42-013 · Conformité NF525</div>
+          </div>
+
+          <!-- Étape 1 : période -->
+          <div class="oc-section">
+            <div class="oc-label">1️⃣  Période à exporter</div>
+            <div class="oc-presets">
+              <button class="oc-preset-btn active" data-periode="mois-courant" onclick="choisirPeriodeFEC(this)">
+                <span class="oc-preset-emoji">📅</span>
+                <span class="oc-preset-txt">Mois courant</span>
+              </button>
+              <button class="oc-preset-btn" data-periode="mois-precedent" onclick="choisirPeriodeFEC(this)">
+                <span class="oc-preset-emoji">⬅️</span>
+                <span class="oc-preset-txt">Mois précédent</span>
+              </button>
+              <button class="oc-preset-btn" data-periode="annee-courante" onclick="choisirPeriodeFEC(this)">
+                <span class="oc-preset-emoji">🗓️</span>
+                <span class="oc-preset-txt">Année en cours</span>
+              </button>
+              <button class="oc-preset-btn" data-periode="custom" onclick="choisirPeriodeFEC(this)">
+                <span class="oc-preset-emoji">🎯</span>
+                <span class="oc-preset-txt">Personnalisée</span>
+              </button>
+            </div>
+
+            <!-- Dates personnalisées (cachées par défaut) -->
+            <div id="fec-custom-dates" style="display:none; margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div class="field-premium">
+                <input type="date" id="fec-date-debut" placeholder=" ">
+                <label for="fec-date-debut">Du</label>
+              </div>
+              <div class="field-premium">
+                <input type="date" id="fec-date-fin" placeholder=" ">
+                <label for="fec-date-fin">Au</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Étape 2 : TVA -->
+          <div class="oc-section">
+            <div class="oc-label">2️⃣  Taux de TVA appliqué</div>
+            <div class="oc-presets">
+              <button class="oc-preset-btn" data-tva="5.5" onclick="choisirTauxFEC(this)">
+                <span class="oc-preset-emoji">🥡</span>
+                <span class="oc-preset-txt">5,5% — Emporter</span>
+              </button>
+              <button class="oc-preset-btn active" data-tva="10" onclick="choisirTauxFEC(this)">
+                <span class="oc-preset-emoji">🍽️</span>
+                <span class="oc-preset-txt">10% — Sur place</span>
+              </button>
+              <button class="oc-preset-btn" data-tva="20" onclick="choisirTauxFEC(this)">
+                <span class="oc-preset-emoji">🍻</span>
+                <span class="oc-preset-txt">20% — Alcools</span>
+              </button>
+            </div>
+            <p class="oc-help" style="margin-top:10px;">⚠️ <strong>Demande à ton expert-comptable</strong> quel taux appliquer pour ton activité. Tu peux changer après.</p>
+          </div>
+
+          <!-- Récap -->
+          <div class="oc-section">
+            <div class="oc-label">👀  Récapitulatif</div>
+            <div class="oc-apercu" id="fec-recap" style="background:linear-gradient(135deg, rgba(168,225,12,0.06), rgba(168,225,12,0.02)); border-color:rgba(168,225,12,0.25);">
+              <div class="oc-apercu-label">📦 Le fichier contiendra</div>
+              <div id="fec-recap-content" style="font-size:13px; color:var(--text); line-height:1.7;">
+                Période : <strong id="fec-recap-periode">Mois courant</strong><br>
+                TVA appliquée : <strong id="fec-recap-tva">10%</strong><br>
+                Format : <strong>Fichier .txt normalisé NF Z 42-013</strong>
+              </div>
+              <div class="oc-apercu-hint">💡 Le fichier sera téléchargé sur ton appareil. À conserver 6 ans.</div>
+            </div>
+          </div>
+
+          <!-- Bouton génération -->
+          <button class="prod-save" onclick="genererFEC()" id="btn-generer-fec" style="width:100%; padding:16px; font-size:14px; height:auto; border-radius:14px; background:linear-gradient(135deg, var(--lime, #A8E10C), #82B509); color:#000;">
+            📥 Générer et télécharger le FEC
+          </button>
+
+          <div style="height:30px;"></div>
         </div>
       </div>
 
@@ -5885,8 +6048,171 @@ async function chargerToggles() {
 }
 
 // ============================================================
-//  HISTORIQUE SMS
+//  EXPORT FEC (conformité fiscale)
 // ============================================================
+let fecPeriode = 'mois-courant';
+let fecTauxTVA = 10;
+
+function ouvrirExportFEC() {
+  document.getElementById('fec-modal').classList.add('show');
+  // Reset par défaut
+  fecPeriode = 'mois-courant';
+  fecTauxTVA = 10;
+  document.querySelectorAll('#fec-modal .oc-preset-btn[data-periode]').forEach(b => 
+    b.classList.toggle('active', b.dataset.periode === 'mois-courant'));
+  document.querySelectorAll('#fec-modal .oc-preset-btn[data-tva]').forEach(b => 
+    b.classList.toggle('active', b.dataset.tva === '10'));
+  document.getElementById('fec-custom-dates').style.display = 'none';
+  rafraichirRecapFEC();
+}
+
+function fermerExportFEC() {
+  document.getElementById('fec-modal').classList.remove('show');
+}
+
+function choisirPeriodeFEC(btn) {
+  document.querySelectorAll('#fec-modal .oc-preset-btn[data-periode]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  fecPeriode = btn.dataset.periode;
+  document.getElementById('fec-custom-dates').style.display = (fecPeriode === 'custom') ? 'grid' : 'none';
+  
+  // Pré-remplir les dates si custom
+  if (fecPeriode === 'custom') {
+    const now = new Date();
+    const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    const inputDebut = document.getElementById('fec-date-debut');
+    const inputFin = document.getElementById('fec-date-fin');
+    if (!inputDebut.value) inputDebut.value = debutMois;
+    if (!inputFin.value) inputFin.value = finMois;
+  }
+  
+  rafraichirRecapFEC();
+}
+
+function choisirTauxFEC(btn) {
+  document.querySelectorAll('#fec-modal .oc-preset-btn[data-tva]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  fecTauxTVA = parseFloat(btn.dataset.tva);
+  rafraichirRecapFEC();
+}
+
+function calculerDatesFEC() {
+  const now = new Date();
+  let debut, fin;
+  
+  switch (fecPeriode) {
+    case 'mois-courant':
+      debut = new Date(now.getFullYear(), now.getMonth(), 1);
+      fin = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      break;
+    case 'mois-precedent':
+      debut = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      fin = new Date(now.getFullYear(), now.getMonth(), 0);
+      break;
+    case 'annee-courante':
+      debut = new Date(now.getFullYear(), 0, 1);
+      fin = new Date(now.getFullYear(), 11, 31);
+      break;
+    case 'custom':
+      debut = new Date(document.getElementById('fec-date-debut').value || now);
+      fin = new Date(document.getElementById('fec-date-fin').value || now);
+      break;
+  }
+  
+  return {
+    debut: debut.toISOString().slice(0, 10),
+    fin: fin.toISOString().slice(0, 10)
+  };
+}
+
+function rafraichirRecapFEC() {
+  const dates = calculerDatesFEC();
+  const periodeLabels = {
+    'mois-courant': 'Mois courant',
+    'mois-precedent': 'Mois précédent',
+    'annee-courante': 'Année en cours',
+    'custom': 'Personnalisée'
+  };
+  document.getElementById('fec-recap-periode').textContent = 
+    periodeLabels[fecPeriode] + ' (' + dates.debut + ' → ' + dates.fin + ')';
+  document.getElementById('fec-recap-tva').textContent = fecTauxTVA + '%';
+}
+
+async function genererFEC() {
+  const dates = calculerDatesFEC();
+  const btn = document.getElementById('btn-generer-fec');
+  const texteInitial = btn.innerHTML;
+  btn.innerHTML = '⏳ Génération en cours…';
+  btn.disabled = true;
+  
+  try {
+    // Appel de la fonction SQL
+    const { data, error } = await sbClient.rpc('generer_fec', {
+      p_restaurant_id: RESTO_ID,
+      p_date_debut: dates.debut,
+      p_date_fin: dates.fin,
+      p_taux_tva: fecTauxTVA
+    });
+    
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Aucune donnée à exporter');
+    
+    // Compter le nombre de lignes (en-tête + écritures)
+    const nbLignes = data.split('\n').filter(l => l.trim()).length - 1; // -1 pour l'en-tête
+    
+    if (nbLignes <= 0) {
+      btn.innerHTML = texteInitial;
+      btn.disabled = false;
+      alert('Aucune vente trouvée pour cette période.\n\nVérifie que tu as bien des ventes entre ' + dates.debut + ' et ' + dates.fin + '.');
+      return;
+    }
+    
+    // Génération du fichier .txt
+    const nomFichier = 'FEC_' + RESTO_ID.toUpperCase() + '_' + dates.debut.replace(/-/g, '') + '_' + dates.fin.replace(/-/g, '') + '.txt';
+    
+    // Téléchargement
+    const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomFichier;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    btn.innerHTML = '✅ Téléchargé !';
+    setTimeout(() => {
+      btn.innerHTML = texteInitial;
+      btn.disabled = false;
+    }, 2500);
+    
+    // Toast confirmation
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:var(--lime,#A8E10C); color:var(--bg-deep,#0a0908); padding:14px 22px; border-radius:999px; font-weight:700; font-size:13px; z-index:99999; box-shadow:0 8px 24px rgba(168,225,12,0.3);';
+    toast.textContent = '✅ FEC généré (' + nbLignes + ' écritures)';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+    
+  } catch (e) {
+    btn.innerHTML = '❌ Erreur';
+    setTimeout(() => {
+      btn.innerHTML = texteInitial;
+      btn.disabled = false;
+    }, 2500);
+    alert('Erreur génération FEC : ' + e.message);
+  }
+}
+
+// Permettre de modifier les dates custom et rafraîchir le récap
+document.addEventListener('DOMContentLoaded', () => {
+  const inputDebut = document.getElementById('fec-date-debut');
+  const inputFin = document.getElementById('fec-date-fin');
+  if (inputDebut) inputDebut.addEventListener('change', rafraichirRecapFEC);
+  if (inputFin) inputFin.addEventListener('change', rafraichirRecapFEC);
+});
+
 let smsHistoryCache = [];
 let smsHistoryFiltre = 'all';
 
