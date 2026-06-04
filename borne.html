@@ -996,7 +996,9 @@ async function onScanSuccess(decodedText) {
   await arreterScanner();
   // Le QR code contient l'ID du client (UUID) ou un lien
   let clientId = decodedText.trim();
-
+  // Format Gin Khao : "GINKHAO:UUID"
+  const matchGinKhao = clientId.match(/^GINKHAO:([0-9a-f-]{36})$/i);
+  if (matchGinKhao) clientId = matchGinKhao[1];
   // Extraire l'UUID si c'est une URL (ex: https://gin-khao.com/?c=UUID)
   const matchUrl = clientId.match(/[?&]c=([0-9a-f-]{36})/i);
   if (matchUrl) clientId = matchUrl[1];
@@ -1159,7 +1161,6 @@ async function imprimerTicketCuisine(venteId, numero, lignes) {
     console.error('Impression échouée (non bloquant) :', e);
   }
 }
-
 init();
 </script>
 </body>
