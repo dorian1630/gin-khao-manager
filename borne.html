@@ -49,53 +49,47 @@ body {
 .ecran.actif { display: flex; animation: fadeIn 0.35s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* ===== ÉCRAN ACCUEIL ===== */
+/* ===== ÉCRAN ACCUEIL — Image plein écran ===== */
 #ecran-accueil {
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;  /* Bouton en bas */
   text-align: center;
   cursor: pointer;
-  background:
-    radial-gradient(circle at 50% 35%, rgba(230,57,70,0.14), transparent 55%),
-    radial-gradient(circle at 50% 90%, rgba(228,184,96,0.10), transparent 50%),
-    var(--bg-deep);
+  background-image:
+    linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.5) 90%, rgba(0,0,0,0.8) 100%),
+    url('https://res.cloudinary.com/dci5mreqo/image/upload/v1780537853/ChatGPT_Image_4_juin_2026_03_50_05_xilbec.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   overflow: hidden;
+  padding-bottom: 120px;
 }
-.accueil-mark {
-  font-family: var(--display);
-  font-size: 16px;
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  color: var(--gold);
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-.accueil-logo {
-  font-family: var(--display);
-  font-size: clamp(64px, 14vw, 130px);
-  font-weight: 500;
-  line-height: 0.95;
-  letter-spacing: -0.02em;
-}
-.accueil-logo span { color: var(--sriracha); }
-.accueil-sub { font-size: 18px; color: var(--text-mute); margin-top: 18px; letter-spacing: 0.05em; }
 .accueil-cta {
-  margin-top: 70px;
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  padding: 22px 44px;
-  border: 2px solid var(--gold);
+  padding: 28px 60px;
+  border: 3px solid var(--gold);
   border-radius: 999px;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--gold);
+  background: rgba(10, 9, 8, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   animation: pulse 2.2s ease-in-out infinite;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.02em;
 }
 @keyframes pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(228,184,96,0.3); }
-  50% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(228,184,96,0); }
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 0 rgba(228,184,96,0.4); }
+  50% { transform: scale(1.04); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 24px rgba(228,184,96,0); }
+}
+/* On cache les éléments accueil-mark, accueil-logo, accueil-sub, accueil-bowl */
+.accueil-mark, .accueil-logo, .accueil-sub, .accueil-bowl {
+  display: none;
 }
 .accueil-bowl {
   font-size: clamp(80px, 18vw, 180px);
@@ -184,7 +178,7 @@ body {
   background: linear-gradient(160deg, var(--surface-2), var(--surface));
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 22px 18px;
+  padding: 22px 18px 18px;
   cursor: pointer;
   transition: all 0.18s;
   display: flex;
@@ -195,22 +189,60 @@ body {
 .plat-card:active { transform: scale(0.97); }
 .plat-card:hover { border-color: var(--gold-soft); }
 .plat-card.rupture { opacity: 0.4; pointer-events: none; }
-.plat-emoji { font-size: 50px; margin-bottom: 12px; }
-.plat-nom { font-size: 18px; font-weight: 700; line-height: 1.2; }
-.plat-bas { margin-top: auto; padding-top: 14px; display: flex; align-items: center; justify-content: space-between; }
-.plat-prix { font-family: var(--display); font-size: 24px; font-weight: 500; color: var(--gold); }
+.plat-emoji {
+  font-size: 50px;
+  margin-bottom: 14px;
+  line-height: 1;
+}
+.plat-nom {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  min-height: 40px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.plat-bas {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.plat-prix {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--gold);
+  white-space: nowrap;
+}
 .plat-plus {
-  width: 44px; height: 44px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--sriracha);
   color: #fff;
-  font-size: 26px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25);
 }
 .plat-rupture-badge {
-  position: absolute; top: 12px; right: 12px;
-  background: var(--text-dim); color: var(--bg-deep);
-  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--text-dim);
+  color: var(--bg-deep);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
   text-transform: uppercase;
 }
 
@@ -996,9 +1028,11 @@ async function onScanSuccess(decodedText) {
   await arreterScanner();
   // Le QR code contient l'ID du client (UUID) ou un lien
   let clientId = decodedText.trim();
-  // Format Gin Khao : "GINKHAO:UUID"
+
+  // ✨ Format Gin Khao : "GINKHAO:UUID"
   const matchGinKhao = clientId.match(/^GINKHAO:([0-9a-f-]{36})$/i);
   if (matchGinKhao) clientId = matchGinKhao[1];
+
   // Extraire l'UUID si c'est une URL (ex: https://gin-khao.com/?c=UUID)
   const matchUrl = clientId.match(/[?&]c=([0-9a-f-]{36})/i);
   if (matchUrl) clientId = matchUrl[1];
@@ -1161,6 +1195,7 @@ async function imprimerTicketCuisine(venteId, numero, lignes) {
     console.error('Impression échouée (non bloquant) :', e);
   }
 }
+
 init();
 </script>
 </body>
