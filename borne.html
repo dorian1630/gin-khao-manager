@@ -1836,13 +1836,27 @@ async function imprimerTicketBorneRawBT(numero, methode, lignes) {
   try {
     // Construire le contenu ESC/POS du ticket
     const escpos = genererTicketBorneEscPos(numero, methode, lignes);
-    // Encoder en base64
+    // Encoder en base64 (compatible URL)
     const base64 = btoa(escpos);
-    // Construire l'intent RawBT
-    // Format : rawbt:base64data
-    const url = 'rawbt:' + base64;
-    // Lancer l'intent
-    window.location.href = url;
+    // URL-encode pour utilisation dans une intent URL
+    const base64Url = encodeURIComponent(base64);
+
+    // Format intent:// pour compatibilité Kiosk Browser et autres navigateurs Android
+    // L'intent fonctionne en background sans quitter la page
+    const intentUrl = 'intent:base64,' + base64 + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end';
+
+    // Utiliser un iframe caché pour ne pas naviguer (évite le ERR_UNKNOWN_URL_SCHEME visible)
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = intentUrl;
+    document.body.appendChild(iframe);
+
+    // Nettoyer l'iframe après 2 secondes
+    setTimeout(() => {
+      if (iframe && iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
+    }, 2000);
   } catch (e) {
     console.error('Erreur impression RawBT:', e);
   }
