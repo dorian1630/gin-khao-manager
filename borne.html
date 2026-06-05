@@ -1469,8 +1469,11 @@ async function payer(methode) {
     const numero = data.numero ?? '?';
     const venteId = data.vente_id;
 
-    // 🧾 Impression auto du ticket cuisine (fire-and-forget)
-    imprimerTicketCuisine(venteId, numero, lignes).catch(e => console.error('Impression KO:', e));
+    // 🧾 Impression cuisine UNIQUEMENT si payé maintenant (carte)
+    // Si paiement au comptoir → la cuisine n'imprime QUE quand le caissier encaisse
+    if (methode === 'carte') {
+      imprimerTicketCuisine(venteId, numero, lignes).catch(e => console.error('Impression KO:', e));
+    }
 
     afficherConfirmation(numero, methode);
   } catch (e) {
