@@ -1601,7 +1601,57 @@ function onScanError(err) { /* silent : on ignore les "no qr code found" */ }
 
 async function onScanSuccess(decodedText) {
   await arreterScanner();
-  // Le QR code contient l'ID du client (UUID) ou un lien
+  await traiterScanFidelite(decodedText);
+}
+
+// ============================================================
+//  🔫 SCANNER PHYSIQUE INTÉGRÉ (mode HID/Clavier)
+// ============================================================
+// Détecte automatiquement les scans rapides depuis un scanner physique
+// qui tape le contenu comme un clavier (mode HID).
+// Le scan typique : "GINKHAO:UUID" + Entrée, tapé en < 100ms
+// ============================================================
+
+let scanBuffer = '';
+let scanLastKeyTime = 0;
+const SCAN_TIMEOUT_MS = 50; // Délai max entre 2 touches pour considérer que c'est un scan
+
+document.addEventListener('keydown', function(e) {
+  const now = Date.now();
+  const isScanFast = (now - scanLastKeyTime) < SCAN_TIMEOUT_MS;
+
+  // Si trop lent depuis la dernière touche, on reset (c'est de la frappe humaine)
+  if (!isScanFast && scanBuffer.length > 0) {
+    scanBuffer = '';
+  }
+
+  // Touche Entrée = fin du scan
+  if (e.key === 'Enter') {
+    if (scanBuffer.length >= 8) {  // Minimum sensé pour un QR
+      const scanned = scanBuffer;
+      scanBuffer = '';
+      // Si ça ressemble à un QR fidélité, on traite
+      if (/^GINKHAO:|^[0-9a-f]{8}-[0-9a-f]{4}/i.test(scanned)) {
+        e.preventDefault();
+        traiterScanFidelite(scanned);
+      }
+    } else {
+      scanBuffer = '';
+    }
+    return;
+  }
+
+  // Caractères imprimables seulement
+  if (e.key.length === 1) {
+    scanBuffer += e.key;
+    scanLastKeyTime = now;
+  }
+});
+
+// ============================================================
+//  Traitement du scan (commun caméra + scanner physique)
+// ============================================================
+async function traiterScanFidelite(decodedText) {
   let clientId = decodedText.trim();
 
   // ✨ Format Gin Khao : "GINKHAO:UUID"
@@ -1614,8 +1664,8 @@ async function onScanSuccess(decodedText) {
 
   // Vérifier que c'est bien un UUID
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)) {
-    alert('QR code non reconnu. Veuillez réessayer avec votre carte fidélité Gin Khao.');
-    allerEcran('ecran-panier');
+    // Si le scan n'est pas un UUID valide, ne RIEN faire (silencieux)
+    // Évite d'afficher des erreurs intempestives quand on tape au clavier
     return;
   }
 
@@ -1628,16 +1678,45 @@ async function onScanSuccess(decodedText) {
       .single();
     if (error || !data) {
       alert('Client introuvable. Veuillez réessayer ou demander de l\'aide au comptoir.');
-      allerEcran('ecran-panier');
       return;
     }
     clientFid = data;
     afficherFidelite();
-    allerEcran('ecran-panier');
+    // Si on n'est pas déjà sur le panier, on n'y va pas (pour ne pas perturber)
+    if (document.getElementById('ecran-panier').classList.contains('actif')) {
+      // déjà au panier, on reste
+    } else if (document.getElementById('ecran-scanner-fid').classList.contains('actif')) {
+      // depuis le scanner caméra, on retourne au panier
+      allerEcran('ecran-panier');
+    }
+    // Sinon (depuis menu, accueil-cats), on reste sur la page actuelle
+    // et un toast/bandeau affichera "Bienvenue [nom]"
+
+    // Toast/feedback visuel
+    afficherToastFidelite(data.nom);
   } catch (e) {
     alert('Erreur : ' + e.message);
-    allerEcran('ecran-panier');
   }
+}
+
+function afficherToastFidelite(nom) {
+  // Petit toast en bas pour confirmer l'identification
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg, var(--gold), var(--gold-soft));
+    color:var(--bg-deep); padding:18px 32px; border-radius:999px;
+    font-size:18px; font-weight:700; z-index:9999;
+    box-shadow:0 10px 40px rgba(0,0,0,0.5);
+    animation: toastIn 0.3s ease;
+  `;
+  toast.textContent = '👋 Bienvenue ' + nom;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.transition = 'opacity 0.3s';
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
 }
 
 function afficherFidelite() {
