@@ -2012,30 +2012,110 @@ function afficherListePaiementsAttente() {
   zone.innerHTML = html;
 }
 
+// ID de la vente borne en cours d'encaissement (pour link la finalisation)
+let venteBorneEnCours = null;
+
 async function encaisserBorne(venteId, total) {
-  if (!confirm(`Encaisser la commande de ${total.toFixed(2).replace('.', ',')} € ?`)) return;
-
+  // On charge la commande borne dans le ticket actuel pour que le caissier encaisse normalement
   try {
-    // Marquer la vente comme validée
-    const { error } = await sb
-      .from('ventes')
-      .update({ statut: 'validé' })
-      .eq('id', venteId);
+    // Trouver la commande dans la liste
+    const venteBorne = paiementsBorneAttente.find(v => v.id === venteId);
+    if (!venteBorne) {
+      alert('Commande non trouvée');
+      return;
+    }
 
-    if (error) throw error;
+    // Si le ticket actuel n'est pas vide, demander confirmation
+    if (ticket.length > 0) {
+      if (!confirm('Le ticket actuel sera remplacé par la commande borne. Continuer ?')) return;
+    }
 
-    // TODO : déclencher impression cuisine
-    // Pour l'instant, on rafraîchit juste
-    await chargerPaiementsBorneAttente();
+    // Vider le ticket actuel
+    ticket = [];
+    clientFid = null;
+    remise = null;
+    platOffertApplique = false;
 
-    // Toast de succès
+    // Reset le mode paiement (le caissier va choisir)
+    modePaiement = 'especes';
+
+    // Charger les plats de la borne dans le ticket
+    for (const ligne of venteBorne.lignes) {
+      // Trouver le produit complet dans la liste
+      const produit = produits.find(p => p.id === ligne.produit_id) ||
+                      produits.find(p => p.nom === ligne.nom_produit);
+      if (produit) {
+        const dansLeTicket = ticket.find(l => l.produit_id === produit.id);
+        if (dansLeTicket) {
+          dansLeTicket.quantite += ligne.quantite;
+        } else {
+          ticket.push({
+            produit_id: produit.id,
+            nom: produit.nom,
+            prix: parseFloat(ligne.prix_unitaire),
+            quantite: ligne.quantite,
+            stock_actif: produit.stock_actif,
+            stock: produit.stock,
+            categorie_id: produit.categorie_id
+          });
+        }
+      } else {
+        // Produit non trouvé (peut-être supprimé) → on ajoute quand même avec produit_id fictif
+        ticket.push({
+          produit_id: ligne.produit_id,
+          nom: ligne.nom_produit,
+          prix: parseFloat(ligne.prix_unitaire),
+          quantite: ligne.quantite,
+          stock_actif: false,
+          stock: 0,
+          categorie_id: null
+        });
+      }
+    }
+
+    // Charger le canal (sur_place / emporter)
+    canalVente = venteBorne.mode_service || 'sur_place';
+    if (typeof choisirCanal === 'function') {
+      // Mettre à jour l'UI du canal
+      document.querySelectorAll('[data-canal]').forEach(el => {
+        el.classList.toggle('active', el.dataset.canal === canalVente);
+      });
+    }
+
+    // Charger le client si fidélité
+    if (venteBorne.client_id) {
+      const { data: client } = await sb
+        .from('clients')
+        .select('*')
+        .eq('id', venteBorne.client_id)
+        .single();
+      if (client) {
+        clientFid = client;
+      }
+    }
+
+    // Mémoriser la vente borne pour la finaliser au lieu d'en créer une nouvelle
+    venteBorneEnCours = venteId;
+
+    // Afficher l'état dans le ticket avec une mention "Commande borne #X"
+    document.getElementById('ticket-num').innerHTML =
+      `🍜 Commande borne <b style="color:var(--gold)">#${venteBorne.numero}</b>`;
+
+    afficherTicket();
+    if (typeof majFidelite === 'function') majFidelite();
+
+    // Fermer la modale
+    fermerPaiementsAttente();
+
+    // Toast informatif
     const toast = document.getElementById('toast');
-    document.getElementById('toast-title').textContent = '✓ Commande encaissée';
-    document.getElementById('toast-sub').textContent = `${total.toFixed(2).replace('.', ',')} €`;
+    document.getElementById('toast-title').textContent = '🍜 Commande borne chargée';
+    document.getElementById('toast-sub').textContent = `Cliquez sur Encaisser pour valider`;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 
   } catch (e) {
+    console.error('Erreur:', e);
     alert('Erreur : ' + e.message);
   }
 }
@@ -2644,15 +2724,62 @@ async function validerVente() {
     let canalPourBase = canalVente;
     if (canalVente === 'cc_enligne' || canalVente === 'cc_comptoir') canalPourBase = 'click_collect';
 
-    const { data, error } = await sb.rpc('enregistrer_vente', {
-      p_restaurant_id: RESTO_ID,
-      p_mode_paiement: modePaiement,
-      p_lignes: lignes,
-      p_canal: canalPourBase,
-      p_taux_commission: CANAUX_COMMISSION.includes(canalVente) ? tauxCommission : null,
-      p_client_id: clientFid ? clientFid.id : null   // ✨ NOUVEAU : on envoie l'ID du client attaché
-    });
-    if (error) throw error;
+    let data;
+
+    // ✨ NOUVEAU : Si on encaisse une vente borne en attente, on la finalise au lieu d'en créer une nouvelle
+    if (venteBorneEnCours) {
+      // Update du mode_paiement et passage en validé
+      const { data: venteMaj, error: errUpdate } = await sb
+        .from('ventes')
+        .update({
+          mode_paiement: modePaiement,
+          statut: 'validé'
+        })
+        .eq('id', venteBorneEnCours)
+        .select('numero, total')
+        .single();
+
+      if (errUpdate) throw errUpdate;
+
+      data = {
+        vente_id: venteBorneEnCours,
+        numero: venteMaj.numero,
+        total: venteMaj.total
+      };
+
+      // 🧾 Déclencher l'impression cuisine maintenant (vente validée)
+      try {
+        await fetch('/.netlify/functions/imprimer-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vente_id: venteBorneEnCours,
+            numero: venteMaj.numero,
+            mode_service: canalVente,
+            origine: 'borne',
+            lignes: lignes
+          })
+        });
+      } catch (e) {
+        console.error('Impression KO:', e);
+      }
+
+      // Reset la variable
+      venteBorneEnCours = null;
+
+    } else {
+      // Cas normal : nouvelle vente caisse
+      const { data: dataRpc, error } = await sb.rpc('enregistrer_vente', {
+        p_restaurant_id: RESTO_ID,
+        p_mode_paiement: modePaiement,
+        p_lignes: lignes,
+        p_canal: canalPourBase,
+        p_taux_commission: CANAUX_COMMISSION.includes(canalVente) ? tauxCommission : null,
+        p_client_id: clientFid ? clientFid.id : null
+      });
+      if (error) throw error;
+      data = dataRpc;
+    }
 
     // Succès — la vente est enregistrée
     const numero = data?.numero ?? '?';
@@ -2688,6 +2815,7 @@ async function validerVente() {
     clientFid = null;
     platOffertApplique = false;
     remise = null;
+    venteBorneEnCours = null;
     afficherClientFid();
     afficherTicket();
     await chargerMenu(); // recharge le stock à jour
