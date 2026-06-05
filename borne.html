@@ -1475,6 +1475,10 @@ async function payer(methode) {
       imprimerTicketCuisine(venteId, numero, lignes).catch(e => console.error('Impression KO:', e));
     }
 
+    // 🖨️ Impression du ticket BORNE client (numéro géant) via RawBT
+    // → Sortir le ticket que le client récupère devant la borne
+    imprimerTicketBorneRawBT(numero, methode, lignes).catch(e => console.error('RawBT KO:', e));
+
     afficherConfirmation(numero, methode);
   } catch (e) {
     alert('Erreur lors de l\'envoi : ' + e.message);
@@ -1821,6 +1825,142 @@ function annulerPaiementSumUp() {
 // ============================================================
 //  🧾 IMPRESSION TICKET CUISINE (auto)
 // ============================================================
+// ============================================================
+//  🖨️ IMPRESSION RawBT — Ticket borne client (numéro géant)
+// ============================================================
+// RawBT est une app Android (ru.a402d.rawbtprinter) qui reçoit
+// des commandes ESC/POS en base64 via intent et les imprime
+// sur l'imprimante USB connectée.
+// ============================================================
+async function imprimerTicketBorneRawBT(numero, methode, lignes) {
+  try {
+    // Construire le contenu ESC/POS du ticket
+    const escpos = genererTicketBorneEscPos(numero, methode, lignes);
+    // Encoder en base64
+    const base64 = btoa(escpos);
+    // Construire l'intent RawBT
+    // Format : rawbt:base64data
+    const url = 'rawbt:' + base64;
+    // Lancer l'intent
+    window.location.href = url;
+  } catch (e) {
+    console.error('Erreur impression RawBT:', e);
+  }
+}
+
+function genererTicketBorneEscPos(numero, methode, lignes) {
+  const ESC = '\x1B';
+  const GS = '\x1D';
+  const LF = '\x0A';
+  let s = '';
+
+  // Init imprimante
+  s += ESC + '@';
+
+  // Logo / en-tête (gros, centré, gras)
+  s += ESC + 'a' + '\x01';      // Centré
+  s += GS + '!' + '\x11';        // Double hauteur + largeur
+  s += ESC + 'E' + '\x01';       // Gras
+  s += 'Gin Khao' + LF;
+  s += ESC + 'E' + '\x00';       // Gras off
+  s += GS + '!' + '\x00';        // Taille normale
+  s += 'Street Food Thai' + LF;
+  s += LF;
+
+  // Mode service
+  const modeLabel = modeService === 'sur_place' ? 'SUR PLACE' : 'A EMPORTER';
+  s += ESC + 'E' + '\x01';
+  s += '[' + modeLabel + ']' + LF;
+  s += ESC + 'E' + '\x00';
+  s += LF;
+
+  // Séparateur
+  s += '========================================' + LF;
+  s += LF;
+
+  // Numéro de commande GÉANT
+  s += 'VOTRE NUMERO' + LF;
+  s += LF;
+  s += GS + '!' + '\x77';        // TAILLE GÉANTE (8x8)
+  s += ESC + 'E' + '\x01';
+  s += '#' + numero + LF;
+  s += ESC + 'E' + '\x00';
+  s += GS + '!' + '\x00';        // Taille normale
+
+  // Séparateur
+  s += LF;
+  s += '========================================' + LF;
+  s += LF;
+
+  // Détail commande
+  s += ESC + 'a' + '\x00';        // Aligné à gauche
+  s += 'Date : ' + new Date().toLocaleString('fr-FR') + LF;
+  if (clientFid && clientFid.nom) {
+    s += 'Client : ' + clientFid.nom + LF;
+  }
+  s += '----------------------------------------' + LF;
+
+  // Lignes
+  let total = 0;
+  lignes.forEach(l => {
+    const qte = l.quantite || 1;
+    const nom = l.nom || l.nom_produit || '';
+    const prix = parseFloat(l.prix) * qte;
+    total += prix;
+    const debut = qte + 'x ' + nom;
+    const prixStr = prix.toFixed(2).replace('.', ',') + ' EUR';
+    // Padding pour aligner à droite
+    const espacesMax = 42 - debut.length - prixStr.length;
+    if (espacesMax > 0) {
+      s += debut + ' '.repeat(espacesMax) + prixStr + LF;
+    } else {
+      s += debut + LF;
+      s += '  ' + ' '.repeat(40 - prixStr.length - 2) + prixStr + LF;
+    }
+  });
+
+  s += '----------------------------------------' + LF;
+
+  // Total
+  s += ESC + 'E' + '\x01';
+  s += GS + '!' + '\x11';
+  const totalStr = total.toFixed(2).replace('.', ',') + ' EUR';
+  s += 'TOTAL : ' + totalStr + LF;
+  s += GS + '!' + '\x00';
+  s += ESC + 'E' + '\x00';
+  s += LF;
+
+  // Instructions selon mode de paiement
+  s += ESC + 'a' + '\x01';        // Centré
+  if (methode === 'comptoir') {
+    s += ESC + 'E' + '\x01';
+    s += '*** A REGLER AU COMPTOIR ***' + LF;
+    s += ESC + 'E' + '\x00';
+    s += 'Presentez ce ticket au comptoir' + LF;
+    s += 'pour regler votre commande' + LF;
+  } else {
+    s += ESC + 'E' + '\x01';
+    s += '*** PAIEMENT VALIDE ***' + LF;
+    s += ESC + 'E' + '\x00';
+    s += 'Merci, patientez svp' + LF;
+    s += 'Nous preparons votre commande' + LF;
+  }
+
+  s += LF;
+  s += 'Vous serez appele(e) par votre numero' + LF;
+  s += LF;
+  s += LF;
+  s += 'Merci pour votre commande !' + LF;
+  s += LF;
+  s += LF;
+  s += LF;
+
+  // Couper le papier
+  s += GS + 'V' + '\x00';
+
+  return s;
+}
+
 async function imprimerTicketCuisine(venteId, numero, lignes) {
   try {
     // Appel du serveur d'impression local (déjà en place au resto)
