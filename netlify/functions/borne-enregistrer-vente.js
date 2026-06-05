@@ -6,7 +6,11 @@
 // Pour ENREGISTRER une vente (qui nécessite d'incrémenter le compteur
 // + insérer dans ventes/lignes_vente/journal_evenements), on passe par
 // cette function qui utilise la SUPABASE_SERVICE_KEY (côté serveur).
-// 
+//
+// NOUVEAUTÉ v2 :
+// - Si paiement carte (SumUp) → statut = 'validé' (vente OK immédiate)
+// - Si paiement comptoir → statut = 'en_attente' (à valider par le caissier)
+//
 // Variables d'environnement requises :
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_KEY
@@ -78,12 +82,29 @@ exports.handler = async function (event) {
       return jsonResp(500, { ok: false, erreur: error.message });
     }
 
+    const venteId = data?.vente_id;
+
+    // ✨ NOUVEAU : Si paiement comptoir, on passe la vente en "en_attente"
+    // pour que le caissier la voie sur pos.html et l'encaisse
+    if (modePaiement === 'comptoir' && venteId) {
+      const { error: errUpdate } = await sb
+        .from('ventes')
+        .update({ statut: 'en_attente' })
+        .eq('id', venteId);
+
+      if (errUpdate) {
+        console.error('Erreur update statut:', errUpdate);
+        // On continue quand même, la vente est créée
+      }
+    }
+
     return jsonResp(200, {
       ok: true,
-      vente_id: data?.vente_id,
+      vente_id: venteId,
       numero: data?.numero,
       total: data?.total,
-      hash_ticket: data?.hash_ticket
+      hash_ticket: data?.hash_ticket,
+      statut: modePaiement === 'comptoir' ? 'en_attente' : 'validé'
     });
 
   } catch (e) {
