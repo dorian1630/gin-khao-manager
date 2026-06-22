@@ -560,16 +560,26 @@ body {
   box-shadow: 0 4px 14px rgba(255, 107, 53, 0.32);
 }
 
-/* GRILLE PLATS 2 colonnes */
+/* GRILLE PLATS 2 colonnes (portrait borne) - 3 colonnes (paysage PC) */
 .menu-grille {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 24px 140px;
+  padding: 32px 32px 140px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 32px;
   align-content: start;
   background: var(--bg-deep);
+}
+/* En écran large (PC en paysage), on passe à 3 colonnes */
+@media (min-width: 900px) and (orientation: landscape) {
+  .menu-grille {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 36px;
+    padding: 36px 36px 140px;
+  }
 }
 .menu-grille::-webkit-scrollbar { width: 6px; }
 .menu-grille::-webkit-scrollbar-thumb {
@@ -579,7 +589,7 @@ body {
 
 /* CARTE PLAT — Image entière cliquable + prix en bas */
 .plat-card {
-  background: #FFFFFF;
+  background: var(--orange-pale);
   border: 2px solid var(--border-soft);
   border-radius: 24px;
   cursor: pointer;
@@ -591,8 +601,10 @@ body {
   display: flex;
   flex-direction: column;
   background-size: cover;
-  background-position: center;
+  background-position: center center;
   background-repeat: no-repeat;
+  width: 100%;
+  min-width: 0;
 }
 .plat-card.has-image {
   background-color: var(--orange-pale);
