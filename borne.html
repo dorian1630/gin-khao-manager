@@ -333,26 +333,28 @@ body {
 .ac-cats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 20px;
   margin-bottom: 36px;
 }
 .ac-cat-card {
   background: #FFFFFF;
   border: 2px solid var(--border-soft);
   border-radius: 24px;
-  padding: 24px 18px;
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 180px;
-  gap: 12px;
-  box-shadow: var(--shadow-sm);
+  height: 280px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+.ac-cat-card.has-image {
+  background-color: var(--orange-pale);
 }
 .ac-cat-card::before {
   content: '';
@@ -364,6 +366,7 @@ body {
   background: linear-gradient(90deg, var(--orange), var(--orange-dark));
   opacity: 0;
   transition: opacity 0.2s;
+  z-index: 5;
 }
 .ac-cat-card:active {
   transform: scale(0.95);
@@ -375,24 +378,51 @@ body {
   transform: translateY(-2px);
 }
 .ac-cat-card:hover::before { opacity: 1; }
+
+/* Emoji fallback (centré dans la zone vide au-dessus du bandeau) */
 .ac-cat-emoji {
-  font-size: 64px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
   line-height: 1;
   filter: drop-shadow(0 4px 12px rgba(255, 107, 53, 0.2));
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Bandeau du bas avec nom + count */
+.ac-cat-bandeau {
+  margin-top: auto;
+  background: #FFFFFF;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 2;
 }
 .ac-cat-nom {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--text);
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
 .ac-cat-count {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--orange);
   font-weight: 700;
   background: var(--orange-pale);
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1866,11 +1896,14 @@ function afficherAccueilCats() {
   zone.innerHTML = catsAvecProduits.map(c => {
     const nb = produits.filter(p => p.categorie_id === c.id).length;
     const emoji = emojiPourCategorie(c.nom);
+    const hasImage = c.image_url && c.image_url.trim() !== '';
     return `
-      <div class="ac-cat-card" onclick="filtrerCatEtAller('${c.id}')">
-        <div class="ac-cat-emoji">${emoji}</div>
-        <div class="ac-cat-nom">${c.nom}</div>
-        <div class="ac-cat-count">${nb} produit${nb > 1 ? 's' : ''}</div>
+      <div class="ac-cat-card ${hasImage?'has-image':''}" onclick="filtrerCatEtAller('${c.id}')" ${hasImage?`style="background-image:url('${c.image_url}')"`:''}>
+        ${!hasImage ? `<div class="ac-cat-emoji">${emoji}</div>` : ''}
+        <div class="ac-cat-bandeau">
+          <div class="ac-cat-nom">${c.nom}</div>
+          <div class="ac-cat-count">${nb} produit${nb > 1 ? 's' : ''}</div>
+        </div>
       </div>
     `;
   }).join('');
