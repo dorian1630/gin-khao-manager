@@ -647,11 +647,14 @@ body {
 /* Emoji en fond (fallback si pas d'image) */
 .plat-emoji-bg {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px;  /* Laisse de la place pour le bandeau */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 120px;
+  font-size: 100px;
   line-height: 1;
   filter: drop-shadow(0 6px 20px rgba(255, 107, 53, 0.25));
   opacity: 0.55;
@@ -662,18 +665,18 @@ body {
 .plat-bandeau-fallback {
   margin-top: auto;
   background: #FFFFFF;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   border-top: 1px solid var(--border-soft);
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
   position: relative;
   z-index: 2;
 }
 .plat-nom-fallback {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.25;
   color: var(--text);
