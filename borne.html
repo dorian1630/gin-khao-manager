@@ -148,7 +148,12 @@ body {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: var(--bg-deep);
+  background-color: var(--bg-deep);
+  background-image: url('https://res.cloudinary.com/dci5mreqo/image/upload/v1782309416/Sans_titre_1080_x_1920_px_zhfttb.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  position: relative;
 }
 .mode-titre {
   font-family: var(--display);
@@ -158,12 +163,21 @@ body {
   margin-bottom: 50px;
   text-align: center;
   letter-spacing: -0.01em;
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 14px 28px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-md);
 }
 .mode-choix {
   display: flex;
   gap: 28px;
   flex-wrap: wrap;
   justify-content: center;
+  position: relative;
+  z-index: 2;
 }
 .mode-card {
   width: 440px;
