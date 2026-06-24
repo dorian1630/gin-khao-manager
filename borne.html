@@ -75,17 +75,38 @@ body {
 /* ===== ÉCRAN ACCUEIL — Image plein écran ===== */
 #ecran-accueil {
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   text-align: center;
   cursor: pointer;
   background-color: var(--bg-deep);
-  background-image: url('https://res.cloudinary.com/dci5mreqo/image/upload/v1780537853/ChatGPT_Image_4_juin_2026_03_50_05_xilbec.png');
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
   position: relative;
   overflow: hidden;
-  padding-bottom: 100px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.accueil-image {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.accueil-image img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+.accueil-bottom {
+  flex-shrink: 0;
+  padding: 30px 20px 50px;
+  text-align: center;
 }
 .accueil-cta {
   display: inline-flex;
@@ -1673,11 +1694,14 @@ body {
 
 <!-- ===== ÉCRAN 1 : ACCUEIL ===== -->
 <div class="ecran actif" id="ecran-accueil" onclick="allerMode()">
-  <div class="accueil-bowl">🍜</div>
-  <div class="accueil-mark">Street Food Thaï</div>
-  <div class="accueil-logo">Gin <span>Khao</span></div>
-  <div class="accueil-sub">Commandez en quelques secondes</div>
-  <div class="accueil-cta">👆 Touchez pour commander</div>
+  <div class="accueil-image">
+    <img src="https://res.cloudinary.com/dci5mreqo/image/upload/v1780537853/ChatGPT_Image_4_juin_2026_03_50_05_xilbec.png" 
+         alt="Gin Khao - Accueil" 
+         id="accueil-img" />
+  </div>
+  <div class="accueil-bottom">
+    <div class="accueil-cta">👆 Touchez pour commander</div>
+  </div>
 </div>
 
 <!-- ===== ÉCRAN 2 : MODE ===== -->
