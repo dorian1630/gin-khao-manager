@@ -2399,7 +2399,7 @@ function afficherModaleRetirables() {
   const html = `
     <div class="parcours-content">
       <div class="parcours-head">
-        <div class="parcours-etape">Étape 1/3</div>
+        <div class="parcours-etape">Personnalisation</div>
         <h2 class="parcours-titre">🌿 Personnaliser votre ${p.nom}</h2>
         <p class="parcours-sous">Décochez les ingrédients que vous ne voulez pas</p>
       </div>
@@ -2412,7 +2412,7 @@ function afficherModaleRetirables() {
         `).join('')}
       </div>
       <div class="parcours-actions">
-        <button class="parcours-btn-passer" onclick="passerEtapeSuivante()">Passer →</button>
+        <button class="parcours-btn-valider" onclick="passerEtapeSuivante()">Suivant ✓</button>
       </div>
     </div>
   `;
@@ -2443,7 +2443,7 @@ function afficherModaleSupplements() {
   const html = `
     <div class="parcours-content">
       <div class="parcours-head">
-        <div class="parcours-etape">Étape 2/3</div>
+        <div class="parcours-etape">Suppléments</div>
         <h2 class="parcours-titre">➕ Suppléments ?</h2>
         <p class="parcours-sous">Ajoutez des protéines à votre ${p.nom}</p>
       </div>
@@ -2457,7 +2457,8 @@ function afficherModaleSupplements() {
         `).join('')}
       </div>
       <div class="parcours-actions">
-        <button class="parcours-btn-passer" onclick="passerEtapeSuivante()">Passer →</button>
+        <button class="parcours-btn-passer" onclick="passerEtapeSuivante()">Sans supplément →</button>
+        <button class="parcours-btn-valider" id="parcours-btn-supp-valider" onclick="passerEtapeSuivante()">Suivant ✓</button>
       </div>
     </div>
   `;
