@@ -3010,8 +3010,7 @@ function afficherModaleFormuleEntree() {
   const items = entrees.map(e => {
     if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
       // Trouver la variante 2 pièces, sinon prendre la première
-      const variante2p = e.variantes.find(v => v.label && v.label.includes('2 pi')) || e.variantes[0];
-      return {
+      const variante2p = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces', prix: 0 };      return {
         id: e.id,
         nom: e.nom,
         label: e.nom + ' (' + variante2p.label + ')',
