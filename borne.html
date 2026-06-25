@@ -2043,7 +2043,10 @@ body {
       <div class="nm">Sur place</div>
     </div>
     <div class="mode-card" onclick="choisirMode('emporter')">
-      <div class="ic">🥡</div>
+      <div class="ic">
+        <img src="https://res.cloudinary.com/dci5mreqo/image/upload/v1782414884/Gemini_Generated_Image_k3lw1gk3lw1gk3lw_omocnc.png" 
+             alt="À emporter" />
+      </div>
       <div class="nm">À emporter</div>
     </div>
   </div>
@@ -3010,7 +3013,8 @@ function afficherModaleFormuleEntree() {
   const items = entrees.map(e => {
     if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
       // Trouver la variante 2 pièces, sinon prendre la première
-      const variante2p = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces', prix: 0 };      return {
+      const variante2p = e.variantes.find(v => v.label && v.label.includes('2 pi')) || e.variantes[0];
+      return {
         id: e.id,
         nom: e.nom,
         label: e.nom + ' (' + variante2p.label + ')',
