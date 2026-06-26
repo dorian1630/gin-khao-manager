@@ -1,43 +1,74 @@
-// netlify/functions/sumup-check-status.js
 // ============================================================
-// SumUp — Vérification du statut d'un checkout (polling)
+// 💳 SumUp — Vérification du statut d'un paiement
+// ============================================================
+// Cette fonction est appelée toutes les 2 secondes par la borne
+// pendant que le client est en train de payer sur le Solo.
+// Elle renvoie le statut actuel : PENDING / PAID / FAILED / EXPIRED.
+//
+// Variables d'environnement requises :
+//   - SUMUP_API_KEY : ta clé secrète SumUp
 // ============================================================
 
-exports.handler = async function (event) {
-  const SUMUP_API_KEY = process.env.SUMUP_API_KEY;
-  if (!SUMUP_API_KEY) return jsonResp(500, { erreur: 'SUMUP_API_KEY manquante' });
+exports.handler = async (event, context) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'application/json'
+  };
 
-  const checkoutId = (event.queryStringParameters || {}).checkout_id;
-  if (!checkoutId) return jsonResp(400, { erreur: 'checkout_id manquant' });
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
 
   try {
-    const res = await fetch('https://api.sumup.com/v0.1/checkouts/' + encodeURIComponent(checkoutId), {
-      headers: { 'Authorization': 'Bearer ' + SUMUP_API_KEY }
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      return jsonResp(500, { erreur: data.message || 'Erreur SumUp' });
+    const SUMUP_API_KEY = process.env.SUMUP_API_KEY;
+    if (!SUMUP_API_KEY) {
+      throw new Error('SUMUP_API_KEY non configurée');
     }
 
-    // Statuts SumUp : PENDING, PAID, FAILED, EXPIRED
-    return jsonResp(200, {
-      statut: data.status,
-      transaction_id: data.transaction_id || null,
-      transaction_code: data.transaction_code || null,
-      amount: data.amount,
-      currency: data.currency
-    });
+    const checkoutId = event.queryStringParameters?.checkout_id;
+    if (!checkoutId) {
+      throw new Error('checkout_id manquant');
+    }
+
+    // Appel API SumUp pour récupérer le statut
+    const sumupResponse = await fetch(
+      'https://api.sumup.com/v0.1/checkouts/' + encodeURIComponent(checkoutId),
+      {
+        headers: {
+          'Authorization': 'Bearer ' + SUMUP_API_KEY,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const sumupData = await sumupResponse.json();
+
+    if (!sumupResponse.ok) {
+      throw new Error(sumupData.message || 'Erreur API SumUp');
+    }
+
+    // Le statut SumUp peut être : PENDING, PAID, FAILED, EXPIRED
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        ok: true,
+        statut: sumupData.status,
+        checkout_id: sumupData.id,
+        amount: sumupData.amount,
+        currency: sumupData.currency,
+        transactions: sumupData.transactions || []
+      })
+    };
 
   } catch (e) {
-    return jsonResp(500, { erreur: e.message });
+    console.error('Erreur check status:', e);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ ok: false, erreur: e.message })
+    };
   }
 };
-
-function jsonResp(code, obj) {
-  return {
-    statusCode: code,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-    body: JSON.stringify(obj)
-  };
-}
