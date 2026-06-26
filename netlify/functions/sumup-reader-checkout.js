@@ -1,12 +1,9 @@
 // ============================================================
 // 💳 SumUp — Reader Checkout (envoyer paiement DIRECT au Solo)
+// V3 : Enregistre le paiement dans Supabase + return_url webhook
 // ============================================================
-// Cette fonction utilise l'endpoint Reader Checkout de SumUp
-// qui envoie un paiement DIRECTEMENT à un Solo appairé.
-// Le client voit le montant sur le Solo et tape sa carte.
-// 
-// Doc : POST /v0.1/merchants/{code}/readers/{id}/checkout
-// ============================================================
+
+const SUPABASE_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -16,51 +13,42 @@ exports.handler = async (event, context) => {
     'Content-Type': 'application/json'
   };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
-
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ ok: false, erreur: 'Méthode non autorisée' })
-    };
+    return { statusCode: 405, headers, body: JSON.stringify({ ok: false, erreur: 'Méthode non autorisée' }) };
   }
 
   try {
     const SUMUP_API_KEY = process.env.SUMUP_API_KEY;
     const SUMUP_MERCHANT_CODE = process.env.SUMUP_MERCHANT_CODE;
     const SUMUP_AFFILIATE_KEY = process.env.SUMUP_AFFILIATE_KEY;
+    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+    const SITE_URL = process.env.URL || process.env.DEPLOY_URL || 'https://gin-khao-manager.netlify.app';
     
-    if (!SUMUP_API_KEY || !SUMUP_MERCHANT_CODE) {
-      throw new Error('Configuration manquante (SUMUP_API_KEY / SUMUP_MERCHANT_CODE)');
-    }
-    if (!SUMUP_AFFILIATE_KEY) {
-      throw new Error('SUMUP_AFFILIATE_KEY manquante (requise pour le Solo)');
+    if (!SUMUP_API_KEY || !SUMUP_MERCHANT_CODE || !SUMUP_AFFILIATE_KEY) {
+      throw new Error('Configuration SumUp manquante');
     }
 
-    const { reader_id, montant, description } = JSON.parse(event.body);
+    const { reader_id, montant, description, restaurant_id } = JSON.parse(event.body);
     
     if (!reader_id) throw new Error('reader_id manquant');
     if (!montant || isNaN(parseFloat(montant)) || parseFloat(montant) <= 0) {
       throw new Error('Montant invalide');
     }
 
-    // Montant en centimes pour SumUp Reader API
     const montantCents = Math.round(parseFloat(montant) * 100);
-    
-    // Référence unique
     const reference = 'GINKHAO-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8);
+    const restoId = restaurant_id || 'gin-khao';
+
+    // URL du webhook qui recevra la confirmation
+    const webhookUrl = SITE_URL + '/.netlify/functions/sumup-webhook?ref=' + encodeURIComponent(reference);
 
     // Appel API Reader Checkout
-    // POST /v0.1/merchants/{merchant_code}/readers/{reader_id}/checkout
     const url = 'https://api.sumup.com/v0.1/merchants/' 
       + encodeURIComponent(SUMUP_MERCHANT_CODE) 
       + '/readers/' + encodeURIComponent(reader_id) 
       + '/checkout';
 
-    // Body avec affiliate_key requis pour le Solo
     const bodyData = {
       total_amount: {
         value: montantCents,
@@ -68,14 +56,13 @@ exports.handler = async (event, context) => {
         minor_unit: 2
       },
       description: description || 'Gin Khao - Borne',
+      return_url: webhookUrl,
       affiliate: {
         key: SUMUP_AFFILIATE_KEY,
         app_id: 'gin-khao-borne',
         foreign_transaction_id: reference
       }
     };
-
-    console.log('SumUp Reader Checkout body:', JSON.stringify(bodyData));
 
     const sumupResponse = await fetch(url, {
       method: 'POST',
@@ -89,18 +76,42 @@ exports.handler = async (event, context) => {
     const data = await sumupResponse.json();
 
     if (!sumupResponse.ok) {
-      console.error('Erreur SumUp Reader:', JSON.stringify(data));
-      // Renvoyer le détail complet pour debug
       return {
         statusCode: sumupResponse.status,
         headers,
         body: JSON.stringify({ 
           ok: false, 
-          erreur: data.message || data.error_message || data.title || 'Erreur API ' + sumupResponse.status,
-          details: data,
-          status: sumupResponse.status
+          erreur: data.message || data.title || ((data.errors||{}).detail) || 'Erreur API ' + sumupResponse.status,
+          details: data
         })
       };
+    }
+
+    const clientTransactionId = data.data?.client_transaction_id || data.client_transaction_id;
+
+    // Enregistrer le paiement dans Supabase
+    if (SUPABASE_SERVICE_KEY && clientTransactionId) {
+      try {
+        await fetch(SUPABASE_URL + '/rest/v1/paiements_sumup', {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_SERVICE_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            restaurant_id: restoId,
+            client_transaction_id: clientTransactionId,
+            reference: reference,
+            reader_id: reader_id,
+            montant: parseFloat(montant),
+            statut: 'PENDING'
+          })
+        });
+      } catch (e) {
+        console.error('Erreur insert paiement_sumup:', e);
+      }
     }
 
     return {
@@ -108,12 +119,11 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         ok: true,
-        client_transaction_id: data.data?.client_transaction_id || data.client_transaction_id,
+        client_transaction_id: clientTransactionId,
         reference: reference,
         amount: montant,
         currency: 'EUR',
-        reader_id: reader_id,
-        raw_response: data
+        reader_id: reader_id
       })
     };
 
