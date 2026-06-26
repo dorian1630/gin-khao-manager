@@ -661,7 +661,7 @@ html, body {
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 8000;
+  z-index: 1000;
   padding: 20px;
 }
 .overlay.show { display: flex; animation: fadeIn 0.2s ease; }
@@ -1210,6 +1210,246 @@ html, body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ===== PERFORMANCE ÉQUIPE ===== */
+.modal-perf {
+  max-width: 640px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+.perf-periodes {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-deep);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+.perf-periode-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px 8px;
+  border-radius: 8px;
+  color: var(--text-mute);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.perf-periode-btn.active {
+  background: var(--surface-2);
+  color: var(--gold);
+}
+.perf-periode-btn:hover:not(.active) { color: var(--text-soft); }
+
+/* Podium */
+.podium {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+.podium-place {
+  background: linear-gradient(160deg, var(--surface-2), var(--surface));
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 12px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+.podium-place:hover { transform: translateY(-3px); }
+.podium-place.gold {
+  border-color: var(--gold);
+  background: linear-gradient(160deg, rgba(228,184,96,0.12), var(--surface));
+  box-shadow: 0 8px 24px rgba(228,184,96,0.15);
+  padding-top: 22px;
+}
+.podium-place.silver { border-color: #9ca3af; }
+.podium-place.bronze { border-color: #cd7f32; }
+.podium-medaille {
+  font-size: 32px;
+  margin-bottom: 6px;
+}
+.podium-place.gold .podium-medaille { font-size: 42px; }
+.podium-nom {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.podium-place.gold .podium-nom { font-size: 16px; color: var(--gold); }
+.podium-ca {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--gold);
+  margin-bottom: 2px;
+}
+.podium-place.gold .podium-ca { font-size: 22px; }
+.podium-ventes {
+  font-size: 11px;
+  color: var(--text-mute);
+  font-family: var(--mono);
+}
+
+/* Tableau détaillé */
+.perf-titre-section {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+  font-weight: 700;
+  margin-bottom: 8px;
+  margin-top: 4px;
+}
+.perf-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.perf-row:hover {
+  border-color: var(--gold-soft);
+  background: rgba(228,184,96,0.04);
+}
+.perf-row-rang {
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--text-mute);
+  font-weight: 500;
+  min-width: 24px;
+}
+.perf-row-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: var(--bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.perf-row-info {
+  min-width: 0;
+}
+.perf-row-nom {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.perf-row-temps {
+  font-size: 11px;
+  color: var(--text-mute);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+.perf-row-ventes {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-align: right;
+  min-width: 70px;
+}
+.perf-row-ca {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--gold);
+  text-align: right;
+  min-width: 80px;
+}
+
+.perf-vide {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-mute);
+}
+.perf-vide .ic { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+
+/* ===== FICHE CAISSIER (détail) ===== */
+.fc-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(228,184,96,0.08), var(--surface-2));
+  border: 1px solid var(--gold-soft);
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+}
+.fc-avatar-big {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: var(--bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.fc-header-info { flex: 1; }
+.fc-nom-big {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 500;
+}
+.fc-sous { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
+
+.fc-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.fc-stat-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: center;
+}
+.fc-stat-card .ic { font-size: 22px; margin-bottom: 4px; }
+.fc-stat-card .lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.fc-stat-card .val {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+}
+.fc-stat-card.gold .val { color: var(--gold); }
+.fc-stat-card.lime .val { color: var(--lime); }
+
 /* ===== BOUTON CAISSIER (rouge/vert) ===== */
 .btn-caissier {
   display: inline-flex;
@@ -1263,7 +1503,7 @@ html, body {
   inset: 0;
   background: rgba(5, 4, 3, 0.92);
   backdrop-filter: blur(10px);
-  z-index: 7000;
+  z-index: 4500;
   display: none;
   align-items: center;
   justify-content: center;
@@ -1271,38 +1511,6 @@ html, body {
   gap: 24px;
   text-align: center;
   padding: 24px;
-  pointer-events: auto;
-}
-.bloque-caisse.actif { display: flex; }
-.bloque-caisse h2 {
-  font-family: var(--display);
-  font-size: 32px;
-  font-weight: 500;
-  color: var(--gold);
-}
-.bloque-caisse p {
-  color: var(--text-mute);
-  font-size: 15px;
-  max-width: 360px;
-  line-height: 1.6;
-}
-.bloque-caisse .big-ic {
-  font-size: 60px;
-}
-.bloque-caisse .btn-connecter {
-  background: linear-gradient(135deg, var(--sriracha), var(--sriracha-soft));
-  color: #fff;
-  border: none;
-  padding: 16px 32px;
-  font-size: 16px;
-  font-weight: 700;
-  border-radius: 999px;
-  cursor: pointer;
-  font-family: var(--body);
-  box-shadow: 0 10px 30px rgba(230,57,70,0.4);
-  position: relative;
-  z-index: 7001;
-  pointer-events: auto;
 }
 .bloque-caisse.actif { display: flex; }
 .bloque-caisse h2 {
@@ -2268,6 +2476,45 @@ html, body {
   </div>
 </div>
 
+<!-- ===== MODALE PERFORMANCE ÉQUIPE ===== -->
+<div class="overlay" id="overlay-perf-equipe">
+  <div class="modal modal-perf">
+    <div class="histo-head">
+      <h3>🏆 Performance équipe</h3>
+      <button class="link-btn" onclick="fermerPerformanceEquipe()">Fermer</button>
+    </div>
+    
+    <!-- Sélecteur période -->
+    <div class="perf-periodes">
+      <button class="perf-periode-btn active" data-periode="jour" onclick="changerPeriode('jour')">Aujourd'hui</button>
+      <button class="perf-periode-btn" data-periode="semaine" onclick="changerPeriode('semaine')">Semaine</button>
+      <button class="perf-periode-btn" data-periode="mois" onclick="changerPeriode('mois')">Mois</button>
+      <button class="perf-periode-btn" data-periode="total" onclick="changerPeriode('total')">Total</button>
+    </div>
+    
+    <div id="perf-contenu" style="overflow-y: auto; flex: 1;">
+      <div style="text-align:center; padding:40px; color: var(--text-mute);">
+        <div class="spinner" style="margin:0 auto 12px;"></div>Chargement…
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALE FICHE CAISSIER (détail) ===== -->
+<div class="overlay" id="overlay-fiche-caissier">
+  <div class="modal modal-perf">
+    <div class="histo-head">
+      <h3 id="fc-titre">Fiche caissier</h3>
+      <button class="link-btn" onclick="fermerFicheCaissier()">← Retour</button>
+    </div>
+    <div id="fc-contenu" style="overflow-y: auto; flex: 1;">
+      <div style="text-align:center; padding:40px; color: var(--text-mute);">
+        <div class="spinner" style="margin:0 auto 12px;"></div>Chargement…
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODALE CONNEXION CAISSIER (PIN) ===== -->
 <div class="overlay" id="overlay-caissier-pin">
   <div class="modal modal-pin">
@@ -2383,6 +2630,14 @@ html, body {
       <span class="drawer-label">
         <b>Gérer les caissiers</b>
         <span>Ajouter, modifier, désactiver</span>
+      </span>
+      <span class="drawer-arrow">›</span>
+    </button>
+    <button class="drawer-item" onclick="ouvrirPerformanceEquipe()">
+      <span class="drawer-icon">🏆</span>
+      <span class="drawer-label">
+        <b>Performance équipe</b>
+        <span>Classement & stats des caissiers</span>
       </span>
       <span class="drawer-arrow">›</span>
     </button>
@@ -5244,6 +5499,393 @@ document.getElementById('overlay-gestion-caissiers').addEventListener('click', e
 });
 document.getElementById('overlay-edit-caissier').addEventListener('click', e => {
   if (e.target.id === 'overlay-edit-caissier') fermerEditCaissier();
+});
+
+// ============================================
+//  🏆 PERFORMANCE ÉQUIPE
+// ============================================
+let perfPeriodeActive = 'jour';
+
+function ouvrirPerformanceEquipe() {
+  fermerMenuHamburger();
+  document.getElementById('overlay-perf-equipe').classList.add('show');
+  perfPeriodeActive = 'jour';
+  document.querySelectorAll('.perf-periode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.periode === 'jour');
+  });
+  chargerPerformanceEquipe();
+}
+
+function fermerPerformanceEquipe() {
+  document.getElementById('overlay-perf-equipe').classList.remove('show');
+}
+
+function changerPeriode(periode) {
+  perfPeriodeActive = periode;
+  document.querySelectorAll('.perf-periode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.periode === periode);
+  });
+  chargerPerformanceEquipe();
+}
+
+// Retourne {debut, fin} pour la période
+function getPeriodeDates(periode) {
+  const fin = new Date();
+  let debut;
+  if (periode === 'jour') {
+    debut = new Date();
+    debut.setHours(0, 0, 0, 0);
+  } else if (periode === 'semaine') {
+    debut = new Date();
+    const jourSem = debut.getDay() === 0 ? 7 : debut.getDay();
+    debut.setDate(debut.getDate() - (jourSem - 1));
+    debut.setHours(0, 0, 0, 0);
+  } else if (periode === 'mois') {
+    debut = new Date(fin.getFullYear(), fin.getMonth(), 1);
+  } else {
+    // total : depuis 2 ans en arrière (pratique)
+    debut = new Date(fin.getFullYear() - 2, 0, 1);
+  }
+  return { debut: debut.toISOString(), fin: fin.toISOString() };
+}
+
+async function chargerPerformanceEquipe() {
+  const zone = document.getElementById('perf-contenu');
+  zone.innerHTML = '<div style="text-align:center; padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+  
+  const { debut, fin } = getPeriodeDates(perfPeriodeActive);
+  
+  try {
+    // Charger tous les caissiers (même inactifs si données historiques)
+    const { data: tousCaissiers, error: errCaiss } = await sb.from('caissiers')
+      .select('*')
+      .eq('restaurant_id', RESTO_ID);
+    if (errCaiss) throw errCaiss;
+    
+    // Charger ventes de la période avec caissier_id
+    const { data: ventes, error } = await sb.from('ventes')
+      .select('id, total, mode_paiement, cree_le, caissier_id, caissier_nom')
+      .eq('restaurant_id', RESTO_ID)
+      .eq('statut', 'validee')
+      .gte('cree_le', debut)
+      .lte('cree_le', fin);
+    
+    if (error) throw error;
+    
+    // Grouper par caissier_id
+    const stats = {};
+    (ventes || []).forEach(v => {
+      const cid = v.caissier_id || 'sans';
+      const nom = v.caissier_nom || 'Sans caissier';
+      if (!stats[cid]) {
+        stats[cid] = {
+          id: cid,
+          nom: nom,
+          nb_ventes: 0,
+          ca_total: 0,
+          ca_especes: 0,
+          ca_carte: 0,
+          ca_plateforme: 0,
+          dates_ventes: []
+        };
+      }
+      stats[cid].nb_ventes++;
+      stats[cid].ca_total += Number(v.total || 0);
+      if (v.mode_paiement === 'especes') stats[cid].ca_especes += Number(v.total || 0);
+      else if (v.mode_paiement === 'carte') stats[cid].ca_carte += Number(v.total || 0);
+      else if (v.mode_paiement === 'plateforme') stats[cid].ca_plateforme += Number(v.total || 0);
+      stats[cid].dates_ventes.push(new Date(v.cree_le));
+    });
+    
+    // Calculer temps de caisse approximatif (1ère vente → dernière vente, par jour)
+    Object.values(stats).forEach(s => {
+      // Grouper les ventes par jour
+      const parJour = {};
+      s.dates_ventes.forEach(d => {
+        const jour = d.toISOString().slice(0, 10);
+        if (!parJour[jour]) parJour[jour] = [];
+        parJour[jour].push(d);
+      });
+      // Pour chaque jour : durée entre 1ère et dernière vente
+      let totalMs = 0;
+      Object.values(parJour).forEach(datesJour => {
+        if (datesJour.length === 0) return;
+        const tri = datesJour.sort((a, b) => a - b);
+        const premiere = tri[0];
+        const derniere = tri[tri.length - 1];
+        let duree = derniere - premiere;
+        // Min 30 min si une seule vente, max +30min pour compter la dernière transaction
+        if (datesJour.length === 1) duree = 30 * 60 * 1000;
+        else duree += 30 * 60 * 1000;
+        totalMs += duree;
+      });
+      s.temps_caisse_ms = totalMs;
+      s.nb_jours = Object.keys(parJour).length;
+    });
+    
+    // Trier par CA décroissant
+    const tri = Object.values(stats).sort((a, b) => b.ca_total - a.ca_total);
+    
+    // Filtrer "Sans caissier" si tout est attribué
+    const triReel = tri.filter(s => s.id !== 'sans' || s.nb_ventes > 0);
+    
+    if (triReel.length === 0) {
+      zone.innerHTML = `
+        <div class="perf-vide">
+          <div class="ic">📊</div>
+          <p>Aucune vente sur cette période</p>
+        </div>`;
+      return;
+    }
+    
+    // === PODIUM (top 3) ===
+    let podiumHtml = '';
+    if (triReel.length >= 1) {
+      // Construire l'ordre visuel : #2 #1 #3
+      const top1 = triReel[0];
+      const top2 = triReel[1];
+      const top3 = triReel[2];
+      
+      podiumHtml = '<div class="podium">';
+      
+      // #2 à gauche
+      if (top2) {
+        podiumHtml += `
+          <div class="podium-place silver" onclick="ouvrirFicheCaissier('${top2.id}', '${escapeHtmlPos(top2.nom).replace(/'/g, "\\'")}')">
+            <div class="podium-medaille">🥈</div>
+            <div class="podium-nom">${escapeHtmlPos(top2.nom)}</div>
+            <div class="podium-ca">${fmt(top2.ca_total)}</div>
+            <div class="podium-ventes">${top2.nb_ventes} ventes</div>
+          </div>`;
+      } else {
+        podiumHtml += '<div></div>';
+      }
+      
+      // #1 au milieu (plus grand)
+      podiumHtml += `
+        <div class="podium-place gold" onclick="ouvrirFicheCaissier('${top1.id}', '${escapeHtmlPos(top1.nom).replace(/'/g, "\\'")}')">
+          <div class="podium-medaille">🥇</div>
+          <div class="podium-nom">${escapeHtmlPos(top1.nom)}</div>
+          <div class="podium-ca">${fmt(top1.ca_total)}</div>
+          <div class="podium-ventes">${top1.nb_ventes} ventes</div>
+        </div>`;
+      
+      // #3 à droite
+      if (top3) {
+        podiumHtml += `
+          <div class="podium-place bronze" onclick="ouvrirFicheCaissier('${top3.id}', '${escapeHtmlPos(top3.nom).replace(/'/g, "\\'")}')">
+            <div class="podium-medaille">🥉</div>
+            <div class="podium-nom">${escapeHtmlPos(top3.nom)}</div>
+            <div class="podium-ca">${fmt(top3.ca_total)}</div>
+            <div class="podium-ventes">${top3.nb_ventes} ventes</div>
+          </div>`;
+      } else {
+        podiumHtml += '<div></div>';
+      }
+      podiumHtml += '</div>';
+    }
+    
+    // === TABLEAU COMPLET ===
+    let tableauHtml = '<div class="perf-titre-section">Classement complet</div>';
+    triReel.forEach((s, i) => {
+      const initiale = (s.nom || '?').charAt(0).toUpperCase();
+      const panierMoy = s.nb_ventes > 0 ? s.ca_total / s.nb_ventes : 0;
+      const tempsTxt = formatDuree(s.temps_caisse_ms);
+      
+      tableauHtml += `
+        <div class="perf-row" onclick="ouvrirFicheCaissier('${s.id}', '${escapeHtmlPos(s.nom).replace(/'/g, "\\'")}')">
+          <div class="perf-row-rang">#${i+1}</div>
+          <div class="perf-row-avatar">${initiale}</div>
+          <div class="perf-row-info">
+            <div class="perf-row-nom">${escapeHtmlPos(s.nom)}</div>
+            <div class="perf-row-temps">⏱️ ${tempsTxt} · panier moy. ${fmt(panierMoy)}</div>
+          </div>
+          <div class="perf-row-ventes">${s.nb_ventes}<br><span style="font-size:10px; color:var(--text-mute);">ventes</span></div>
+          <div class="perf-row-ca">${fmt(s.ca_total)}</div>
+        </div>`;
+    });
+    
+    zone.innerHTML = podiumHtml + tableauHtml;
+    
+  } catch (e) {
+    zone.innerHTML = `<div class="perf-vide"><div class="ic">⚠️</div><p>Erreur : ${e.message}</p></div>`;
+  }
+}
+
+// Format durée en ms → "Xh YYmin"
+function formatDuree(ms) {
+  if (!ms || ms < 60000) return '—';
+  const minutes = Math.floor(ms / 60000);
+  const h = Math.floor(minutes / 60);
+  const min = minutes % 60;
+  if (h === 0) return min + ' min';
+  return h + 'h ' + (min < 10 ? '0' : '') + min;
+}
+
+// ============================================
+//  FICHE CAISSIER (détail)
+// ============================================
+async function ouvrirFicheCaissier(caissierId, nom) {
+  document.getElementById('overlay-fiche-caissier').classList.add('show');
+  document.getElementById('fc-titre').textContent = '👤 ' + nom;
+  
+  const { debut, fin } = getPeriodeDates(perfPeriodeActive);
+  const zone = document.getElementById('fc-contenu');
+  zone.innerHTML = '<div style="text-align:center; padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+  
+  try {
+    // Charger ventes du caissier
+    let query = sb.from('ventes')
+      .select('id, total, mode_paiement, cree_le, lignes_vente(nom_produit, quantite, prix_unitaire)')
+      .eq('restaurant_id', RESTO_ID)
+      .eq('statut', 'validee')
+      .gte('cree_le', debut)
+      .lte('cree_le', fin);
+    
+    if (caissierId === 'sans') {
+      query = query.is('caissier_id', null);
+    } else {
+      query = query.eq('caissier_id', caissierId);
+    }
+    
+    const { data: ventes, error } = await query;
+    if (error) throw error;
+    
+    if (!ventes || ventes.length === 0) {
+      zone.innerHTML = `<div class="perf-vide"><div class="ic">📭</div><p>Aucune vente sur cette période</p></div>`;
+      return;
+    }
+    
+    // Calculs
+    const ca = ventes.reduce((s, v) => s + Number(v.total || 0), 0);
+    const especes = ventes.filter(v => v.mode_paiement === 'especes').reduce((s, v) => s + Number(v.total || 0), 0);
+    const carte = ventes.filter(v => v.mode_paiement === 'carte').reduce((s, v) => s + Number(v.total || 0), 0);
+    const plateforme = ventes.filter(v => v.mode_paiement === 'plateforme').reduce((s, v) => s + Number(v.total || 0), 0);
+    const panierMoy = ca / ventes.length;
+    
+    // Temps de caisse
+    const parJour = {};
+    ventes.forEach(v => {
+      const d = new Date(v.cree_le);
+      const jour = d.toISOString().slice(0, 10);
+      if (!parJour[jour]) parJour[jour] = [];
+      parJour[jour].push(d);
+    });
+    let totalMs = 0;
+    Object.values(parJour).forEach(datesJour => {
+      const tri = datesJour.sort((a, b) => a - b);
+      let duree = tri[tri.length - 1] - tri[0];
+      if (datesJour.length === 1) duree = 30 * 60 * 1000;
+      else duree += 30 * 60 * 1000;
+      totalMs += duree;
+    });
+    const tempsTotal = formatDuree(totalMs);
+    const nbJours = Object.keys(parJour).length;
+    
+    // Top produits
+    const prodMap = {};
+    ventes.forEach(v => {
+      (v.lignes_vente || []).forEach(l => {
+        if (Number(l.prix_unitaire) <= 0) return;
+        const nom = l.nom_produit.replace(/^  ↳ /, '').trim();
+        prodMap[nom] = (prodMap[nom] || 0) + Number(l.quantite || 0);
+      });
+    });
+    const topProds = Object.entries(prodMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    
+    const initiale = (nom || '?').charAt(0).toUpperCase();
+    const periodeNom = { jour: "aujourd'hui", semaine: 'cette semaine', mois: 'ce mois', total: 'au total' }[perfPeriodeActive];
+    
+    zone.innerHTML = `
+      <div class="fc-header">
+        <div class="fc-avatar-big">${initiale}</div>
+        <div class="fc-header-info">
+          <div class="fc-nom-big">${escapeHtmlPos(nom)}</div>
+          <div class="fc-sous">Stats ${periodeNom}</div>
+        </div>
+      </div>
+      
+      <div class="fc-stats-grid">
+        <div class="fc-stat-card gold">
+          <div class="ic">💰</div>
+          <div class="lbl">CA Total</div>
+          <div class="val">${fmt(ca)}</div>
+        </div>
+        <div class="fc-stat-card">
+          <div class="ic">🧾</div>
+          <div class="lbl">Ventes</div>
+          <div class="val">${ventes.length}</div>
+        </div>
+        <div class="fc-stat-card">
+          <div class="ic">📊</div>
+          <div class="lbl">Panier moyen</div>
+          <div class="val">${fmt(panierMoy)}</div>
+        </div>
+        <div class="fc-stat-card lime">
+          <div class="ic">⏱️</div>
+          <div class="lbl">Temps caisse</div>
+          <div class="val">${tempsTotal}</div>
+        </div>
+      </div>
+      
+      <div class="cal-section">
+        <div class="cal-section-titre">📅 Jours travaillés</div>
+        <div style="text-align: center; padding: 12px; background: var(--surface-2); border-radius: 10px; border: 1px solid var(--border);">
+          <div style="font-family: var(--display); font-size: 28px; color: var(--gold);">${nbJours}</div>
+          <div style="font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;">jour${nbJours > 1 ? 's' : ''} sur la période</div>
+        </div>
+      </div>
+      
+      <div class="cal-section">
+        <div class="cal-section-titre">💳 Répartition des paiements</div>
+        <div class="cal-paie-row">
+          <div class="cz-paie-card">
+            <div class="ic">💵</div>
+            <div class="lbl">Espèces</div>
+            <div class="val">${fmt(especes)}</div>
+          </div>
+          <div class="cz-paie-card">
+            <div class="ic">💳</div>
+            <div class="lbl">Carte</div>
+            <div class="val">${fmt(carte)}</div>
+          </div>
+          ${plateforme > 0 ? `
+          <div class="cz-paie-card">
+            <div class="ic">🛵</div>
+            <div class="lbl">Plateformes</div>
+            <div class="val">${fmt(plateforme)}</div>
+          </div>` : ''}
+        </div>
+      </div>
+      
+      ${topProds.length > 0 ? `
+      <div class="cal-section">
+        <div class="cal-section-titre">🏆 Top 5 produits vendus</div>
+        ${topProds.map((p, i) => `
+          <div class="cal-top-prod">
+            <div class="rang">#${i+1}</div>
+            <div class="nom">${escapeHtmlPos(p[0])}</div>
+            <div class="qte">${p[1]} vendus</div>
+          </div>
+        `).join('')}
+      </div>` : ''}
+    `;
+    
+  } catch (e) {
+    zone.innerHTML = `<div class="perf-vide"><div class="ic">⚠️</div><p>Erreur : ${e.message}</p></div>`;
+  }
+}
+
+function fermerFicheCaissier() {
+  document.getElementById('overlay-fiche-caissier').classList.remove('show');
+}
+
+// Fermer en cliquant dehors
+document.getElementById('overlay-perf-equipe').addEventListener('click', e => {
+  if (e.target.id === 'overlay-perf-equipe') fermerPerformanceEquipe();
+});
+document.getElementById('overlay-fiche-caissier').addEventListener('click', e => {
+  if (e.target.id === 'overlay-fiche-caissier') fermerFicheCaissier();
 });
 
 // ============================================
