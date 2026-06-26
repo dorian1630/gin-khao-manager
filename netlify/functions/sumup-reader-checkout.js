@@ -31,9 +31,13 @@ exports.handler = async (event, context) => {
   try {
     const SUMUP_API_KEY = process.env.SUMUP_API_KEY;
     const SUMUP_MERCHANT_CODE = process.env.SUMUP_MERCHANT_CODE;
+    const SUMUP_AFFILIATE_KEY = process.env.SUMUP_AFFILIATE_KEY;
     
     if (!SUMUP_API_KEY || !SUMUP_MERCHANT_CODE) {
       throw new Error('Configuration manquante (SUMUP_API_KEY / SUMUP_MERCHANT_CODE)');
+    }
+    if (!SUMUP_AFFILIATE_KEY) {
+      throw new Error('SUMUP_AFFILIATE_KEY manquante (requise pour le Solo)');
     }
 
     const { reader_id, montant, description } = JSON.parse(event.body);
@@ -56,28 +60,47 @@ exports.handler = async (event, context) => {
       + '/readers/' + encodeURIComponent(reader_id) 
       + '/checkout';
 
+    // Body avec affiliate_key requis pour le Solo
+    const bodyData = {
+      total_amount: {
+        value: montantCents,
+        currency: 'EUR',
+        minor_unit: 2
+      },
+      description: description || 'Gin Khao - Borne',
+      affiliate: {
+        key: SUMUP_AFFILIATE_KEY,
+        app_id: 'gin-khao-borne',
+        foreign_transaction_id: reference
+      }
+    };
+
+    console.log('SumUp Reader Checkout body:', JSON.stringify(bodyData));
+
     const sumupResponse = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + SUMUP_API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        total_amount: {
-          value: montantCents,
-          currency: 'EUR',
-          minor_unit: 2
-        },
-        description: description || 'Gin Khao - Borne',
-        return_url: ''
-      })
+      body: JSON.stringify(bodyData)
     });
 
     const data = await sumupResponse.json();
 
     if (!sumupResponse.ok) {
-      console.error('Erreur SumUp Reader:', data);
-      throw new Error(data.message || data.error_message || 'Erreur API : ' + sumupResponse.status);
+      console.error('Erreur SumUp Reader:', JSON.stringify(data));
+      // Renvoyer le détail complet pour debug
+      return {
+        statusCode: sumupResponse.status,
+        headers,
+        body: JSON.stringify({ 
+          ok: false, 
+          erreur: data.message || data.error_message || data.title || 'Erreur API ' + sumupResponse.status,
+          details: data,
+          status: sumupResponse.status
+        })
+      };
     }
 
     return {
