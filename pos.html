@@ -3976,17 +3976,18 @@ async function validerVente() {
     });
     if (error) throw error;
 
-    // Succès — la vente est enregistrée
+// Succès — la vente est enregistrée
     const numero = data?.numero ?? '?';
     const totalVente = data?.total ?? totalTicket();
-    const venteId = data?.vente_id ?? data?.id;
     
-    // ✨ Enregistrer le caissier sur la vente
-    if (venteId && caissierActif) {
+    // ✨ Enregistrer le caissier sur la vente (UPDATE par numéro + restaurant_id)
+    if (caissierActif && numero !== '?') {
       try {
-        await sb.from('ventes')
+        const { error: errMaj } = await sb.from('ventes')
           .update({ caissier_id: caissierActif.id, caissier_nom: caissierActif.nom })
-          .eq('id', venteId);
+          .eq('restaurant_id', RESTO_ID)
+          .eq('numero', numero);
+        if (errMaj) console.error('Erreur enregistrement caissier:', errMaj);
       } catch (e) {
         console.error('Erreur enregistrement caissier:', e);
       }
