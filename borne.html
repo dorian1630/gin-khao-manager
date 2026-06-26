@@ -4237,8 +4237,16 @@ function afficherInfoFidelite() {
 }
 
 // ============================================================
-//  💳 PAIEMENT SUMUP (online checkout)
+//  💳 PAIEMENT SUMUP (online checkout - DEPRECATED, voir Reader API plus bas)
 // ============================================================
+
+// ============================================================
+//  💳 SUMUP SOLO — Paiement direct au terminal via Reader API
+// ============================================================
+// Configuration du Reader (le Solo physique)
+const SUMUP_READER_ID = 'rdr_2SD5M6R7GJ9SJAKDEBV2TRQ5PW';
+
+let sumupRealtimeChannel = null;
 let sumupCheckoutId = null;
 let sumupPolling = null;
 
@@ -4246,28 +4254,73 @@ async function lancerPaiementSumUp() {
   if (envoiEnCours || panier.length === 0) return;
   envoiEnCours = true;
   const montant = totalPanier();
+  
   document.getElementById('paie-sumup-montant').textContent = fmt(montant);
-  document.getElementById('paie-sumup-sub').textContent = 'Suivez les instructions sur le terminal SumUp Solo';
+  document.getElementById('paie-sumup-sub').textContent = 'Préparation du paiement...';
   allerEcran('ecran-paiement-sumup');
 
   try {
-    // Appel notre Netlify Function qui crée un checkout SumUp
-    const resp = await fetch('/.netlify/functions/sumup-create-checkout', {
+    // Envoyer le paiement au Solo via la nouvelle Reader API
+    const resp = await fetch('/.netlify/functions/sumup-reader-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        reader_id: SUMUP_READER_ID,
         montant: montant.toFixed(2),
         description: 'Gin Khao - Borne',
-        return_url: window.location.origin + '/borne.html'
+        restaurant_id: RESTO_ID
       })
     });
     const data = await resp.json();
-    if (!data.ok) throw new Error(data.erreur || 'Erreur création checkout');
+    
+    if (!data.ok) {
+      throw new Error(data.erreur || 'Erreur création paiement');
+    }
 
-    sumupCheckoutId = data.checkout_id;
+    sumupCheckoutId = data.client_transaction_id;
+    
+    document.getElementById('paie-sumup-sub').textContent = '✨ Présentez votre carte sur le terminal';
 
-    // On lance le polling pour vérifier le statut toutes les 2 secondes
-    sumupPolling = setInterval(verifierStatutSumUp, 2000);
+    // S'abonner aux changements en temps réel sur la table paiements_sumup
+    if (sumupRealtimeChannel) {
+      try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
+    }
+    
+    sumupRealtimeChannel = sb
+      .channel('sumup-paiement-' + sumupCheckoutId)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'paiements_sumup',
+        filter: 'client_transaction_id=eq.' + sumupCheckoutId
+      }, (payload) => {
+        const nouvelEnregistrement = payload.new;
+        console.log('Paiement maj:', nouvelEnregistrement);
+        if (nouvelEnregistrement.statut === 'PAID') {
+          gererPaiementSumUpReussi();
+        } else if (nouvelEnregistrement.statut === 'FAILED') {
+          gererPaiementSumUpEchoue();
+        }
+      })
+      .subscribe();
+    
+    // FALLBACK : Polling en cas de souci avec le Realtime (toutes les 3s)
+    sumupPolling = setInterval(async () => {
+      try {
+        const { data: paiement } = await sb
+          .from('paiements_sumup')
+          .select('statut')
+          .eq('client_transaction_id', sumupCheckoutId)
+          .single();
+        
+        if (paiement && paiement.statut === 'PAID') {
+          gererPaiementSumUpReussi();
+        } else if (paiement && paiement.statut === 'FAILED') {
+          gererPaiementSumUpEchoue();
+        }
+      } catch (e) {}
+    }, 3000);
+    
   } catch (e) {
     alert('Erreur SumUp : ' + e.message + '\n\nVeuillez payer au comptoir.');
     envoiEnCours = false;
@@ -4275,33 +4328,46 @@ async function lancerPaiementSumUp() {
   }
 }
 
-async function verifierStatutSumUp() {
-  if (!sumupCheckoutId) return;
-  try {
-    const resp = await fetch('/.netlify/functions/sumup-check-status?checkout_id=' + encodeURIComponent(sumupCheckoutId));
-    const data = await resp.json();
-    if (data.statut === 'PAID') {
-      clearInterval(sumupPolling);
-      sumupPolling = null;
-      // Paiement réussi ! On enregistre la vente
-      await payer('carte');
-    } else if (data.statut === 'FAILED' || data.statut === 'EXPIRED') {
-      clearInterval(sumupPolling);
-      sumupPolling = null;
-      alert('Paiement échoué ou expiré. Veuillez réessayer.');
-      envoiEnCours = false;
-      allerEcran('ecran-paiement');
-    }
-    // PENDING / autre : on continue à attendre
-  } catch (e) {
-    console.error('Polling SumUp:', e);
+async function gererPaiementSumUpReussi() {
+  // Nettoyer
+  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
+  if (sumupRealtimeChannel) { 
+    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
+    sumupRealtimeChannel = null;
   }
+  
+  // Animation succès
+  document.getElementById('paie-sumup-sub').innerHTML = '<span style="color:#10b981;">✅ Paiement validé !</span>';
+  
+  // Enregistrer la vente
+  setTimeout(async () => {
+    await payer('carte');
+  }, 800);
+}
+
+function gererPaiementSumUpEchoue() {
+  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
+  if (sumupRealtimeChannel) { 
+    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
+    sumupRealtimeChannel = null;
+  }
+  
+  alert('❌ Paiement refusé ou annulé.\n\nVeuillez réessayer ou payer au comptoir.');
+  envoiEnCours = false;
+  sumupCheckoutId = null;
+  allerEcran('ecran-paiement');
+}
+
+// Ancienne fonction conservée pour compat (no-op)
+async function verifierStatutSumUp() {
+  // Plus utilisée — remplacée par le Realtime + polling
 }
 
 function annulerPaiementSumUp() {
-  if (sumupPolling) {
-    clearInterval(sumupPolling);
-    sumupPolling = null;
+  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
+  if (sumupRealtimeChannel) { 
+    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
+    sumupRealtimeChannel = null;
   }
   sumupCheckoutId = null;
   envoiEnCours = false;
