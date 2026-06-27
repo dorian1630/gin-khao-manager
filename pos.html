@@ -10,28 +10,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg-deep:       #0A0908;
-  --bg-soft:       #14110E;
-  --surface:       #1C1814;
-  --surface-2:     #251F19;
-  --border:        #2D261E;
-  --border-soft:   #221C16;
+  /* 🎨 NOUVELLE PALETTE — Blanc chic avec touches or/rouge */
+  --bg-deep:       #F5F2EC;   /* Beige très clair, élégant */
+  --bg-soft:       #FAF7F2;   /* Beige encore plus clair */
+  --surface:       #FFFFFF;   /* Blanc pur pour cartes */
+  --surface-2:     #FAF7F2;   /* Blanc cassé pour zones sec */
+  --border:        #E8E0D0;   /* Bordure douce dorée */
+  --border-soft:   #F0EAD8;   /* Bordure très douce */
 
-  --sriracha:      #E63946;
+  --sriracha:      #E63946;   /* Rouge accent (inchangé) */
   --sriracha-soft: #C42E3B;
-  --gold:          #E4B860;
+  --gold:          #C9A55A;   /* Or plus sombre pour contraste sur blanc */
   --gold-soft:     #B8924E;
-  --lime:          #A8E10C;
-  --lime-soft:     #82B509;
+  --gold-light:    #E4B860;   /* Or clair pour décor */
+  --lime:          #5BA800;   /* Vert plus sombre */
+  --lime-soft:     #4A8700;
 
-  --text:          #F5EDE2;
-  --text-soft:     #C7B9A5;
+  --text:          #1A1612;   /* Texte sombre sur fond blanc */
+  --text-soft:     #4A4239;
   --text-mute:     #8B7E6F;
-  --text-dim:      #5A5045;
+  --text-dim:      #B5A89A;
 
   --danger:        #E63946;
-  --success:       #82B509;
-  --warning:       #E4B860;
+  --success:       #5BA800;
+  --warning:       #C9A55A;
 
   --display: 'Fraunces', Georgia, serif;
   --body:    'Manrope', system-ui, sans-serif;
@@ -40,6 +42,10 @@
   --radius:    18px;
   --radius-sm: 12px;
   --radius-xs: 8px;
+  
+  --shadow-sm: 0 2px 8px rgba(28, 24, 20, 0.06);
+  --shadow:    0 6px 20px rgba(28, 24, 20, 0.08);
+  --shadow-lg: 0 20px 50px rgba(28, 24, 20, 0.12);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -57,10 +63,10 @@ html, body {
 .caisse {
   height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 240px 1fr 420px;  /* SIDEBAR + Produits + Ticket */
   background:
-    radial-gradient(circle at 15% 20%, rgba(230, 57, 70, 0.06), transparent 45%),
-    radial-gradient(circle at 85% 80%, rgba(228, 184, 96, 0.05), transparent 45%),
+    radial-gradient(circle at 15% 20%, rgba(201, 165, 90, 0.04), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(230, 57, 70, 0.03), transparent 45%),
     var(--bg-deep);
 }
 
@@ -72,95 +78,176 @@ html, body {
   border-right: 1px solid var(--border);
 }
 
+/* ===== TOPBAR ===== */
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 18px 28px;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
-.brand {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-.brand .logo {
+.topbar-titre {
   font-family: var(--display);
   font-size: 24px;
-  font-weight: 500;
-  font-variation-settings: "opsz" 60;
-  letter-spacing: -0.01em;
-}
-.brand .logo span { color: var(--sriracha); }
-.brand .tag {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold);
   font-weight: 600;
+  color: var(--text);
+  text-transform: capitalize;
 }
 .topbar-right { display: flex; align-items: center; gap: 14px; }
 .clock {
   font-family: var(--mono);
   font-size: 14px;
-  color: var(--text-soft);
+  color: var(--text-mute);
   font-weight: 500;
 }
 .link-btn {
   font-size: 12px;
-  color: var(--text-mute);
+  color: var(--text-soft);
   text-decoration: none;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
   transition: all 0.2s;
   font-weight: 600;
   letter-spacing: 0.02em;
-  background: transparent;
+  background: var(--surface);
   font-family: var(--body);
   cursor: pointer;
 }
-.link-btn:hover { color: var(--text); border-color: var(--gold-soft); }
+.link-btn:hover { color: var(--gold); border-color: var(--gold); }
 
-/* Filtres catégories */
-.cats {
+/* ===== SIDEBAR CATÉGORIES ===== */
+.sidebar-cats {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
-  gap: 10px;
-  padding: 18px 28px;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+}
+.sidebar-logo {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.sidebar-logo .logo {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 500;
+  font-variation-settings: "opsz" 60;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.sidebar-logo .logo span { color: var(--sriracha); }
+.sidebar-logo .tag {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+  margin-top: 4px;
+}
+.sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  scrollbar-width: thin;
+}
+.sidebar-list::-webkit-scrollbar { width: 6px; }
+.sidebar-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.cat-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 14px;
+  margin-bottom: 6px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.18s;
+  border: 2px solid transparent;
+}
+.cat-item:hover {
+  background: var(--bg-soft);
+}
+.cat-item.active {
+  background: linear-gradient(135deg, rgba(201,165,90,0.12), rgba(201,165,90,0.04));
+  border-color: var(--gold);
+  box-shadow: 0 4px 14px rgba(201,165,90,0.15);
+}
+.cat-item-icon {
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-soft);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.cat-item.active .cat-item-icon {
+  background: var(--gold);
+}
+.cat-item-info { flex: 1; min-width: 0; }
+.cat-item-nom {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cat-item.active .cat-item-nom { color: var(--gold); }
+.cat-item-nb {
+  font-size: 11px;
+  color: var(--text-mute);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+
+/* ===== SOUS-CATÉGORIES (en bandeau sous topbar) ===== */
+.sous-cats-bar {
+  display: flex;
+  gap: 8px;
+  padding: 14px 28px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
   overflow-x: auto;
   flex-shrink: 0;
   scrollbar-width: none;
 }
-.cats::-webkit-scrollbar { display: none; }
-.cat-chip {
+.sous-cats-bar::-webkit-scrollbar { display: none; }
+.sous-cat-chip {
   flex-shrink: 0;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-soft);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s;
   white-space: nowrap;
 }
-.cat-chip:hover { border-color: var(--gold-soft); }
-.cat-chip.active {
+.sous-cat-chip:hover { border-color: var(--gold); color: var(--gold); }
+.sous-cat-chip.active {
   background: var(--sriracha);
   border-color: var(--sriracha);
   color: #fff;
 }
 
-/* Grille produits */
+/* ===== GRILLE PRODUITS (cartes plus grandes) ===== */
 .produits-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 28px 28px;
+  padding: 24px 28px 28px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
   align-content: start;
   scrollbar-width: thin;
 }
@@ -169,64 +256,94 @@ html, body {
 
 .produit-card {
   position: relative;
-  background: linear-gradient(160deg, var(--surface-2) 0%, var(--surface) 100%);
-  border: 1px solid var(--border);
+  background: var(--surface);
+  border: 2px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px 16px;
   cursor: pointer;
   transition: all 0.18s;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 110px;
+  min-height: 240px;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
-.produit-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(228,184,96,0.10), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.2s;
+.produit-card:hover { 
+  border-color: var(--gold); 
+  transform: translateY(-3px); 
+  box-shadow: var(--shadow-lg);
 }
-.produit-card:hover { border-color: var(--gold-soft); transform: translateY(-2px); }
-.produit-card:hover::after { opacity: 1; }
 .produit-card:active { transform: translateY(0) scale(0.98); }
 .produit-card.rupture {
   opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
 }
-.produit-nom {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.25;
-  color: var(--text);
-  position: relative;
+.produit-card.has-image {
+  background-size: cover;
+  background-position: center;
+  min-height: 260px;
+}
+.produit-card.has-image::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
   z-index: 1;
+}
+.produit-card.has-image .produit-bandeau {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 18px;
+  z-index: 2;
+}
+.produit-card.has-image .produit-nom {
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.produit-card.has-image .produit-prix {
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.produit-card:not(.has-image) {
+  padding: 20px 18px;
+  justify-content: space-between;
+}
+.produit-bandeau {
+  display: flex;
+  flex-direction: column;
+}
+.produit-nom {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: 12px;
 }
 .produit-bas {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-top: 14px;
-  position: relative;
-  z-index: 1;
 }
 .produit-prix {
   font-family: var(--display);
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--gold);
 }
 .produit-stock {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-mute);
   font-family: var(--mono);
+  background: var(--bg-soft);
+  padding: 4px 8px;
+  border-radius: 6px;
 }
-.produit-stock.warn { color: var(--warning); }
-.produit-stock.crit { color: var(--danger); }
+.produit-stock.warn { color: var(--warning); background: rgba(201,165,90,0.1); }
+.produit-stock.crit { color: var(--danger); background: rgba(230,57,70,0.1); }
 .badge-rupture {
   position: absolute;
   top: 10px;
@@ -256,25 +373,29 @@ html, body {
 .ticket-zone {
   display: flex;
   flex-direction: column;
-  background: var(--bg-soft);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
   overflow: hidden;
+  box-shadow: -2px 0 8px rgba(28, 24, 20, 0.04);
 }
 .ticket-head {
-  padding: 22px 24px 16px;
+  padding: 26px 28px 18px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(201,165,90,0.05), transparent);
 }
 .ticket-head h2 {
   font-family: var(--display);
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 26px;
+  font-weight: 600;
   letter-spacing: -0.01em;
+  color: var(--text);
 }
 .ticket-head .num {
   font-size: 12px;
   color: var(--text-mute);
   font-family: var(--mono);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .ticket-lignes {
@@ -551,26 +672,29 @@ html, body {
 }
 .total-row .val span { color: var(--gold); }
 
-.actions { display: flex; flex-direction: column; gap: 10px; }
+.actions { display: flex; flex-direction: column; gap: 12px; }
 .btn-pay {
   width: 100%;
-  padding: 18px;
+  padding: 22px;
   border: none;
   border-radius: var(--radius);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.18s;
   font-family: var(--body);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .btn-pay:disabled { opacity: 0.35; cursor: not-allowed; }
 .btn-encaisser {
   background: linear-gradient(135deg, var(--sriracha) 0%, var(--sriracha-soft) 100%);
   color: #fff;
-  box-shadow: 0 8px 24px -8px rgba(230,57,70,0.5);
+  box-shadow: 0 10px 30px -8px rgba(230,57,70,0.5);
+  font-size: 20px;
+  padding: 26px;
 }
-.btn-encaisser:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(230,57,70,0.6); }
+.btn-encaisser:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 16px 40px -10px rgba(230,57,70,0.7); }
 .btn-encaisser:not(:disabled):active { transform: translateY(0); }
 .btn-vider {
   background: transparent;
@@ -2519,13 +2643,19 @@ html, body {
 </div>
 
 <div class="caisse">
-  <!-- ===== GAUCHE : PRODUITS ===== -->
+  <!-- ===== GAUCHE : SIDEBAR CATÉGORIES ===== -->
+  <aside class="sidebar-cats" id="sidebar-cats">
+    <div class="sidebar-logo">
+      <div class="logo">Gin <span>Khao</span></div>
+      <div class="tag">Caisse</div>
+    </div>
+    <div class="sidebar-list" id="cats"></div>
+  </aside>
+
+  <!-- ===== CENTRE : PRODUITS ===== -->
   <div class="produits-zone">
     <div class="topbar">
-      <div class="brand">
-        <div class="logo">Gin <span>Khao</span></div>
-        <div class="tag">Caisse</div>
-      </div>
+      <div class="topbar-titre" id="topbar-titre">Sélectionnez une catégorie</div>
       <div class="topbar-right">
         <div class="clock" id="clock">--:--</div>
         <button class="btn-notif-kds" id="btn-notif-kds" onclick="ouvrirKDS()" title="Commandes en cours">
@@ -2545,7 +2675,7 @@ html, body {
       </div>
     </div>
 
-    <div class="cats" id="cats"></div>
+    <div id="sous-cats-wrap"></div>
 
     <div class="produits-grid" id="produits-grid">
       <div class="empty-state">
@@ -3207,45 +3337,88 @@ function afficherCats() {
   
   let html = '';
   
-  // Tabs des cat TOP-LEVEL
+  // ✨ Sidebar verticale : icône + nom + nombre de produits
   catsAvecContenu.forEach(c => {
     const isActive = (c.id === parentActif);
-    html += `<div class="cat-chip ${isActive?'active':''}" onclick="filtrerCat('${c.id}')">${c.nom}</div>`;
+    const emoji = emojiPourCat(c.nom);
+    
+    // Compter les produits (directs + via sous-catégories)
+    let nb = produits.filter(p => p.categorie_id === c.id).length;
+    const sousCats = categories.filter(sc => sc.parent_id === c.id);
+    sousCats.forEach(sc => {
+      nb += produits.filter(p => p.categorie_id === sc.id).length;
+    });
+    
+    html += `
+      <div class="cat-item ${isActive?'active':''}" onclick="filtrerCat('${c.id}')">
+        <div class="cat-item-icon">${emoji}</div>
+        <div class="cat-item-info">
+          <div class="cat-item-nom">${c.nom}</div>
+          <div class="cat-item-nb">${nb} produit${nb > 1 ? 's' : ''}</div>
+        </div>
+      </div>
+    `;
   });
   
   zone.innerHTML = html;
   
   // Affiche aussi les sous-cats si on est dans une cat parente
   afficherSousCats(parentActif);
+  
+  // Met à jour le titre dans la topbar
+  const titre = document.getElementById('topbar-titre');
+  if (titre && catActiveObj) {
+    if (catActiveObj.parent_id) {
+      const parent = categories.find(p => p.id === catActiveObj.parent_id);
+      titre.textContent = (parent ? parent.nom + ' › ' : '') + catActiveObj.nom;
+    } else {
+      titre.textContent = catActiveObj.nom;
+    }
+  }
+}
+
+// Emojis pour les catégories courantes
+function emojiPourCat(nom) {
+  if (!nom) return '🍽️';
+  const n = nom.toLowerCase();
+  if (n.includes('entrée') || n.includes('entree')) return '🥟';
+  if (n.includes('pad thaï') || n.includes('pad thai')) return '🍜';
+  if (n.includes('loc lac') || n.includes('boeuf') || n.includes('bœuf')) return '🥩';
+  if (n.includes('riz')) return '🍚';
+  if (n.includes('nouille')) return '🍝';
+  if (n.includes('sushi') || n.includes('maki') || n.includes('california')) return '🍣';
+  if (n.includes('crousty') || n.includes('crispy')) return '🥢';
+  if (n.includes('pokébowl') || n.includes('poke')) return '🥗';
+  if (n.includes('salade')) return '🥗';
+  if (n.includes('bo bun') || n.includes('bobun')) return '🍲';
+  if (n.includes('dynamite')) return '🌶️';
+  if (n.includes('boisson')) return '🥤';
+  if (n.includes('dessert')) return '🍰';
+  if (n.includes('formule')) return '🎁';
+  if (n.includes('plat')) return '🍽️';
+  return '🍽️';
 }
 
 function afficherSousCats(parentId) {
-  let zoneSC = document.getElementById('sous-cats');
+  const wrap = document.getElementById('sous-cats-wrap');
+  if (!wrap) return;
   
   const sousCats = categories
     .filter(sc => sc.parent_id === parentId)
     .sort((a, b) => (a.ordre || 999) - (b.ordre || 999));
   
-  // Si pas de sous-cats, on cache la zone
   if (sousCats.length === 0) {
-    if (zoneSC) zoneSC.innerHTML = '';
+    wrap.innerHTML = '';
     return;
   }
   
-  // Créer la zone si elle n'existe pas
-  if (!zoneSC) {
-    zoneSC = document.createElement('div');
-    zoneSC.id = 'sous-cats';
-    zoneSC.className = 'sous-cats';
-    document.getElementById('cats').after(zoneSC);
-  }
-  
-  let html = '';
+  let html = '<div class="sous-cats-bar">';
   sousCats.forEach(sc => {
     const isActive = (sc.id === catActive);
     html += `<div class="sous-cat-chip ${isActive?'active':''}" onclick="filtrerCat('${sc.id}')">${sc.nom}</div>`;
   });
-  zoneSC.innerHTML = html;
+  html += '</div>';
+  wrap.innerHTML = html;
 }
 
 function filtrerCat(id) {
@@ -6424,24 +6597,37 @@ function afficherPopupNotif(commande) {
   }, 8000);
 }
 
-function vuEtOuvrirKDS() {
+async function vuEtOuvrirKDS() {
   const popup = document.getElementById('popup-notif-nouvelle');
   const id = popup.dataset.commandeId;
   popup.classList.remove('actif');
   if (popupNotifTimeout) clearTimeout(popupNotifTimeout);
   
-  // Marquer comme vue
+  // ✨ Ouvrir IMMÉDIATEMENT la modale KDS
+  // (sans attendre l'UPDATE Supabase qui peut être lent)
+  await ouvrirKDS();
+  
+  // En parallèle : marquer comme vue + imprimer
   if (id) {
     sb.from('commandes_en_cours')
       .update({ statut: 'a_preparer', vu_caisse: true, vu_le: new Date().toISOString() })
       .eq('id', id)
       .then(() => {
+        // MAJ locale aussi au cas où le Realtime UPDATE n'arrive pas tout de suite
+        const idx = kdsCommandes.findIndex(c => c.id === id);
+        if (idx >= 0) {
+          kdsCommandes[idx].statut = 'a_preparer';
+          kdsCommandes[idx].vu_caisse = true;
+          afficherKDS();
+          majBadgeKDS();
+        }
         // Imprimer le ticket cuisine
         imprimerCommandeKDS(id);
+      })
+      .catch(err => {
+        console.error('Erreur update commande:', err);
       });
   }
-  
-  ouvrirKDS();
 }
 
 function sourceLabel(source) {
@@ -6458,13 +6644,17 @@ function sourceLabel(source) {
   return labels[source] || source || 'Inconnu';
 }
 
-function ouvrirKDS() {
+async function ouvrirKDS() {
   fermerMenuHamburger();
   document.getElementById('overlay-kds').classList.add('show');
   kdsFiltreActif = 'actives';
   document.querySelectorAll('.kds-filtre-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.statut === 'actives');
   });
+  
+  // ✨ Forcer le rechargement des commandes à chaque ouverture
+  document.getElementById('kds-zone').innerHTML = '<div style="text-align:center; padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+  await chargerCommandesKDS();
   afficherKDS();
 }
 
