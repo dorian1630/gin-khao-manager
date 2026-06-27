@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0A0908">
-<!-- VERSION 2026-06-26-v5-FIX -->
+<!-- VERSION 2026-06-26-v7-ACCUEIL -->
 <title>Gin Khao · Borne de commande</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1340,6 +1340,7 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 32px;
+  padding-bottom: 110px;  /* ✨ Espace pour la barre panier flottante */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: max-content;
@@ -1716,6 +1717,7 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
+  padding-bottom: 110px;  /* ✨ Espace pour la barre panier sticky */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: max-content;
@@ -1775,7 +1777,7 @@ body {
 /* ✨ BARRE PANIER pendant le parcours formule (sticky bottom)   */
 /* ============================================================ */
 .formule-panier-bar {
-  position: sticky;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -1785,8 +1787,8 @@ body {
   padding: 16px 24px;
   background: #FFFFFF;
   border-top: 2px solid var(--border-soft);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
-  z-index: 20;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 50;
   gap: 16px;
 }
 .formule-panier-info {
@@ -2320,8 +2322,17 @@ body {
       <!-- Catégories injectées par JS -->
     </div>
 
-    <!-- Espace bas -->
-    <div style="height: 40px;"></div>
+    <!-- Espace bas pour la barre panier -->
+    <div style="height: 120px;"></div>
+  </div>
+  
+  <!-- ✨ BARRE PANIER FLOTTANTE -->
+  <div class="formule-panier-bar" id="ac-panier-bar">
+    <div class="formule-panier-info">
+      <div class="formule-panier-count" id="ac-panier-count">Panier vide</div>
+      <div class="formule-panier-total" id="ac-panier-total">0<span>,00 €</span></div>
+    </div>
+    <button class="formule-panier-btn" id="ac-panier-btn" disabled onclick="allerPanier()">Voir le panier</button>
   </div>
 </div>
 
@@ -2640,7 +2651,7 @@ function afficherSousCategories(parentId) {
     <div class="sc-header">
       <button class="btn-retour-cats" onclick="allerEcran('ecran-accueil-cats')">← Catégories</button>
       <div class="logo">${parent.nom}</div>
-      <button class="btn-voir-panier-mini" onclick="allerPanier()" id="btn-voir-panier-sc">Panier</button>
+      <div></div>
     </div>
     <div class="sc-grille">
       ${sousCats.map(sc => {
@@ -2658,6 +2669,7 @@ function afficherSousCategories(parentId) {
         `;
       }).join('')}
     </div>
+    ${barrePanierFormule()}
   `;
   
   allerEcran('ecran-sous-cats');
@@ -3930,11 +3942,25 @@ function nbArticles() {
 
 function majBarrePanier() {
   const n = nbArticles();
-  document.getElementById('panier-count').textContent =
-    n === 0 ? 'Panier vide' : n + ' article' + (n > 1 ? 's' : '');
+  const lbl = n === 0 ? 'Panier vide' : n + ' article' + (n > 1 ? 's' : '');
   const [e, c] = totalPanier().toFixed(2).split('.');
-  document.getElementById('panier-total-mini').innerHTML = `${e}<span>,${c} €</span>`;
-  document.getElementById('btn-voir-panier').disabled = (n === 0);
+  const totalHtml = `${e}<span>,${c} €</span>`;
+  
+  // Barre panier de l'écran menu
+  const elCount = document.getElementById('panier-count');
+  if (elCount) elCount.textContent = lbl;
+  const elTotal = document.getElementById('panier-total-mini');
+  if (elTotal) elTotal.innerHTML = totalHtml;
+  const elBtn = document.getElementById('btn-voir-panier');
+  if (elBtn) elBtn.disabled = (n === 0);
+  
+  // ✨ Barre panier de l'écran accueil-cats (catégories principales)
+  const acCount = document.getElementById('ac-panier-count');
+  if (acCount) acCount.textContent = lbl;
+  const acTotal = document.getElementById('ac-panier-total');
+  if (acTotal) acTotal.innerHTML = totalHtml;
+  const acBtn = document.getElementById('ac-panier-btn');
+  if (acBtn) acBtn.disabled = (n === 0);
 }
 
 function afficherPanier() {
