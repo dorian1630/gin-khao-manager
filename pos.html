@@ -1450,6 +1450,307 @@ html, body {
 .fc-stat-card.gold .val { color: var(--gold); }
 .fc-stat-card.lime .val { color: var(--lime); }
 
+/* ===== BOUTON NOTIFICATION KDS ===== */
+.btn-notif-kds {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  margin-right: 8px;
+  padding: 0;
+}
+.btn-notif-kds:hover { border-color: var(--gold); }
+.btn-notif-kds.has-notifs {
+  border-color: var(--sriracha);
+  animation: pulseNotif 1.5s ease-in-out infinite;
+}
+@keyframes pulseNotif {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(230, 57, 70, 0); }
+}
+.notif-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--sriracha);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
+  display: none;
+}
+.btn-notif-kds.has-notifs .notif-badge {
+  display: inline-block;
+}
+
+/* ===== POPUP NOUVELLE COMMANDE ===== */
+.popup-notif-nouvelle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #fff, #fff5f5);
+  border: 3px solid var(--sriracha);
+  border-radius: 20px;
+  padding: 24px;
+  width: 380px;
+  max-width: 90vw;
+  box-shadow: 0 30px 60px rgba(230, 57, 70, 0.3);
+  z-index: 9000;
+  transform: translateX(420px);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+}
+.popup-notif-nouvelle.actif {
+  transform: translateX(0);
+  opacity: 1;
+}
+.popup-notif-content { text-align: center; }
+.popup-notif-flash {
+  font-size: 48px;
+  animation: clochette 0.5s ease-in-out infinite alternate;
+}
+@keyframes clochette {
+  0% { transform: rotate(-15deg); }
+  100% { transform: rotate(15deg); }
+}
+.popup-notif-titre {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--sriracha);
+  margin-top: 6px;
+}
+.popup-notif-source {
+  display: inline-block;
+  background: var(--gold);
+  color: #1a1a1a;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 8px;
+}
+.popup-notif-numero {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 8px;
+}
+.popup-notif-articles {
+  background: var(--surface-2);
+  padding: 12px;
+  border-radius: 10px;
+  margin: 12px 0;
+  font-size: 13px;
+  color: var(--text-soft);
+  max-height: 100px;
+  overflow-y: auto;
+  text-align: left;
+}
+.popup-notif-articles ul { list-style: none; padding: 0; margin: 0; }
+.popup-notif-articles li { padding: 2px 0; }
+.popup-notif-total {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+.popup-notif-actions { display: flex; gap: 8px; justify-content: center; }
+.btn-notif-voir {
+  background: linear-gradient(135deg, var(--sriracha), var(--sriracha-soft));
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--body);
+}
+
+/* ===== MODALE KDS (Kitchen Display System) ===== */
+.modal-kds {
+  max-width: 720px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+.kds-filtres {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-deep);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.kds-filtre-btn {
+  flex: 1;
+  min-width: 80px;
+  background: transparent;
+  border: none;
+  padding: 10px 8px;
+  border-radius: 8px;
+  color: var(--text-mute);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.kds-filtre-btn.active {
+  background: var(--surface-2);
+  color: var(--gold);
+}
+.kds-cnt {
+  background: var(--sriracha);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+}
+.kds-filtre-btn:not(.active) .kds-cnt {
+  background: var(--surface-2);
+  color: var(--text-mute);
+}
+
+.kds-commande {
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.kds-commande.statut-nouvelle { border-color: var(--sriracha); animation: pulseNew 2s infinite; }
+.kds-commande.statut-a_preparer { border-color: var(--sriracha); }
+.kds-commande.statut-en_preparation { border-color: #f59e0b; }
+.kds-commande.statut-prete { border-color: var(--lime); }
+.kds-commande.statut-recuperee { opacity: 0.5; border-color: var(--border); }
+@keyframes pulseNew {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(230, 57, 70, 0); }
+}
+
+.kds-cmd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.kds-cmd-numero {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.kds-cmd-source {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--bg-deep);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+.kds-cmd-source.borne { background: var(--gold); color: #1a1a1a; }
+.kds-cmd-source.click_collect, .kds-cmd-source.click-collect { background: #3b82f6; color: #fff; }
+.kds-cmd-source.uber_eats { background: #000; color: #06c167; }
+.kds-cmd-source.deliveroo { background: #00ccbc; color: #fff; }
+.kds-cmd-source.just_eat { background: #ff8000; color: #fff; }
+.kds-cmd-source.app, .kds-cmd-source.site { background: #6366f1; color: #fff; }
+.kds-cmd-source.caisse { background: var(--surface); color: var(--text-soft); }
+
+.kds-cmd-time {
+  font-size: 11px;
+  color: var(--text-mute);
+  font-family: var(--mono);
+}
+.kds-cmd-mode {
+  font-size: 11px;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+.kds-cmd-articles {
+  background: var(--bg-deep);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  max-height: 130px;
+  overflow-y: auto;
+}
+.kds-cmd-article {
+  padding: 4px 0;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.kds-cmd-article:last-child { border-bottom: none; }
+.kds-cmd-article-qte {
+  font-weight: 700;
+  color: var(--gold);
+  margin-right: 8px;
+}
+.kds-cmd-total {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 12px;
+  text-align: right;
+}
+.kds-cmd-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.kds-btn {
+  flex: 1;
+  min-width: 70px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+}
+.kds-btn:hover { border-color: var(--gold); }
+.kds-btn.prep { border-color: #f59e0b; color: #f59e0b; }
+.kds-btn.prete { border-color: var(--lime); color: var(--lime); }
+.kds-btn.recup { background: linear-gradient(135deg, var(--lime), #16a34a); color: #fff; border: none; }
+.kds-btn.imprimer { background: var(--surface-2); }
+
+.kds-vide {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-mute);
+}
+.kds-vide .ic { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+
 /* ===== BOUTON CAISSIER (rouge/vert) ===== */
 .btn-caissier {
   display: inline-flex;
@@ -2227,6 +2528,10 @@ html, body {
       </div>
       <div class="topbar-right">
         <div class="clock" id="clock">--:--</div>
+        <button class="btn-notif-kds" id="btn-notif-kds" onclick="ouvrirKDS()" title="Commandes en cours">
+          <span class="notif-icone">🔔</span>
+          <span class="notif-badge" id="notif-badge">0</span>
+        </button>
         <button class="btn-caissier rouge" id="btn-caissier" onclick="ouvrirModaleCaissier()">
           <span class="caissier-dot"></span>
           <span class="caissier-nom" id="caissier-nom">Caissier déconnecté</span>
@@ -2476,6 +2781,55 @@ html, body {
   </div>
 </div>
 
+<!-- ===== POPUP NOTIFICATION NOUVELLE COMMANDE ===== -->
+<div class="popup-notif-nouvelle" id="popup-notif-nouvelle">
+  <div class="popup-notif-content">
+    <div class="popup-notif-flash">🔔</div>
+    <div class="popup-notif-titre">Nouvelle commande !</div>
+    <div class="popup-notif-source" id="popup-notif-source">Borne</div>
+    <div class="popup-notif-numero" id="popup-notif-numero">#---</div>
+    <div class="popup-notif-articles" id="popup-notif-articles"></div>
+    <div class="popup-notif-total" id="popup-notif-total">--,-- €</div>
+    <div class="popup-notif-actions">
+      <button class="btn-notif-voir" onclick="vuEtOuvrirKDS()">Voir et imprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALE KDS (Kitchen Display System) ===== -->
+<div class="overlay" id="overlay-kds">
+  <div class="modal modal-kds">
+    <div class="histo-head">
+      <h3>📋 Commandes en cours</h3>
+      <button class="link-btn" onclick="fermerKDS()">Fermer</button>
+    </div>
+    
+    <div class="kds-filtres">
+      <button class="kds-filtre-btn active" data-statut="actives" onclick="filtrerKDS('actives')">
+        🔴 Actives <span class="kds-cnt" id="kds-cnt-actives">0</span>
+      </button>
+      <button class="kds-filtre-btn" data-statut="a_preparer" onclick="filtrerKDS('a_preparer')">
+        À préparer <span class="kds-cnt" id="kds-cnt-aprep">0</span>
+      </button>
+      <button class="kds-filtre-btn" data-statut="en_preparation" onclick="filtrerKDS('en_preparation')">
+        🟡 En prép. <span class="kds-cnt" id="kds-cnt-encours">0</span>
+      </button>
+      <button class="kds-filtre-btn" data-statut="prete" onclick="filtrerKDS('prete')">
+        🟢 Prêtes <span class="kds-cnt" id="kds-cnt-pretes">0</span>
+      </button>
+      <button class="kds-filtre-btn" data-statut="recuperees" onclick="filtrerKDS('recuperees')">
+        ✓ Récup.
+      </button>
+    </div>
+    
+    <div id="kds-zone" style="overflow-y: auto; flex: 1;">
+      <div style="text-align:center; padding:40px; color: var(--text-mute);">
+        <div class="spinner" style="margin:0 auto 12px;"></div>Chargement…
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODALE PERFORMANCE ÉQUIPE ===== -->
 <div class="overlay" id="overlay-perf-equipe">
   <div class="modal modal-perf">
@@ -2641,6 +2995,14 @@ html, body {
       </span>
       <span class="drawer-arrow">›</span>
     </button>
+    <button class="drawer-item" onclick="ouvrirKDS()">
+      <span class="drawer-icon">📋</span>
+      <span class="drawer-label">
+        <b>Commandes en cours</b>
+        <span id="drawer-kds-badge">À préparer & en cours</span>
+      </span>
+      <span class="drawer-arrow">›</span>
+    </button>
     <button class="drawer-item" onclick="ouvrirVentesAnnulees()">
       <span class="drawer-icon">❌</span>
       <span class="drawer-label">
@@ -2788,6 +3150,11 @@ async function init() {
     majAffichageCaissier();
     
     await chargerMenu();
+    
+    // ✨ Démarrer le KDS (notifications nouvelles commandes)
+    if (typeof demarrerKDSRealtime === 'function') {
+      demarrerKDSRealtime();
+    }
   } catch (e) {
     gateMsg.textContent = 'Erreur de connexion : ' + e.message;
     gate.querySelector('.spinner').style.display = 'none';
@@ -5886,6 +6253,354 @@ document.getElementById('overlay-perf-equipe').addEventListener('click', e => {
 });
 document.getElementById('overlay-fiche-caissier').addEventListener('click', e => {
   if (e.target.id === 'overlay-fiche-caissier') fermerFicheCaissier();
+});
+
+// ============================================
+//  🔔 KDS — Notifications nouvelles commandes
+// ============================================
+let kdsRealtimeChannel = null;
+let kdsCommandes = [];
+let kdsFiltreActif = 'actives';
+let popupNotifTimeout = null;
+let audioContextNotif = null;
+
+// Son de notification (généré en Web Audio sans fichier externe)
+function jouerSonNotif() {
+  try {
+    if (!audioContextNotif) {
+      audioContextNotif = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const ctx = audioContextNotif;
+    
+    // Bell tone : 2 notes ding-dong
+    [880, 660].forEach((freq, i) => {
+      setTimeout(() => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.6);
+      }, i * 200);
+    });
+  } catch (e) {
+    console.error('Erreur son notif:', e);
+  }
+}
+
+// Démarrer l'écoute en temps réel
+function demarrerKDSRealtime() {
+  if (kdsRealtimeChannel) return;
+  
+  kdsRealtimeChannel = sb
+    .channel('kds-commandes')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'commandes_en_cours',
+      filter: 'restaurant_id=eq.' + RESTO_ID
+    }, (payload) => {
+      const nouvelle = payload.new;
+      console.log('🔔 Nouvelle commande:', nouvelle);
+      
+      // Ajouter à la liste locale
+      kdsCommandes.unshift(nouvelle);
+      majBadgeKDS();
+      
+      // Notifier visuellement + son
+      afficherPopupNotif(nouvelle);
+      jouerSonNotif();
+      
+      // Si la modale KDS est ouverte, refresh
+      if (document.getElementById('overlay-kds').classList.contains('show')) {
+        afficherKDS();
+      }
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'commandes_en_cours',
+      filter: 'restaurant_id=eq.' + RESTO_ID
+    }, (payload) => {
+      // Mettre à jour dans la liste locale
+      const idx = kdsCommandes.findIndex(c => c.id === payload.new.id);
+      if (idx >= 0) kdsCommandes[idx] = payload.new;
+      
+      majBadgeKDS();
+      if (document.getElementById('overlay-kds').classList.contains('show')) {
+        afficherKDS();
+      }
+    })
+    .subscribe();
+  
+  // Charger les commandes initiales
+  chargerCommandesKDS();
+}
+
+async function chargerCommandesKDS() {
+  try {
+    // Garder les commandes des 24 dernières heures
+    const il_y_a_24h = new Date(Date.now() - 24*3600*1000).toISOString();
+    const { data, error } = await sb.from('commandes_en_cours')
+      .select('*')
+      .eq('restaurant_id', RESTO_ID)
+      .gte('cree_le', il_y_a_24h)
+      .order('cree_le', { ascending: false });
+    
+    if (error) throw error;
+    kdsCommandes = data || [];
+    majBadgeKDS();
+  } catch (e) {
+    console.error('Erreur chargement KDS:', e);
+  }
+}
+
+function majBadgeKDS() {
+  // Compter les commandes actives (= nouvelle / a_preparer / en_preparation / prete)
+  const actives = kdsCommandes.filter(c => 
+    ['nouvelle', 'a_preparer', 'en_preparation', 'prete'].includes(c.statut)
+  ).length;
+  
+  const btn = document.getElementById('btn-notif-kds');
+  const badge = document.getElementById('notif-badge');
+  if (badge) badge.textContent = actives;
+  if (btn) {
+    if (actives > 0) btn.classList.add('has-notifs');
+    else btn.classList.remove('has-notifs');
+  }
+  
+  // Mettre à jour les compteurs des filtres
+  const cntActives = kdsCommandes.filter(c => ['nouvelle','a_preparer','en_preparation','prete'].includes(c.statut)).length;
+  const cntAprep = kdsCommandes.filter(c => ['nouvelle','a_preparer'].includes(c.statut)).length;
+  const cntEncours = kdsCommandes.filter(c => c.statut === 'en_preparation').length;
+  const cntPretes = kdsCommandes.filter(c => c.statut === 'prete').length;
+  
+  const els = {
+    'kds-cnt-actives': cntActives,
+    'kds-cnt-aprep': cntAprep,
+    'kds-cnt-encours': cntEncours,
+    'kds-cnt-pretes': cntPretes
+  };
+  for (const id in els) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = els[id];
+  }
+  
+  // Maj badge drawer
+  const drawerBadge = document.getElementById('drawer-kds-badge');
+  if (drawerBadge) {
+    drawerBadge.textContent = actives > 0 ? actives + ' commande' + (actives > 1 ? 's' : '') + ' en cours' : 'Aucune en cours';
+  }
+}
+
+function afficherPopupNotif(commande) {
+  const popup = document.getElementById('popup-notif-nouvelle');
+  
+  document.getElementById('popup-notif-source').textContent = sourceLabel(commande.source);
+  document.getElementById('popup-notif-numero').textContent = '#' + commande.numero;
+  document.getElementById('popup-notif-total').textContent = fmt(commande.total || 0);
+  
+  // Articles
+  const lignes = commande.lignes || [];
+  const articlesHtml = '<ul>' + lignes.map(l => 
+    '<li><b>' + (l.quantite || 1) + '×</b> ' + escapeHtmlPos(l.nom) + '</li>'
+  ).join('') + '</ul>';
+  document.getElementById('popup-notif-articles').innerHTML = articlesHtml;
+  
+  popup.classList.add('actif');
+  
+  // Stocker l'ID pour le bouton "Voir et imprimer"
+  popup.dataset.commandeId = commande.id;
+  
+  // Auto-disparition après 8 secondes
+  if (popupNotifTimeout) clearTimeout(popupNotifTimeout);
+  popupNotifTimeout = setTimeout(() => {
+    popup.classList.remove('actif');
+  }, 8000);
+}
+
+function vuEtOuvrirKDS() {
+  const popup = document.getElementById('popup-notif-nouvelle');
+  const id = popup.dataset.commandeId;
+  popup.classList.remove('actif');
+  if (popupNotifTimeout) clearTimeout(popupNotifTimeout);
+  
+  // Marquer comme vue
+  if (id) {
+    sb.from('commandes_en_cours')
+      .update({ statut: 'a_preparer', vu_caisse: true, vu_le: new Date().toISOString() })
+      .eq('id', id)
+      .then(() => {
+        // Imprimer le ticket cuisine
+        imprimerCommandeKDS(id);
+      });
+  }
+  
+  ouvrirKDS();
+}
+
+function sourceLabel(source) {
+  const labels = {
+    'borne': 'Borne',
+    'click_collect': 'Click & Collect',
+    'app': 'Application',
+    'site': 'Site web',
+    'uber_eats': 'Uber Eats',
+    'deliveroo': 'Deliveroo',
+    'just_eat': 'Just Eat',
+    'caisse': 'Caisse'
+  };
+  return labels[source] || source || 'Inconnu';
+}
+
+function ouvrirKDS() {
+  fermerMenuHamburger();
+  document.getElementById('overlay-kds').classList.add('show');
+  kdsFiltreActif = 'actives';
+  document.querySelectorAll('.kds-filtre-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.statut === 'actives');
+  });
+  afficherKDS();
+}
+
+function fermerKDS() {
+  document.getElementById('overlay-kds').classList.remove('show');
+}
+
+function filtrerKDS(statut) {
+  kdsFiltreActif = statut;
+  document.querySelectorAll('.kds-filtre-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.statut === statut);
+  });
+  afficherKDS();
+}
+
+function afficherKDS() {
+  const zone = document.getElementById('kds-zone');
+  
+  // Filtrer
+  let commandes;
+  if (kdsFiltreActif === 'actives') {
+    commandes = kdsCommandes.filter(c => ['nouvelle','a_preparer','en_preparation','prete'].includes(c.statut));
+  } else if (kdsFiltreActif === 'a_preparer') {
+    commandes = kdsCommandes.filter(c => ['nouvelle','a_preparer'].includes(c.statut));
+  } else if (kdsFiltreActif === 'en_preparation') {
+    commandes = kdsCommandes.filter(c => c.statut === 'en_preparation');
+  } else if (kdsFiltreActif === 'prete') {
+    commandes = kdsCommandes.filter(c => c.statut === 'prete');
+  } else if (kdsFiltreActif === 'recuperees') {
+    commandes = kdsCommandes.filter(c => c.statut === 'recuperee');
+  } else {
+    commandes = kdsCommandes;
+  }
+  
+  if (commandes.length === 0) {
+    zone.innerHTML = '<div class="kds-vide"><div class="ic">📭</div><p>Aucune commande</p></div>';
+    return;
+  }
+  
+  zone.innerHTML = commandes.map(c => {
+    const tempsEcoule = Math.floor((Date.now() - new Date(c.cree_le).getTime()) / 60000);
+    const tempsTxt = tempsEcoule < 1 ? 'à l\'instant' : 
+                     tempsEcoule < 60 ? 'il y a ' + tempsEcoule + ' min' : 
+                     'il y a ' + Math.floor(tempsEcoule/60) + 'h' + (tempsEcoule%60);
+    
+    const articles = (c.lignes || []).map(l => 
+      '<div class="kds-cmd-article"><span><span class="kds-cmd-article-qte">' + (l.quantite || 1) + '×</span>' + escapeHtmlPos(l.nom) + '</span></div>'
+    ).join('');
+    
+    let actionsHtml = '';
+    if (c.statut === 'nouvelle' || c.statut === 'a_preparer') {
+      actionsHtml = `
+        <button class="kds-btn prep" onclick="changerStatutKDS('${c.id}', 'en_preparation')">🟡 En préparation</button>
+        <button class="kds-btn imprimer" onclick="imprimerCommandeKDS('${c.id}')">🖨️</button>
+      `;
+    } else if (c.statut === 'en_preparation') {
+      actionsHtml = `
+        <button class="kds-btn prete" onclick="changerStatutKDS('${c.id}', 'prete')">🟢 Prête</button>
+        <button class="kds-btn imprimer" onclick="imprimerCommandeKDS('${c.id}')">🖨️</button>
+      `;
+    } else if (c.statut === 'prete') {
+      actionsHtml = `
+        <button class="kds-btn recup" onclick="changerStatutKDS('${c.id}', 'recuperee')">✓ Récupérée</button>
+      `;
+    }
+    
+    return `
+      <div class="kds-commande statut-${c.statut}">
+        <div class="kds-cmd-head">
+          <div>
+            <div class="kds-cmd-numero">#${escapeHtmlPos(c.numero || '?')}</div>
+            <div class="kds-cmd-mode">${c.mode_service === 'sur_place' ? '🍽️ Sur place' : '🥡 À emporter'}</div>
+          </div>
+          <div style="text-align:right;">
+            <span class="kds-cmd-source ${c.source}">${sourceLabel(c.source)}</span>
+            <div class="kds-cmd-time">${tempsTxt}</div>
+          </div>
+        </div>
+        <div class="kds-cmd-articles">${articles || '<em style="color:var(--text-mute)">Pas de détails</em>'}</div>
+        <div class="kds-cmd-total">${fmt(c.total || 0)}</div>
+        <div class="kds-cmd-actions">${actionsHtml}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function changerStatutKDS(id, nouveauStatut) {
+  const maj = { statut: nouveauStatut };
+  if (nouveauStatut === 'en_preparation') maj.preparee_le = new Date().toISOString();
+  else if (nouveauStatut === 'prete') maj.prete_le = new Date().toISOString();
+  else if (nouveauStatut === 'recuperee') maj.recuperee_le = new Date().toISOString();
+  
+  try {
+    await sb.from('commandes_en_cours').update(maj).eq('id', id);
+    // Le Realtime va mettre à jour l'affichage automatiquement
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  }
+}
+
+async function imprimerCommandeKDS(id) {
+  const cmd = kdsCommandes.find(c => c.id === id);
+  if (!cmd) return;
+  
+  // Essayer d'imprimer via le relais d'impression existant
+  try {
+    if (typeof envoyerImpressionCuisine === 'function') {
+      await envoyerImpressionCuisine({
+        numero: cmd.numero,
+        source: cmd.source,
+        mode_service: cmd.mode_service,
+        lignes: cmd.lignes,
+        total: cmd.total
+      });
+      // Notifier sans alerter
+      console.log('✅ Ticket envoyé à l\'impression');
+    } else {
+      console.log('Pas de fonction d\'impression disponible');
+    }
+  } catch (e) {
+    console.error('Erreur impression:', e);
+  }
+}
+
+// Lancer le KDS au chargement
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (typeof sb !== 'undefined') {
+      demarrerKDSRealtime();
+    }
+  }, 2000);
+});
+
+// Fermer modale en cliquant dehors
+document.getElementById('overlay-kds').addEventListener('click', e => {
+  if (e.target.id === 'overlay-kds') fermerKDS();
 });
 
 // ============================================
