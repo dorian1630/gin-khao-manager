@@ -150,7 +150,7 @@ body {
   justify-content: center;
   padding: 40px;
   background-color: var(--bg-deep);
-  background-image: url('https://res.cloudinary.com/dci5mreqo/image/upload/v1782545119/Sans_titre_1080_x_1920_px_1_bm8blw.png');
+  background-image: url('https://res.cloudinary.com/dci5mreqo/image/upload/v1782309416/Sans_titre_1080_x_1920_px_zhfttb.png');
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -2282,7 +2282,7 @@ body {
   <div class="mode-choix">
     <div class="mode-card" onclick="choisirMode('sur_place')">
       <div class="ic">
-        <img src="https://res.cloudinary.com/dci5mreqo/image/upload/v1782544268/ChatGPT_Image_27_juin_2026_09_10_38_tzsqrp.png" 
+        <img src="https://res.cloudinary.com/dci5mreqo/image/upload/v1782307321/ChatGPT_Image_24_juin_2026_15_19_33_vuthdi.png" 
              alt="Sur place" />
       </div>
       <div class="nm">Sur place</div>
@@ -4021,23 +4021,63 @@ async function payer(methode) {
   if (envoiEnCours || panier.length === 0) return;
   envoiEnCours = true;
 
-  // mode_paiement : 'comptoir' = à régler au comptoir
   const lignes = panier.map(l => ({
     produit_id: l.produit_id,
     nom: l.nom,
     prix: l.prix,
     quantite: l.quantite
   }));
-
+  const totalCmd = totalPanier();
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🎯 PAIEMENT AU COMPTOIR : nouveau flow
+  // → On NE crée PAS la vente
+  // → On crée juste une commande_en_cours pour la caisse
+  // → Le caissier l'attrapera et la chargera dans son ticket
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (methode === 'comptoir') {
+    try {
+      // Récupérer le prochain numéro pour affichage
+      const numAttente = '#' + Math.floor(Math.random() * 900 + 100); // numéro temporaire
+      
+      // Insérer directement dans commandes_en_cours (sans passer par /ventes)
+      const { data: cmd, error } = await sb.from('commandes_en_cours').insert({
+        restaurant_id: RESTO_ID,
+        numero: numAttente,
+        source: 'borne',
+        mode_service: modeService,
+        total: totalCmd,
+        lignes: lignes,
+        statut: 'paiement_comptoir'  // ✨ statut spécial
+      }).select().single();
+      
+      if (error) throw error;
+      
+      // Imprimer ticket borne client (pour qu'il sache son numéro)
+      imprimerTicketBorneRawBT(numAttente.replace('#',''), methode, lignes).catch(e => console.error('RawBT KO:', e));
+      
+      // Affichage confirmation
+      afficherConfirmation(numAttente.replace('#',''), methode);
+      return;
+    } catch (e) {
+      alert('Erreur lors de l\'envoi : ' + e.message);
+      envoiEnCours = false;
+      allerEcran('ecran-paiement');
+      return;
+    }
+  }
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 💳 PAIEMENT CARTE / autre : flow normal
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   try {
     // ✨ On passe par notre Netlify Function (sécurisée, service_role)
-    // au lieu d'appeler Supabase directement depuis la borne (clé anon limitée)
     const resp = await fetch('/.netlify/functions/borne-enregistrer-vente', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         restaurant_id: RESTO_ID,
-        mode_paiement: methode === 'comptoir' ? 'comptoir' : 'carte',
+        mode_paiement: 'carte',
         lignes: lignes,
         mode_service: modeService,
         client_id: clientFid ? clientFid.id : null
@@ -4049,28 +4089,14 @@ async function payer(methode) {
     const numero = data.numero ?? '?';
     const venteId = data.vente_id;
 
-    // ✨ NOUVEAU : insérer dans commandes_en_cours pour notification caisse
-    try {
-      await sb.from('commandes_en_cours').insert({
-        restaurant_id: RESTO_ID,
-        vente_id: venteId,
-        numero: String(numero),
-        source: 'borne',
-        mode_service: modeService,
-        total: data.total || totalPanier(),
-        lignes: lignes,
-        statut: 'nouvelle'
-      });
-    } catch (e) {
-      console.error('Erreur insert commande_en_cours:', e);
-    }
-
     // 🧾 Impression cuisine UNIQUEMENT si payé maintenant (carte)
+    // Si paiement au comptoir → la cuisine n'imprime QUE quand le caissier encaisse
     if (methode === 'carte') {
       imprimerTicketCuisine(venteId, numero, lignes).catch(e => console.error('Impression KO:', e));
     }
 
     // 🖨️ Impression du ticket BORNE client (numéro géant) via RawBT
+    // → Sortir le ticket que le client récupère devant la borne
     imprimerTicketBorneRawBT(numero, methode, lignes).catch(e => console.error('RawBT KO:', e));
 
     afficherConfirmation(numero, methode);
