@@ -10,28 +10,51 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg-deep: #0A0908;
-  --bg-soft: #14110E;
-  --surface: #1C1814;
-  --surface-2: #251F19;
-  --border: #2D261E;
-  --border-soft: #221C16;
-  --sriracha: #E63946;
-  --sriracha-soft: #C42E3B;
-  --gold: #E4B860;
-  --gold-soft: #B8924E;
+  /* 🍊 PALETTE McDo STYLE - Orange & Blanc */
+  --bg-deep: #FFF8F2;          /* Fond principal blanc cassé chaud */
+  --bg-soft: #FFFFFF;           /* Fond pur */
+  --surface: #FFFFFF;           /* Surface cartes */
+  --surface-2: #FFFAF5;         /* Surface cartes alt */
+  --border: #FFE4D1;            /* Bordures soft */
+  --border-soft: #FFF0E0;       /* Bordures très soft */
+
+  /* Accents */
+  --orange: #FF6B35;            /* Orange Gin Khao principal */
+  --orange-dark: #E55524;       /* Orange hover/pressed */
+  --orange-soft: #FFAA80;       /* Orange clair */
+  --orange-pale: #FFE4D1;       /* Orange ultra clair (backgrounds) */
+
+  /* Compat (remplace les anciens noms gardés pour compat) */
+  --sriracha: #FF6B35;
+  --sriracha-soft: #E55524;
+  --gold: #FF6B35;              /* Re-mappé sur orange */
+  --gold-soft: #E55524;
   --lime: #A8E10C;
   --lime-soft: #82B509;
-  --text: #F5EDE2;
-  --text-soft: #C7B9A5;
-  --text-mute: #8B7E6F;
-  --text-dim: #5A5045;
+
+  /* Textes (sombres sur fond clair) */
+  --text: #1A1A1A;              /* Noir profond - lecture */
+  --text-soft: #5C5C5C;         /* Gris foncé - secondaire */
+  --text-mute: #8A8A8A;         /* Gris - tertiaire */
+  --text-dim: #BFBFBF;          /* Gris clair - disabled */
+
+  /* Or thaï (highlights premium) */
+  --thai-gold: #D4A056;
+
+  /* Typo */
   --display: 'Fraunces', Georgia, serif;
   --body: 'Manrope', system-ui, sans-serif;
   --mono: 'JetBrains Mono', monospace;
-  --radius: 22px;
+
+  /* Radius */
+  --radius: 24px;
   --radius-sm: 16px;
-  --radius-xs: 10px;
+  --radius-xs: 12px;
+
+  /* Ombres pour cartes en mode clair */
+  --shadow-sm: 0 2px 8px rgba(255, 107, 53, 0.08);
+  --shadow-md: 0 6px 24px rgba(255, 107, 53, 0.12);
+  --shadow-lg: 0 12px 40px rgba(255, 107, 53, 0.18);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body { height: 100%; }
@@ -49,70 +72,1044 @@ body {
 .ecran.actif { display: flex; animation: fadeIn 0.35s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* ===== ÉCRAN ACCUEIL ===== */
+/* ===== ÉCRAN ACCUEIL — Image plein écran ===== */
 #ecran-accueil {
   align-items: center;
   justify-content: center;
   text-align: center;
   cursor: pointer;
-  background:
-    radial-gradient(circle at 50% 35%, rgba(230,57,70,0.14), transparent 55%),
-    radial-gradient(circle at 50% 90%, rgba(228,184,96,0.10), transparent 50%),
-    var(--bg-deep);
+  background-color: var(--bg-deep);
   position: relative;
   overflow: hidden;
+  padding: 0;
+  flex-direction: column;
 }
-.accueil-mark {
-  font-family: var(--display);
-  font-size: 16px;
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  color: var(--gold);
-  font-weight: 600;
-  margin-bottom: 20px;
+/* L'écran n'est affiché en flex QUE quand il a la classe .actif */
+#ecran-accueil.actif {
+  display: flex;
 }
-.accueil-logo {
-  font-family: var(--display);
-  font-size: clamp(64px, 14vw, 130px);
-  font-weight: 500;
-  line-height: 0.95;
-  letter-spacing: -0.02em;
+#ecran-accueil:not(.actif) {
+  display: none !important;
 }
-.accueil-logo span { color: var(--sriracha); }
-.accueil-sub { font-size: 18px; color: var(--text-mute); margin-top: 18px; letter-spacing: 0.05em; }
+.accueil-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+}
+.accueil-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+.accueil-bottom {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 10;
+}
 .accueil-cta {
-  margin-top: 70px;
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  padding: 22px 44px;
-  border: 2px solid var(--gold);
+  padding: 28px 60px;
+  border: none;
   border-radius: 999px;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--gold);
+  font-size: 26px;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
   animation: pulse 2.2s ease-in-out infinite;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(255, 107, 53, 0.4);
+  letter-spacing: 0.02em;
 }
 @keyframes pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(228,184,96,0.3); }
-  50% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(228,184,96,0); }
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(255, 107, 53, 0.4), 0 0 0 0 rgba(255, 107, 53, 0.5); }
+  50% { transform: scale(1.04); box-shadow: 0 8px 32px rgba(255, 107, 53, 0.4), 0 0 0 24px rgba(255, 107, 53, 0); }
+}
+.accueil-mark, .accueil-logo, .accueil-sub, .accueil-bowl {
+  display: none;
 }
 .accueil-bowl {
   font-size: clamp(80px, 18vw, 180px);
   margin-bottom: 30px;
-  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 20px 40px rgba(255, 107, 53, 0.3));
 }
 
 /* ===== ÉCRAN MODE (sur place / emporter) ===== */
-#ecran-mode { align-items: center; justify-content: center; padding: 40px; }
-.mode-titre { font-family: var(--display); font-size: 40px; font-weight: 500; margin-bottom: 50px; text-align: center; }
-.mode-choix { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+#ecran-mode {
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background-color: var(--bg-deep);
+  background-image: url('https://res.cloudinary.com/dci5mreqo/image/upload/v1782309416/Sans_titre_1080_x_1920_px_zhfttb.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+.mode-titre {
+  font-family: var(--display);
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 50px;
+  text-align: center;
+  letter-spacing: -0.01em;
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 14px 28px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-md);
+}
+.mode-choix {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
 .mode-card {
+  width: 440px;
+  height: 500px;
+  background: #FFFFFF;
+  border: 2px solid var(--border-soft);
+  border-radius: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+}
+.mode-card:active {
+  transform: scale(0.96);
+  box-shadow: var(--shadow-lg);
+}
+.mode-card:hover {
+  border-color: var(--orange);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.mode-card .ic {
+  position: absolute;
+  inset: 0;
+  bottom: 70px;
+  font-size: 180px;
+  filter: drop-shadow(0 6px 18px rgba(255, 107, 53, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.mode-card .ic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mode-card .nm {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  background: #FFFFFF;
+  padding: 18px 16px;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+/* ===== ÉCRAN ACCUEIL CATÉGORIES (McDo style — Orange & Blanc) ===== */
+#ecran-accueil-cats { background: var(--bg-deep); }
+
+/* TOPBAR — Logo + badge mode */
+.ac-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px 20px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+  box-shadow: 0 2px 16px rgba(255, 107, 53, 0.04);
+  position: relative;
+  z-index: 10;
+}
+.ac-logo {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.ac-logo span {
+  color: var(--orange);
+  font-style: italic;
+}
+.ac-mode-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--orange);
+  background: var(--orange-pale);
+  border: 1.5px solid var(--orange-soft);
+  padding: 10px 18px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* SCROLL principal */
+.ac-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 24px 120px;
+  background: var(--bg-deep);
+}
+.ac-scroll::-webkit-scrollbar { width: 6px; }
+.ac-scroll::-webkit-scrollbar-thumb {
+  background: var(--orange-soft);
+  border-radius: 4px;
+}
+
+/* BANDEAU PROMO - Premium card */
+.ac-promo {
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%);
+  border: none;
+  border-radius: 28px;
+  padding: 28px 26px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 36px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  color: #FFFFFF;
+}
+.ac-promo:active { transform: scale(0.98); }
+.ac-promo::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -10%;
   width: 280px;
-  height: 320px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 65%);
+  pointer-events: none;
+}
+.ac-promo::after {
+  content: '';
+  position: absolute;
+  bottom: -50%;
+  left: -10%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255, 224, 200, 0.2), transparent 70%);
+  pointer-events: none;
+}
+.ac-promo-img {
+  font-size: 64px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.25));
+  position: relative;
+  z-index: 1;
+}
+.ac-promo-content {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+.ac-promo-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.ac-promo-title {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  line-height: 1.15;
+  color: #FFFFFF;
+}
+.ac-promo-sub {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+  font-weight: 500;
+}
+.ac-promo-arrow {
+  font-size: 32px;
+  color: #FFFFFF;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* SECTION TITRE */
+.ac-section-title {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 600;
+  margin-bottom: 22px;
+  margin-top: 4px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  padding: 0 4px;
+}
+.ac-section-title::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 28px;
+  background: var(--orange);
+  margin-right: 14px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-top: -2px;
+}
+
+/* GRILLE DES CATÉGORIES - 3 colonnes */
+.ac-cats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 36px;
+}
+/* En portrait borne ou écran étroit, on revient à 2 colonnes */
+@media (max-width: 700px) {
+  .ac-cats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.ac-cat-card {
+  background: #FFFFFF;
+  border: 2px solid var(--border-soft);
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 4 / 5;  /* Format Canva 1080x1350 */
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+.ac-cat-card.has-image {
+  background-color: var(--orange-pale);
+}
+.ac-cat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--orange), var(--orange-dark));
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 5;
+}
+.ac-cat-card:active {
+  transform: scale(0.95);
+  box-shadow: var(--shadow-md);
+}
+.ac-cat-card:hover {
+  border-color: var(--orange);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.ac-cat-card:hover::before { opacity: 1; }
+
+/* Emoji fallback (centré dans la zone vide au-dessus du bandeau) */
+.ac-cat-emoji {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(255, 107, 53, 0.2));
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Bandeau du bas avec nom + count */
+.ac-cat-bandeau {
+  margin-top: auto;
+  background: #FFFFFF;
+  padding: 12px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 2;
+}
+.ac-cat-nom {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.ac-cat-count {
+  font-size: 10px;
+  color: var(--orange);
+  font-weight: 700;
+  background: var(--orange-pale);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+/* En mobile/borne portrait étroit, on revient à des tailles normales */
+@media (max-width: 700px) {
+  .ac-cat-bandeau {
+    padding: 14px 16px;
+    gap: 4px;
+  }
+  .ac-cat-nom {
+    font-size: 17px;
+  }
+  .ac-cat-count {
+    font-size: 11px;
+    padding: 3px 10px;
+  }
+}
+
+/* BEST-SELLERS - scroll horizontal */
+.ac-bestsellers-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin: 0 -28px;
+  padding-left: 28px;
+  padding-right: 28px;
+  scrollbar-width: none;
+}
+.ac-bestsellers-scroll::-webkit-scrollbar { display: none; }
+.ac-best-card {
+  flex-shrink: 0;
+  width: 180px;
   background: linear-gradient(160deg, var(--surface-2), var(--surface));
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+}
+.ac-best-card:active { transform: scale(0.97); }
+.ac-best-card:hover { border-color: var(--gold-soft); }
+.ac-best-badge {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: var(--gold);
+  color: var(--bg-deep);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+}
+.ac-best-emoji {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+.ac-best-nom {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  min-height: 34px;
+}
+.ac-best-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ac-best-prix {
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--gold);
+  font-weight: 500;
+}
+.ac-best-plus {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--sriracha);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(230, 57, 70, 0.3);
+}
+
+
+#ecran-menu { background: var(--bg-soft); }
+/* ===== MENU PLATS — Top bar McDo ===== */
+.menu-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px 20px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+  box-shadow: 0 2px 16px rgba(255, 107, 53, 0.04);
+  position: relative;
+  z-index: 10;
+}
+.menu-top .logo {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.menu-top .logo span {
+  color: var(--orange);
+  font-style: italic;
+}
+.btn-retour-cats {
+  background: var(--orange-pale);
+  border: 1.5px solid var(--orange-soft);
+  color: var(--orange-dark);
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.15s;
+}
+.btn-retour-cats:active {
+  transform: scale(0.95);
+  background: var(--orange-soft);
+  color: #FFFFFF;
+}
+.menu-mode-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--orange);
+  background: var(--orange-pale);
+  border: 1.5px solid var(--orange-soft);
+  padding: 10px 18px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Catégories scroll horizontal */
+.menu-cats {
+  display: flex;
+  gap: 12px;
+  padding: 20px 32px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-soft);
+}
+.menu-cats::-webkit-scrollbar { display: none; }
+.menu-cat {
+  flex-shrink: 0;
+  padding: 14px 24px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: #FFFFFF;
+  color: var(--text-soft);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+}
+.menu-cat:hover {
+  border-color: var(--orange-soft);
+  color: var(--orange-dark);
+}
+.menu-cat.actif {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.32);
+}
+
+/* GRILLE PLATS 2 colonnes (portrait borne) - 3 colonnes (paysage PC) */
+.menu-grille {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 32px 140px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: max-content;
+  gap: 60px 32px;  /* +d'espace vertical pour le bandeau prix */
+  align-content: start;
+  background: var(--bg-deep);
+}
+
+/* Wrapper qui contient prix-top + carte */
+.plat-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Bandeau prix au-dessus de la carte (centré) */
+.plat-prix-top {
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+  padding: 10px 24px;
+  border-radius: 999px;
+  letter-spacing: -0.01em;
+  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.45);
+  line-height: 1;
+  margin-bottom: 12px;
+  white-space: nowrap;
+  border: 3px solid #FFFFFF;
+  z-index: 2;
+}
+/* En écran large (PC en paysage), on passe à 3 colonnes */
+@media (min-width: 900px) and (orientation: landscape) {
+  .menu-grille {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 36px;
+    padding: 36px 36px 140px;
+  }
+}
+.menu-grille::-webkit-scrollbar { width: 6px; }
+.menu-grille::-webkit-scrollbar-thumb {
+  background: var(--orange-soft);
+  border-radius: 4px;
+}
+
+/* CARTE PLAT — Image entière cliquable + prix en bas */
+.plat-card {
+  background: var(--orange-pale);
+  border: 2px solid var(--border-soft);
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  height: 400px;  /* Hauteur FIXE pour TOUTES les cartes */
+  display: flex;
+  flex-direction: column;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  width: 100%;
+  min-width: 0;
+}
+.plat-card.has-image {
+  background-color: var(--orange-pale);
+}
+
+/* Sur grand écran, on peut faire les cartes plus grandes */
+@media (min-width: 900px) and (orientation: landscape) {
+  .plat-card {
+    height: 440px;
+  }
+}
+
+/* Sur PETIT écran ou borne portrait (largeur < 600px), on s'adapte */
+@media (max-width: 600px) {
+  .plat-card {
+    height: 360px;
+  }
+}
+.plat-card:active {
+  transform: scale(0.96);
+  box-shadow: var(--shadow-md);
+}
+.plat-card:hover {
+  border-color: var(--orange);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.plat-card.rupture {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(0.4);
+}
+
+/* Tag prix orange en HAUT-droite quand on a une image */
+.plat-prix-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+  padding: 10px 18px;
+  border-radius: 999px;
+  letter-spacing: -0.01em;
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.45);
+  z-index: 3;
+  line-height: 1;
+  border: 2px solid #FFFFFF;
+}
+
+/* Emoji en fond (fallback si pas d'image) */
+.plat-emoji-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px;  /* Laisse de la place pour le bandeau */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 100px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 20px rgba(255, 107, 53, 0.25));
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Bandeau de fallback quand pas d'image (montre nom + prix) */
+.plat-bandeau-fallback {
+  margin-top: auto;
+  background: #FFFFFF;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 2;
+}
+.plat-nom-fallback {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plat-prix {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--orange);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.plat-rupture-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: #1A1A1A;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Barre panier en bas — FIXE + énergique */
+.panier-bar {
+  flex-shrink: 0;
+  border-top: 1.5px solid var(--border-soft);
+  background: #FFFFFF;
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  box-shadow: 0 -8px 32px rgba(255, 107, 53, 0.08);
+  z-index: 50;
+}
+.panier-info { flex: 1; }
+.panier-count {
+  font-size: 13px;
+  color: var(--text-mute);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.panier-total {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.panier-total span { color: var(--orange); }
+.btn-voir-panier {
+  padding: 18px 32px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+  letter-spacing: 0.02em;
+}
+.btn-voir-panier:active {
+  transform: scale(0.96);
+  box-shadow: 0 3px 12px rgba(255, 107, 53, 0.5);
+}
+.btn-voir-panier:disabled {
+  opacity: 0.4;
+  background: var(--text-dim);
+  box-shadow: none;
+}
+
+/* ===== ÉCRAN PANIER ===== */
+#ecran-panier { background: var(--bg-deep); }
+.panier-head {
+  padding: 24px 32px 20px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  box-shadow: 0 2px 16px rgba(255, 107, 53, 0.04);
+}
+.panier-head h2 {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.btn-retour {
+  background: var(--orange-pale);
+  border: 1.5px solid var(--orange-soft);
+  color: var(--orange-dark);
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+}
+.btn-retour:active {
+  transform: scale(0.95);
+  background: var(--orange-soft);
+  color: #FFFFFF;
+}
+.panier-liste { flex: 1; overflow-y: auto; padding: 22px 24px 24px; }
+.pl-options {
+  font-size: 12px;
+  color: var(--text-soft);
+  font-style: italic;
+  margin-top: 4px;
+  padding: 4px 10px;
+  background: var(--orange-pale);
+  border-radius: 8px;
+  display: inline-block;
+}
+.pl-lie {
+  background: var(--surface-2) !important;
+  padding-left: 36px !important;
+  border-color: var(--border-soft) !important;
+}
+.panier-ligne {
+  display: flex; align-items: center; gap: 16px;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.pl-emoji { font-size: 36px; }
+.pl-info { flex: 1; min-width: 0; }
+.pl-nom {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.pl-prix {
+  font-size: 13px;
+  color: var(--text-mute);
+  font-weight: 600;
+  margin-top: 2px;
+}
+.pl-qte { display: flex; align-items: center; gap: 12px; }
+.pl-qbtn {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: 1.5px solid var(--orange);
+  background: #FFFFFF;
+  color: var(--orange);
+  font-size: 22px; font-weight: 800;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.pl-qbtn:active {
+  transform: scale(0.9);
+  background: var(--orange);
+  color: #FFFFFF;
+}
+.pl-qval {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  min-width: 24px;
+  text-align: center;
+}
+.pl-st {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--orange);
+  min-width: 80px;
+  text-align: right;
+}
+
+.panier-foot {
+  flex-shrink: 0;
+  border-top: 1.5px solid var(--border-soft);
+  background: #FFFFFF;
+  padding: 24px 28px;
+  box-shadow: 0 -8px 32px rgba(255, 107, 53, 0.08);
+}
+.panier-foot-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 18px;
+}
+.panier-foot-total .lbl {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-mute);
+  font-weight: 700;
+}
+.panier-foot-total .val {
+  font-family: var(--display);
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--text);
+}
+.panier-foot-total .val span { color: var(--orange); }
+.btn-commander {
+  width: 100%;
+  padding: 22px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+  letter-spacing: 0.02em;
+}
+.btn-commander:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.5);
+}
+
+/* ===== ÉCRAN PAIEMENT ===== */
+#ecran-paiement {
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: var(--bg-deep);
+}
+.paie-titre {
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+.paie-montant {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--orange);
+  margin-bottom: 50px;
+}
+.paie-choix {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.paie-card {
+  width: 280px;
+  height: 300px;
+  background: #FFFFFF;
+  border: 2px solid var(--border-soft);
+  border-radius: 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -120,214 +1117,115 @@ body {
   gap: 20px;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-md);
 }
-.mode-card:active { transform: scale(0.96); }
-.mode-card:hover { border-color: var(--gold); }
-.mode-card .ic { font-size: 90px; }
-.mode-card .nm { font-size: 26px; font-weight: 700; }
-
-/* ===== ÉCRAN MENU ===== */
-#ecran-menu { background: var(--bg-soft); }
-.menu-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 28px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+.paie-card:active {
+  transform: scale(0.96);
+  box-shadow: var(--shadow-lg);
 }
-.menu-top .logo { font-family: var(--display); font-size: 26px; font-weight: 500; }
-.menu-top .logo span { color: var(--sriracha); }
-.menu-mode-badge {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gold);
-  border: 1px solid var(--gold-soft);
-  padding: 8px 16px;
+.paie-card:hover {
+  border-color: var(--orange);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.paie-card.bientot {
+  opacity: 0.55;
+  background: var(--surface-2);
+}
+.paie-card .ic { font-size: 76px; filter: drop-shadow(0 4px 12px rgba(255, 107, 53, 0.15)); }
+.paie-card .nm {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+}
+.paie-card .badge {
+  font-size: 11px;
+  color: var(--orange);
+  background: var(--orange-pale);
+  padding: 4px 12px;
   border-radius: 999px;
-}
-.menu-cats {
-  display: flex;
-  gap: 12px;
-  padding: 18px 28px;
-  overflow-x: auto;
-  flex-shrink: 0;
-  scrollbar-width: none;
-}
-.menu-cats::-webkit-scrollbar { display: none; }
-.menu-cat {
-  flex-shrink: 0;
-  padding: 14px 26px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-soft);
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.18s;
-}
-.menu-cat.actif { background: var(--sriracha); border-color: var(--sriracha); color: #fff; }
-.menu-grille {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 28px 28px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 18px;
-  align-content: start;
-}
-.menu-grille::-webkit-scrollbar { width: 8px; }
-.menu-grille::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-.plat-card {
-  background: linear-gradient(160deg, var(--surface-2), var(--surface));
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 22px 18px;
-  cursor: pointer;
-  transition: all 0.18s;
-  display: flex;
-  flex-direction: column;
-  min-height: 150px;
-  position: relative;
-}
-.plat-card:active { transform: scale(0.97); }
-.plat-card:hover { border-color: var(--gold-soft); }
-.plat-card.rupture { opacity: 0.4; pointer-events: none; }
-.plat-emoji { font-size: 44px; margin-bottom: 12px; }
-.plat-nom { font-size: 18px; font-weight: 700; line-height: 1.2; }
-.plat-bas { margin-top: auto; padding-top: 14px; display: flex; align-items: center; justify-content: space-between; }
-.plat-prix { font-family: var(--display); font-size: 24px; font-weight: 500; color: var(--gold); }
-.plat-plus {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: var(--sriracha);
-  color: #fff;
-  font-size: 26px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-}
-.plat-rupture-badge {
-  position: absolute; top: 12px; right: 12px;
-  background: var(--text-dim); color: var(--bg-deep);
-  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
 }
-
-/* Barre panier en bas */
-.panier-bar {
-  flex-shrink: 0;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  padding: 18px 28px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-.panier-info { flex: 1; }
-.panier-count { font-size: 14px; color: var(--text-mute); }
-.panier-total { font-family: var(--display); font-size: 30px; font-weight: 500; }
-.panier-total span { color: var(--gold); }
-.btn-voir-panier {
-  padding: 18px 36px;
+.paie-annuler {
+  margin-top: 40px;
+  background: none;
   border: none;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--sriracha), var(--sriracha-soft));
-  color: #fff;
-  font-size: 18px;
-  font-weight: 700;
+  color: var(--text-soft);
+  font-size: 15px;
   cursor: pointer;
-  transition: transform 0.15s;
+  text-decoration: underline;
+  font-family: var(--body);
+  font-weight: 600;
 }
-.btn-voir-panier:active { transform: scale(0.96); }
-.btn-voir-panier:disabled { opacity: 0.4; }
-
-/* ===== ÉCRAN PANIER ===== */
-#ecran-panier { background: var(--bg-soft); }
-.panier-head {
-  padding: 24px 28px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0;
-}
-.panier-head h2 { font-family: var(--display); font-size: 30px; font-weight: 500; }
-.btn-retour {
-  background: var(--surface-2); border: 1px solid var(--border); color: var(--text-soft);
-  padding: 12px 22px; border-radius: var(--radius-xs); font-size: 15px; font-weight: 600;
-  cursor: pointer; font-family: var(--body);
-}
-.panier-liste { flex: 1; overflow-y: auto; padding: 18px 28px; }
-.panier-ligne {
-  display: flex; align-items: center; gap: 16px;
-  background: var(--surface); border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm); padding: 16px 18px; margin-bottom: 12px;
-}
-.pl-emoji { font-size: 32px; }
-.pl-info { flex: 1; }
-.pl-nom { font-size: 17px; font-weight: 700; }
-.pl-prix { font-size: 14px; color: var(--text-mute); font-family: var(--mono); margin-top: 2px; }
-.pl-qte { display: flex; align-items: center; gap: 12px; }
-.pl-qbtn {
-  width: 40px; height: 40px; border-radius: 50%; border: none;
-  background: var(--surface-2); color: var(--text); font-size: 22px; font-weight: 700;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-}
-.pl-qbtn:active { transform: scale(0.9); }
-.pl-qval { font-size: 18px; font-weight: 700; font-family: var(--mono); min-width: 24px; text-align: center; }
-.pl-st { font-family: var(--display); font-size: 20px; color: var(--gold); min-width: 70px; text-align: right; }
-
-.panier-foot { flex-shrink: 0; border-top: 1px solid var(--border); background: var(--surface); padding: 22px 28px; }
-.panier-foot-total { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
-.panier-foot-total .lbl { font-size: 16px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-mute); font-weight: 600; }
-.panier-foot-total .val { font-family: var(--display); font-size: 42px; font-weight: 500; }
-.panier-foot-total .val span { color: var(--gold); }
-.btn-commander {
-  width: 100%; padding: 22px; border: none; border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--lime), var(--lime-soft)); color: var(--bg-deep);
-  font-size: 20px; font-weight: 800; cursor: pointer; transition: transform 0.15s;
-}
-.btn-commander:active { transform: scale(0.98); }
-
-/* ===== ÉCRAN PAIEMENT ===== */
-#ecran-paiement { align-items: center; justify-content: center; padding: 40px; }
-.paie-titre { font-family: var(--display); font-size: 36px; font-weight: 500; margin-bottom: 12px; text-align: center; }
-.paie-montant { font-family: var(--display); font-size: 28px; color: var(--gold); margin-bottom: 50px; }
-.paie-choix { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
-.paie-card {
-  width: 260px; height: 280px;
-  background: linear-gradient(160deg, var(--surface-2), var(--surface));
-  border: 1.5px solid var(--border); border-radius: var(--radius);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-  cursor: pointer; transition: all 0.2s;
-}
-.paie-card:active { transform: scale(0.96); }
-.paie-card:hover { border-color: var(--gold); }
-.paie-card.bientot { opacity: 0.55; }
-.paie-card .ic { font-size: 70px; }
-.paie-card .nm { font-size: 22px; font-weight: 700; }
-.paie-card .badge { font-size: 12px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.05em; }
-.paie-annuler { margin-top: 40px; background: none; border: none; color: var(--text-mute); font-size: 15px; cursor: pointer; text-decoration: underline; font-family: var(--body); }
 
 /* ===== ÉCRAN CONFIRMATION ===== */
-#ecran-fin { align-items: center; justify-content: center; text-align: center; padding: 40px;
-  background: radial-gradient(circle at 50% 40%, rgba(168,225,12,0.12), transparent 55%), var(--bg-deep); }
+#ecran-fin {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  background: radial-gradient(circle at 50% 40%, var(--orange-pale), transparent 55%), var(--bg-deep);
+}
 .fin-check {
-  width: 120px; height: 120px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--lime), var(--lime-soft));
-  color: var(--bg-deep); font-size: 64px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 30px; animation: popCheck 0.5s cubic-bezier(0.16,1,0.3,1);
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-size: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  animation: popCheck 0.5s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 12px 40px rgba(255, 107, 53, 0.4);
 }
 @keyframes popCheck { from { transform: scale(0); } to { transform: scale(1); } }
-.fin-titre { font-family: var(--display); font-size: 38px; font-weight: 500; margin-bottom: 10px; }
-.fin-sub { font-size: 17px; color: var(--text-soft); margin-bottom: 36px; }
-.fin-numero-box {
-  background: var(--surface); border: 1px solid var(--gold-soft); border-radius: var(--radius);
-  padding: 28px 50px; margin-bottom: 36px;
+.fin-titre {
+  font-family: var(--display);
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
 }
-.fin-numero-lbl { font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-mute); }
-.fin-numero { font-family: var(--display); font-size: 80px; font-weight: 600; color: var(--gold); line-height: 1; margin-top: 6px; }
-.fin-mode { font-size: 15px; color: var(--text-mute); }
+.fin-sub {
+  font-size: 18px;
+  color: var(--text-soft);
+  margin-bottom: 36px;
+  font-weight: 500;
+}
+.fin-numero-box {
+  background: #FFFFFF;
+  border: 2px solid var(--orange);
+  border-radius: 28px;
+  padding: 32px 56px;
+  margin-bottom: 36px;
+  box-shadow: var(--shadow-lg);
+}
+.fin-numero-lbl {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-mute);
+  font-weight: 800;
+}
+.fin-numero {
+  font-family: var(--display);
+  font-size: 90px;
+  font-weight: 700;
+  color: var(--orange);
+  line-height: 1;
+  margin-top: 8px;
+  letter-spacing: -0.02em;
+}
+.fin-mode {
+  font-size: 15px;
+  color: var(--text-soft);
+  font-weight: 600;
+}
 .fin-instructions {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -359,7 +1257,864 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Gate connexion */
+/* ===== MODALE UPSELL ===== */
+.upsell-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 6000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.25s ease;
+}
+
+/* ============================================================ */
+/* 🎉 CONFETTIS DE CÉLÉBRATION                                    */
+/* ============================================================ */
+#conteneur-confettis {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+.confetti {
+  position: absolute;
+  top: -20px;
+  border-radius: 2px;
+  animation: confetti-tombe linear forwards;
+}
+@keyframes confetti-tombe {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0.7;
+  }
+}
+
+/* ============================================================ */
+/* ÉCRAN SOUS-CATÉGORIES (Sushi → Makis/Tigers/etc.)              */
+/* ============================================================ */
+#ecran-sous-cats {
+  background: var(--bg-deep);
+  flex-direction: column;
+  padding: 0;
+}
+#ecran-sous-cats.actif {
+  display: flex;
+}
+.sc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: #FFFFFF;
+  border-bottom: 2px solid var(--border-soft);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.btn-voir-panier-mini {
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+}
+.sc-grille {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: max-content;
+  gap: 24px;
+}
+
+/* ============================================================ */
+/* ============================================================ */
+/* MODALE UPSELL V2 (Entrées + Boissons après "Voir mon panier") */
+/* ============================================================ */
+#modal-upsell .upsell-content-v2 {
+  background: #FFFFFF;
+  border-radius: 32px;
+  max-width: 1000px;
+  width: 100%;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+.upsell-head-v2 {
+  text-align: center;
+  padding: 30px 24px 18px;
+  background: linear-gradient(135deg, var(--orange-pale) 0%, #FFFFFF 100%);
+  border-bottom: 2px solid var(--border-soft);
+}
+.upsell-titre-v2 {
+  font-family: var(--display);
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+.upsell-sous-v2 {
+  font-size: 16px;
+  color: var(--text-soft);
+  margin: 0;
+}
+.upsell-grille-v2 {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: max-content;
+  gap: 16px;
+  background: var(--bg-deep);
+}
+.upsell-card-v2 {
+  background: #FFFFFF;
+  border: 2px solid var(--border-soft);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 4 / 5;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow-sm);
+}
+.upsell-card-v2:active {
+  transform: scale(0.96);
+}
+.upsell-card-v2.has-image {
+  background-color: var(--orange-pale);
+}
+.upsell-card-v2.ajoute {
+  border-color: var(--orange);
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.35);
+}
+.upsell-emoji-v2 {
+  font-size: 80px;
+  text-align: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.upsell-bandeau-v2 {
+  background: #FFFFFF;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border-top: 1px solid var(--border-soft);
+  z-index: 2;
+}
+.upsell-nom-v2 {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.upsell-prix-v2 {
+  font-size: 12px;
+  color: var(--orange);
+  font-weight: 700;
+  background: var(--orange-pale);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.upsell-actions-v2 {
+  padding: 18px 24px;
+  display: flex;
+  gap: 14px;
+  background: #FFFFFF;
+  border-top: 2px solid var(--border-soft);
+}
+.upsell-btn-skip-v2 {
+  flex: 1;
+  padding: 16px 24px;
+  border-radius: 999px;
+  background: #F5F5F5;
+  border: 2px solid var(--border-soft);
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.upsell-btn-skip-v2:active {
+  background: #E5E5E5;
+  transform: scale(0.97);
+}
+.upsell-btn-next-v2 {
+  flex: 2;
+  padding: 16px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  border: none;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.4);
+  transition: all 0.18s;
+}
+.upsell-btn-next-v2:active {
+  transform: scale(0.97);
+  box-shadow: 0 3px 10px rgba(255, 107, 53, 0.3);
+}
+.upsell-variantes-v2 {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-deep);
+}
+.upsell-variante-v2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 2px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 18px 24px;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.upsell-variante-v2:active {
+  border-color: var(--orange);
+  background: var(--orange-pale);
+  transform: scale(0.98);
+}
+.upsell-variante-label {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+.upsell-variante-prix {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--orange);
+}
+
+/* ============================================================ */
+/* MODALE PARCOURS PLAT (retirable / suppléments / sauces)       */
+/* ============================================================ */
+
+/* Grille des images (formule boisson + entrée) */
+.parcours-grille-images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px 24px 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+.parcours-card-image {
+  background: #FFFFFF;
+  border: 3px solid var(--border-soft);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 4 / 5;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow-sm);
+}
+.parcours-card-image:active {
+  transform: scale(0.96);
+}
+.parcours-card-image.actif {
+  border-color: var(--orange);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+  transform: scale(1.03);
+}
+.parcours-card-image.has-image {
+  background-color: var(--orange-pale);
+}
+.parcours-card-emoji {
+  font-size: 60px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.parcours-card-bandeau {
+  background: #FFFFFF;
+  padding: 10px;
+  text-align: center;
+  border-top: 1px solid var(--border-soft);
+  z-index: 2;
+}
+.parcours-card-nom {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.parcours-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 7000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.25s ease;
+}
+.parcours-modal.actif {
+  display: flex;
+}
+.parcours-content {
+  background: #FFFFFF;
+  border: none;
+  border-radius: 32px;
+  padding: 40px 32px;
+  max-width: 720px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3), 0 8px 20px rgba(0, 0, 0, 0.1);
+  animation: upsellPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.parcours-head {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* ============================================================ */
+/* ✨ HEADER NAVIGATION DANS LES MODALES (← Retour + ✕ Fermer)  */
+/* ============================================================ */
+.parcours-head-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.parcours-btn-retour {
+  background: rgba(255, 107, 53, 0.1);
+  color: var(--orange);
+  border: 2px solid var(--orange);
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.2s;
+}
+.parcours-btn-retour:active {
+  transform: scale(0.95);
+  background: var(--orange);
+  color: #FFFFFF;
+}
+.parcours-btn-close {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: none;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  font-weight: 700;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.parcours-btn-close:active {
+  transform: scale(0.92);
+  background: #ef4444;
+  color: #FFFFFF;
+}
+
+/* ============================================================ */
+/* ✨ ÉCRANS FORMULE PLEIN ÉCRAN (Entrée → Plat → Boisson)      */
+/* ============================================================ */
+#ecran-formule-step {
+  background: var(--bg-deep, #f8f9fa);
+  flex-direction: column;
+  padding: 0;
+}
+.formule-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: #FFFFFF;
+  border-bottom: 2px solid var(--border-soft);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.formule-step-num {
+  background: var(--orange);
+  color: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.formule-step-titre {
+  text-align: center;
+  padding: 24px 24px 16px;
+}
+.formule-step-titre h2 {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.formule-step-titre p {
+  color: var(--text-mute);
+  font-size: 15px;
+}
+.formule-grille {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: max-content;
+  gap: 18px;
+}
+.formule-card {
+  background: #FFFFFF;
+  border: 3px solid var(--border-soft);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 4 / 5;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow-sm, 0 4px 12px rgba(0,0,0,0.08));
+}
+.formule-card:active {
+  transform: scale(0.96);
+  border-color: var(--orange);
+}
+.formule-card.has-image {
+  background-color: var(--orange-pale, #FFF5F0);
+}
+.formule-card-emoji {
+  font-size: 70px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.formule-card-bandeau {
+  background: #FFFFFF;
+  padding: 14px;
+  text-align: center;
+  border-top: 1px solid var(--border-soft);
+  z-index: 2;
+}
+.formule-card-nom {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.25;
+  margin-bottom: 4px;
+}
+.formule-card-prix {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--orange);
+}
+
+/* ============================================================ */
+/* ✨ BARRE PANIER pendant le parcours formule (sticky bottom)   */
+/* ============================================================ */
+.formule-panier-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #FFFFFF;
+  border-top: 2px solid var(--border-soft);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
+  z-index: 20;
+  gap: 16px;
+}
+.formule-panier-info {
+  flex: 1;
+}
+.formule-panier-count {
+  font-size: 13px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.formule-panier-total {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+}
+.formule-panier-total span {
+  font-size: 18px;
+  color: var(--text-mute);
+}
+.formule-panier-btn {
+  background: linear-gradient(135deg, var(--orange), #FF8552);
+  color: #FFFFFF;
+  border: none;
+  padding: 16px 28px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+  transition: all 0.2s;
+}
+.formule-panier-btn:active {
+  transform: scale(0.96);
+}
+.formule-panier-btn:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.parcours-etape {
+  display: inline-block;
+  background: var(--orange);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: 999px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+.parcours-titre {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.parcours-sous {
+  color: var(--text-soft);
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+.parcours-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+/* Checkbox classique (retirables / suppléments) */
+.parcours-option, .parcours-option-pay {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #FFFFFF;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 22px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 18px;
+}
+.parcours-option:hover, .parcours-option-pay:hover {
+  border-color: var(--orange-soft);
+  background: var(--orange-pale);
+}
+.parcours-option input[type="checkbox"],
+.parcours-option-pay input[type="checkbox"] {
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  accent-color: var(--orange);
+}
+.parcours-option-label {
+  flex: 1;
+  color: var(--text);
+  font-weight: 700;
+}
+.parcours-option-prix {
+  color: var(--orange);
+  font-weight: 800;
+  font-size: 18px;
+}
+/* Radio sauce (avec sélection visuelle) */
+.parcours-option-radio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 18px;
+}
+.parcours-option-radio:hover {
+  border-color: var(--orange-soft);
+  background: var(--orange-pale);
+}
+.parcours-option-radio.actif {
+  border-color: var(--orange);
+  background: var(--orange-pale);
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.15);
+}
+.parcours-option-radio.actif .parcours-option-label::after {
+  content: ' ✓';
+  color: var(--orange);
+  font-weight: 800;
+}
+.parcours-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+.parcours-btn-passer {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border);
+  color: var(--text-soft);
+  padding: 18px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.15s;
+}
+.parcours-btn-passer:hover {
+  color: var(--orange-dark);
+  border-color: var(--orange-soft);
+  background: var(--orange-pale);
+}
+.parcours-btn-valider {
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  border: none;
+  padding: 20px;
+  border-radius: 999px;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.15s;
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+  letter-spacing: 0.02em;
+}
+.parcours-btn-valider:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(255, 107, 53, 0.5);
+}
+.parcours-btn-valider:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: var(--text-dim);
+  box-shadow: none;
+}
+
+.upsell-modal.actif {
+  display: flex;
+}
+.upsell-content {
+  background: #FFFFFF;
+  border: none;
+  border-radius: 32px;
+  padding: 40px 32px 32px;
+  max-width: 700px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3), 0 8px 20px rgba(0, 0, 0, 0.1);
+  animation: upsellPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes upsellPop {
+  from { transform: scale(0.85) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.upsell-confirme {
+  display: inline-block;
+  background: var(--orange);
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: 999px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  font-family: var(--body);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+.upsell-question {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 28px;
+  letter-spacing: -0.01em;
+}
+.upsell-grille {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+@media (min-width: 640px) {
+  .upsell-grille {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.upsell-card {
+  background: #FFFFFF;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: 20px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 180px;
+  box-shadow: var(--shadow-sm);
+}
+.upsell-card:active { transform: scale(0.95); }
+.upsell-card:hover {
+  border-color: var(--orange);
+  box-shadow: var(--shadow-md);
+}
+.upsell-card.upsell-ajoute {
+  border-color: var(--orange);
+  background: var(--orange-pale);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+.upsell-card.upsell-ajoute .upsell-plus {
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+}
+.upsell-emoji {
+  font-size: 44px;
+  margin-bottom: 10px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(255, 107, 53, 0.15));
+}
+.upsell-nom {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.25;
+  margin-bottom: 6px;
+  min-height: 34px;
+}
+.upsell-prix {
+  font-family: var(--display);
+  font-size: 20px;
+  color: var(--orange);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.upsell-plus {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
+}
+.upsell-skip {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border);
+  color: var(--text-soft);
+  padding: 16px 32px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  margin-top: 10px;
+  transition: all 0.15s;
+}
+.upsell-skip:active {
+  transform: scale(0.97);
+  background: var(--orange-pale);
+}
+.upsell-skip:hover {
+  border-color: var(--orange-soft);
+  color: var(--orange-dark);
+  background: var(--orange-pale);
+}
+
+
 .gate { position: fixed; inset: 0; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; z-index: 5000; padding: 24px; text-align: center; }
 .gate .logo { font-family: var(--display); font-size: 32px; }
 .gate .logo span { color: var(--sriracha); }
@@ -380,37 +2135,41 @@ body {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 18px;
+  padding: 18px 20px;
 }
 .fid-bandeau-pas-connecte {
-  background: linear-gradient(135deg, rgba(228,184,96,0.15), rgba(228,184,96,0.05));
-  border: 1.5px solid var(--gold);
+  background: var(--orange-pale);
+  border: 2px solid var(--orange-soft);
+  box-shadow: var(--shadow-sm);
 }
 .fid-bandeau-connecte {
-  background: linear-gradient(135deg, rgba(168,225,12,0.15), rgba(168,225,12,0.05));
-  border: 1.5px solid var(--lime);
+  background: linear-gradient(135deg, #E8F8D5, #DFF1C0);
+  border: 2px solid #88C04F;
+  box-shadow: var(--shadow-sm);
 }
 .fid-icone {
   font-size: 28px;
-  width: 50px;
-  height: 50px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.2);
-  border-radius: 12px;
+  background: #FFFFFF;
+  border-radius: 14px;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 .fid-info { flex: 1; min-width: 0; }
 .fid-titre {
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text);
   margin-bottom: 4px;
+  letter-spacing: -0.01em;
 }
 .fid-sous {
   font-size: 13px;
-  color: var(--text-mute);
+  color: var(--text-soft);
 }
 .fid-detach-hint {
   opacity: 0.6;
@@ -459,9 +2218,11 @@ body {
 /* ===== ÉCRAN PAIEMENT SUMUP ===== */
 #ecran-paiement-sumup {
   background: var(--bg-soft);
-  display: flex;
   align-items: center;
   justify-content: center;
+}
+#ecran-paiement-sumup.actif {
+  display: flex;
 }
 .paie-sumup-content {
   text-align: center;
@@ -500,12 +2261,16 @@ body {
 </div>
 
 <!-- ===== ÉCRAN 1 : ACCUEIL ===== -->
-<div class="ecran actif" id="ecran-accueil" onclick="allerMode()">
-  <div class="accueil-bowl">🍜</div>
-  <div class="accueil-mark">Street Food Thaï</div>
-  <div class="accueil-logo">Gin <span>Khao</span></div>
-  <div class="accueil-sub">Commandez en quelques secondes</div>
-  <div class="accueil-cta">👆 Touchez pour commander</div>
+<div class="ecran actif" id="ecran-accueil">
+  <div class="accueil-image" onclick="allerMode()">
+    <img src="https://res.cloudinary.com/dci5mreqo/image/upload/v1782303388/ChatGPT_Image_24_juin_2026_14_16_03_l5b0u5.png" 
+         alt="Gin Khao - Accueil" 
+         id="accueil-img" 
+         onclick="allerMode()" />
+  </div>
+  <div class="accueil-bottom" onclick="allerMode()">
+    <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander</div>
+  </div>
 </div>
 
 <!-- ===== ÉCRAN 2 : MODE ===== -->
@@ -513,19 +2278,56 @@ body {
   <div class="mode-titre">Vous mangez…</div>
   <div class="mode-choix">
     <div class="mode-card" onclick="choisirMode('sur_place')">
-      <div class="ic">🍽️</div>
+      <div class="ic">
+        <img src="https://res.cloudinary.com/dci5mreqo/image/upload/v1782307321/ChatGPT_Image_24_juin_2026_15_19_33_vuthdi.png" 
+             alt="Sur place" />
+      </div>
       <div class="nm">Sur place</div>
     </div>
     <div class="mode-card" onclick="choisirMode('emporter')">
-      <div class="ic">🥡</div>
+      <div class="ic">
+        <img src="https://res.cloudinary.com/dci5mreqo/image/upload/v1782414884/Gemini_Generated_Image_k3lw1gk3lw1gk3lw_omocnc.png" 
+             alt="À emporter" />
+      </div>
       <div class="nm">À emporter</div>
     </div>
+  </div>
+</div>
+
+<!-- ===== ÉCRAN 2 bis : ACCUEIL CATÉGORIES (style McDo) ===== -->
+<div class="ecran" id="ecran-accueil-cats">
+  <div class="ac-top">
+    <div class="ac-logo">Gin <span>Khao</span></div>
+    <div class="ac-mode-badge" id="ac-mode-badge">Sur place</div>
+  </div>
+
+  <div class="ac-scroll">
+    <!-- Bandeau promo -->
+    <div class="ac-promo" onclick="filtrerCatEtAllerFormules()">
+      <div class="ac-promo-img">🍱</div>
+      <div class="ac-promo-content">
+        <div class="ac-promo-label">DÉCOUVREZ</div>
+        <div class="ac-promo-title">Les Formules</div>
+        <div class="ac-promo-sub">Combos plat + boisson + entrée à prix réduit</div>
+      </div>
+      <div class="ac-promo-arrow">→</div>
+    </div>
+
+    <!-- Catégories en grille -->
+    <h2 class="ac-section-title">Nos catégories</h2>
+    <div class="ac-cats-grid" id="ac-cats-grid">
+      <!-- Catégories injectées par JS -->
+    </div>
+
+    <!-- Espace bas -->
+    <div style="height: 40px;"></div>
   </div>
 </div>
 
 <!-- ===== ÉCRAN 3 : MENU ===== -->
 <div class="ecran" id="ecran-menu">
   <div class="menu-top">
+    <button class="btn-retour-cats" onclick="retourCategories()">← Catégories</button>
     <div class="logo">Gin <span>Khao</span></div>
     <div class="menu-mode-badge" id="menu-mode-badge">Sur place</div>
   </div>
@@ -626,8 +2428,26 @@ body {
   </div>
 </div>
 
+<!-- ===== MODALE UPSELL ===== -->
+<div class="upsell-modal" id="modal-upsell">
+  <div class="upsell-content">
+    <div class="upsell-confirme" id="upsell-titre">Ajouté ! 🎉</div>
+    <div class="upsell-question">🎁 Et avec ça ?</div>
+    <div class="upsell-grille" id="upsell-liste">
+      <!-- Suggestions injectées par JS -->
+    </div>
+    <button class="upsell-skip" onclick="fermerUpsell()">Non merci, continuer →</button>
+  </div>
+</div>
+
+<!-- ===== MODALE PARCOURS PLAT (retirable / supp / sauce) ===== -->
+<div class="parcours-modal" id="modal-parcours">
+  <!-- Contenu injecté par JS selon l'étape -->
+</div>
+
 <!-- ===== ÉCRAN 6 : CONFIRMATION ===== -->
 <div class="ecran" id="ecran-fin">
+  <div id="conteneur-confettis"></div>
   <div class="fin-check" id="fin-check">✓</div>
   <div class="fin-titre" id="fin-titre">Commande envoyée !</div>
   <div class="fin-sub" id="fin-sub">Votre commande est en préparation</div>
@@ -676,13 +2496,188 @@ function allerMode() { allerEcran('ecran-mode'); }
 function choisirMode(mode) {
   modeService = mode;
   document.getElementById('menu-mode-badge').textContent = mode === 'sur_place' ? '🍽️ Sur place' : '🥡 À emporter';
+  document.getElementById('ac-mode-badge').textContent = mode === 'sur_place' ? '🍽️ Sur place' : '🥡 À emporter';
+  afficherAccueilCats();
+  allerEcran('ecran-accueil-cats');
+}
+
+// ============================================================
+//  ÉCRAN ACCUEIL CATÉGORIES (style McDo)
+// ============================================================
+function emojiPourCategorie(nomCat) {
+  const n = (nomCat || '').toLowerCase();
+  if (/sushi/.test(n)) return '🍣';
+  if (/maki/.test(n)) return '🍙';
+  if (/california/.test(n)) return '🍣';
+  if (/crispy/.test(n)) return '🥢';
+  if (/tiger/.test(n)) return '🐯';
+  if (/pad.*tha|pad.*thai/.test(n)) return '🍜';
+  if (/riz.*tha|riz.*thai/.test(n)) return '🍚';
+  if (/loc.*lac/.test(n)) return '🥩';
+  if (/dynamite|crousty/.test(n)) return '💥';
+  if (/gin.*bo.*bun|bo.*bun/.test(n)) return '🥗';
+  if (/salade/.test(n)) return '🥗';
+  if (/sauce/.test(n)) return '🍶';
+  if (/boisson/.test(n)) return '🥤';
+  if (/dessert/.test(n)) return '🍮';
+  if (/pok/.test(n)) return '🍱';
+  if (/plat/.test(n)) return '🍽️';
+  return '🍴';
+}
+
+function afficherAccueilCats() {
+  // 1. Catégories TOP-LEVEL (parent_id NULL) qui ont du contenu (produits OU sous-catégories)
+  const zone = document.getElementById('ac-cats-grid');
+  const topCats = categories.filter(c => !c.parent_id);
+  const catsAvecContenu = topCats.filter(c => {
+    // A des produits directs OU a des sous-catégories
+    const aProduits = produits.some(p => p.categorie_id === c.id);
+    const aSousCats = categories.some(sc => sc.parent_id === c.id);
+    return aProduits || aSousCats;
+  });
+  zone.innerHTML = catsAvecContenu.map(c => {
+    const sousCats = categories.filter(sc => sc.parent_id === c.id);
+    const aSousCats = sousCats.length > 0;
+    // Compter les produits : directs OU dans les sous-catégories
+    let nb;
+    if (aSousCats) {
+      const idsSousCats = sousCats.map(sc => sc.id);
+      nb = produits.filter(p => idsSousCats.includes(p.categorie_id)).length;
+    } else {
+      nb = produits.filter(p => p.categorie_id === c.id).length;
+    }
+    const emoji = emojiPourCategorie(c.nom);
+    const hasImage = c.image_url && c.image_url.trim() !== '';
+    return `
+      <div class="ac-cat-card ${hasImage?'has-image':''}" onclick="filtrerCatEtAller('${c.id}')" ${hasImage?`style="background-image:url('${c.image_url}')"`:''}>
+        ${!hasImage ? `<div class="ac-cat-emoji">${emoji}</div>` : ''}
+        <div class="ac-cat-bandeau">
+          <div class="ac-cat-nom">${c.nom}</div>
+          <div class="ac-cat-count">${nb} produit${nb > 1 ? 's' : ''}${aSousCats ? ' · ' + sousCats.length + ' sous-cat.' : ''}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 2. Best-sellers retiré
+  const sectionBest = document.getElementById('ac-bestsellers-section');
+  if (sectionBest) sectionBest.style.display = 'none';
+}
+
+function filtrerCatEtAller(catId) {
+  // Si la cat a des sous-catégories, on va sur l'écran des sous-catégories
+  const sousCats = categories.filter(sc => sc.parent_id === catId);
+  if (sousCats.length > 0) {
+    afficherSousCategories(catId);
+    return;
+  }
+  
+  // ✨ NOUVEAU : si c'est une SOUS-CATÉGORIE FORMULE (parent = "Formules"),
+  // on lance le parcours formule en plein écran (Entrée → Plat → Boisson)
+  const cat = categories.find(c => c.id === catId);
+  if (cat && cat.parent_id) {
+    const parent = categories.find(p => p.id === cat.parent_id);
+    if (parent && parent.nom === 'Formules') {
+      lancerParcoursFormule(cat);
+      return;
+    }
+  }
+  
+  // Sinon : comportement normal (afficher les produits de cette cat)
+  catActive = catId;
+  afficherCats();
+  afficherMenu();
   allerEcran('ecran-menu');
+}
+
+// Ouvrir la catégorie Formules (cliquée depuis l'encadré "Les Formules")
+function filtrerCatEtAllerFormules() {
+  const cat = categories.find(c => c.nom === 'Formules' && !c.parent_id);
+  if (!cat) {
+    alert('Aucune formule disponible pour le moment');
+    return;
+  }
+  filtrerCatEtAller(cat.id);
+}
+
+// Retour intelligent : si on est sur une sous-catégorie, retour aux sous-catégories du parent
+function retourCategories() {
+  const cat = categories.find(c => c.id === catActive);
+  if (cat && cat.parent_id) {
+    // On est dans une sous-catégorie → retour à l'écran des sous-cats du parent
+    afficherSousCategories(cat.parent_id);
+  } else {
+    // On est dans une catégorie top-level → retour à l'écran principal
+    allerEcran('ecran-accueil-cats');
+  }
+}
+
+// ============================================================
+//  📂 ÉCRAN SOUS-CATÉGORIES (pour Sushi → Makis/Tigers/etc.)
+// ============================================================
+let categorieParenteEnCours = null;
+
+function afficherSousCategories(parentId) {
+  categorieParenteEnCours = parentId;
+  const parent = categories.find(c => c.id === parentId);
+  if (!parent) return;
+  
+  const sousCats = categories
+    .filter(sc => sc.parent_id === parentId)
+    .sort((a, b) => (a.ordre || 999) - (b.ordre || 999));
+  
+  // Créer l'écran s'il n'existe pas
+  let ecran = document.getElementById('ecran-sous-cats');
+  if (!ecran) {
+    ecran = document.createElement('div');
+    ecran.id = 'ecran-sous-cats';
+    ecran.className = 'ecran';
+    document.body.appendChild(ecran);
+  }
+  
+  ecran.innerHTML = `
+    <div class="sc-header">
+      <button class="btn-retour-cats" onclick="allerEcran('ecran-accueil-cats')">← Catégories</button>
+      <div class="logo">${parent.nom}</div>
+      <button class="btn-voir-panier-mini" onclick="allerPanier()" id="btn-voir-panier-sc">Panier</button>
+    </div>
+    <div class="sc-grille">
+      ${sousCats.map(sc => {
+        const nb = produits.filter(p => p.categorie_id === sc.id).length;
+        const emoji = emojiPourCategorie(sc.nom);
+        const hasImage = sc.image_url && sc.image_url.trim() !== '';
+        return `
+          <div class="ac-cat-card ${hasImage?'has-image':''}" onclick="filtrerCatEtAller('${sc.id}')" ${hasImage?`style="background-image:url('${sc.image_url}')"`:''}>
+            ${!hasImage ? `<div class="ac-cat-emoji">${emoji}</div>` : ''}
+            <div class="ac-cat-bandeau">
+              <div class="ac-cat-nom">${sc.nom}</div>
+              <div class="ac-cat-count">${nb} produit${nb > 1 ? 's' : ''}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+  
+  allerEcran('ecran-sous-cats');
+}
+
+function animationAjout(el) {
+  el.style.transform = 'scale(1.1)';
+  setTimeout(() => { el.style.transform = ''; }, 200);
 }
 
 function allerPanier() {
   if (panier.length === 0) return;
+  
+  // ✨ NOUVEAU : Avant d'aller au panier, on déclenche la séquence d'upsells
+  // Ordre : 1. Entrées → 2. Boissons → 3. Panier final
+  declencherUpsellEntrees();
+}
+
+function ouvrirPanierFinal() {
   afficherPanier();
-  afficherFidelite();  // ✨ Mettre à jour le bandeau fidélité
+  afficherFidelite();
   allerEcran('ecran-panier');
 }
 
@@ -709,12 +2704,23 @@ async function init() {
 async function chargerMenu() {
   const { data: cats } = await sb.from('categories')
     .select('*').eq('restaurant_id', RESTO_ID).order('ordre');
-  categories = cats || [];
+  // ✨ Filtrer les catégories cachées de la borne (Sauces, Suppléments, Extras)
+  categories = (cats || []).filter(c => c.visible_borne !== false);
 
   const { data: prods, error } = await sb.from('produits')
     .select('*').eq('restaurant_id', RESTO_ID).eq('actif', true).order('ordre');
   if (error) throw error;
+  // On garde TOUS les produits actifs (y compris sauces/suppléments/extras
+  // pour les retrouver via leurs UUIDs dans le parcours plat et upsell)
   produits = prods || [];
+
+  // ✨ Sélectionner la première catégorie qui a des produits comme catégorie active
+  if (catActive === 'tout' || !categories.find(c => c.id === catActive)) {
+    const premiereCatAvecProduits = categories.find(c =>
+      produits.some(p => p.categorie_id === c.id)
+    );
+    if (premiereCatAvecProduits) catActive = premiereCatAvecProduits.id;
+  }
 
   afficherCats();
   afficherMenu();
@@ -722,8 +2728,17 @@ async function chargerMenu() {
 
 function afficherCats() {
   const zone = document.getElementById('menu-cats');
-  let html = `<div class="menu-cat ${catActive==='tout'?'actif':''}" onclick="filtrerCat('tout')">Tout</div>`;
-  categories.forEach(c => {
+  // ✨ N'afficher que les catégories qui ONT des produits actifs ET PAS de sous-catégories
+  // (Les catégories avec sous-catégories ne sont pas cliquables directement dans le menu)
+  const catsAvecProduits = categories.filter(c => {
+    const aProduits = produits.some(p => p.categorie_id === c.id);
+    const aSousCats = categories.some(sc => sc.parent_id === c.id);
+    // On affiche : la cat actuelle (même si sous-cat), ou cats avec produits sans sous-cats
+    if (c.id === catActive) return true;
+    return aProduits && !aSousCats;
+  });
+  let html = '';
+  catsAvecProduits.forEach(c => {
     html += `<div class="menu-cat ${catActive===c.id?'actif':''}" onclick="filtrerCat('${c.id}')">${c.nom}</div>`;
   });
   zone.innerHTML = html;
@@ -733,8 +2748,8 @@ function filtrerCat(id) { catActive = id; afficherCats(); afficherMenu(); }
 
 function afficherMenu() {
   const grille = document.getElementById('menu-grille');
-  let liste = produits;
-  if (catActive !== 'tout') liste = produits.filter(p => p.categorie_id === catActive);
+  // ✨ Toujours filtrer par catégorie (plus de "Tout")
+  const liste = produits.filter(p => p.categorie_id === catActive);
 
   if (liste.length === 0) {
     grille.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-mute);">Aucun produit dans cette catégorie</div>';
@@ -745,14 +2760,18 @@ function afficherMenu() {
     const cat = categories.find(c => c.id === p.categorie_id);
     const emoji = emojiCat(cat ? cat.nom : '');
     const rupture = p.stock_actif && p.stock <= 0;
+    const hasImage = p.image_url && p.image_url.trim() !== '';
     return `
-      <div class="plat-card ${rupture?'rupture':''}" onclick="ajouter('${p.id}')">
-        ${rupture ? '<div class="plat-rupture-badge">Épuisé</div>' : ''}
-        <div class="plat-emoji">${emoji}</div>
-        <div class="plat-nom">${p.nom}</div>
-        <div class="plat-bas">
-          <div class="plat-prix">${fmt(p.prix)}</div>
-          <div class="plat-plus">+</div>
+      <div class="plat-wrapper">
+        <div class="plat-prix-top">${fmt(p.prix)}</div>
+        <div class="plat-card ${rupture?'rupture':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}')" ${hasImage?`style="background-image:url('${p.image_url}')"`:''}>
+          ${rupture ? '<div class="plat-rupture-badge">Épuisé</div>' : ''}
+          ${!hasImage ? `
+            <div class="plat-emoji-bg">${emoji}</div>
+            <div class="plat-bandeau-fallback">
+              <div class="plat-nom-fallback">${p.nom}</div>
+            </div>
+          ` : ''}
         </div>
       </div>`;
   }).join('');
@@ -762,17 +2781,1147 @@ function afficherMenu() {
 function ajouter(produitId) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
+
+  // ✨ Si le plat a des options de personnalisation, lancer le parcours modal
+  const aRetirables = Array.isArray(p.ingredients_retirable) && p.ingredients_retirable.length > 0;
+  const aSupplements = Array.isArray(p.supplements_ids) && p.supplements_ids.length > 0;
+  const aSauces = Array.isArray(p.sauces_ids) && p.sauces_ids.length > 0;
+
+  if (aRetirables || aSupplements || aSauces) {
+    // Lance le parcours plat (modales successives)
+    demarrerParcoursPlat(p);
+    return;
+  }
+
+  // Sinon, ajout direct au panier (comportement original)
+  ajouterDirect(p);
+}
+
+// Ajout direct au panier (sans options)
+function ajouterDirect(p, options) {
   const cat = categories.find(c => c.id === p.categorie_id);
   const emoji = emojiCat(cat ? cat.nom : '');
 
-  const ligne = panier.find(l => l.produit_id === produitId);
   if (p.stock_actif) {
-    const deja = ligne ? ligne.quantite : 0;
-    if (deja >= p.stock) return; // pas plus que le stock
+    const dejaTotal = panier.filter(l => l.produit_id === p.id).reduce((s, l) => s + l.quantite, 0);
+    if (dejaTotal >= p.stock) return;
   }
+
+  // Si pas d'options personnalisées, regrouper avec ligne existante
+  const aDesOptions = options && (
+    options.retirable?.length > 0 ||
+    options.supplements?.length > 0 ||
+    options.sauces?.length > 0 ||
+    options.sauce ||  // compat ancienne version
+    (options.options_base && Object.keys(options.options_base).length > 0)
+  );
+  if (!aDesOptions) {
+    const ligne = panier.find(l => l.produit_id === p.id && !l.options);
+    if (ligne) {
+      ligne.quantite++;
+    } else {
+      panier.push({ produit_id: p.id, nom: p.nom, prix: parseFloat(p.prix), quantite: 1, emoji });
+    }
+  } else {
+    // Avec options : toujours une nouvelle ligne (chaque combinaison unique)
+    panier.push({
+      produit_id: p.id,
+      nom: p.nom,
+      prix: parseFloat(p.prix),
+      quantite: 1,
+      emoji,
+      options: options
+    });
+  }
+  majBarrePanier();
+
+  // ⚠️ NE PAS déclencher l'upsell ici (il est déjà appelé dans finaliserParcoursPlat)
+  // pour éviter le double appel
+  if (!options || (!options.retirable && !options.supplements && !options.sauces && !options.options_base)) {
+    declencherUpsell(p);
+  }
+}
+
+// ============================================================
+//  💰 UPSELL — DÉSACTIVÉ (on déclenche maintenant via allerPanier)
+//  L'ancien système est remplacé par declencherUpsellEntrees + Boissons
+// ============================================================
+let upsellDejaProposees = new Set();
+
+function declencherUpsell(produitAjoute) {
+  // ✨ DÉSACTIVÉ : remplacé par la séquence Entrées → Boissons via allerPanier
+  return;
+}
+
+// ============================================================
+//  🥟 UPSELL ENTRÉES (avant boissons)
+// ============================================================
+function declencherUpsellEntrees() {
+  const cat = categories.find(c => c.nom === 'Entrées');
+  if (!cat) {
+    declencherUpsellBoissons();
+    return;
+  }
+  const entrees = produits.filter(p => p.categorie_id === cat.id && p.actif !== false);
+  if (entrees.length === 0) {
+    declencherUpsellBoissons();
+    return;
+  }
+  afficherUpsellGrille({
+    titre: '🥟 Une entrée pour accompagner ?',
+    sous: 'Ajoutez autant que vous voulez',
+    items: entrees,
+    type: 'entree',
+    onNext: () => declencherUpsellBoissons(),
+    onSkip: () => declencherUpsellBoissons()
+  });
+}
+
+// ============================================================
+//  🍹 UPSELL BOISSONS
+// ============================================================
+function declencherUpsellBoissons() {
+  const cat = categories.find(c => c.nom === 'Boissons');
+  if (!cat) {
+    declencherUpsellDesserts();
+    return;
+  }
+  const boissons = produits.filter(p => p.categorie_id === cat.id && p.actif !== false);
+  if (boissons.length === 0) {
+    declencherUpsellDesserts();
+    return;
+  }
+  afficherUpsellGrille({
+    titre: '🍹 Et avec une boisson ?',
+    sous: 'Ajoutez autant que vous voulez',
+    items: boissons,
+    type: 'boisson',
+    onNext: () => declencherUpsellDesserts(),
+    onSkip: () => declencherUpsellDesserts()
+  });
+}
+
+// ✨ NOUVEAU : Upsell desserts à la fin
+function declencherUpsellDesserts() {
+  const cat = categories.find(c => c.nom === 'Desserts');
+  if (!cat) {
+    ouvrirPanierFinal();
+    return;
+  }
+  const desserts = produits.filter(p => p.categorie_id === cat.id && p.actif !== false);
+  if (desserts.length === 0) {
+    ouvrirPanierFinal();
+    return;
+  }
+  afficherUpsellGrille({
+    titre: '🍰 Un petit dessert ?',
+    sous: 'Pour finir en douceur',
+    items: desserts,
+    type: 'dessert',
+    onNext: () => ouvrirPanierFinal(),
+    onSkip: () => ouvrirPanierFinal()
+  });
+}
+
+// ============================================================
+//  🎨 AFFICHAGE GRILLE UPSELL (commune entrées + boissons)
+// ============================================================
+function afficherUpsellGrille(config) {
+  const modal = document.getElementById('modal-upsell') || creerModaleUpsell();
+  modal.classList.add('actif');
+
+  const html = `
+    <div class="upsell-content-v2">
+      <div class="parcours-head-nav" style="padding: 16px 20px 0;">
+        <div style="visibility:hidden;">←</div>
+        <button class="parcours-btn-close" onclick="fermerUpsellEtContinuer('${config.type}', 'skip')" title="Fermer">✕</button>
+      </div>
+      <div class="upsell-head-v2">
+        <h2 class="upsell-titre-v2">${config.titre}</h2>
+        <p class="upsell-sous-v2">${config.sous}</p>
+      </div>
+      <div class="upsell-grille-v2">
+        ${config.items.map(p => {
+          const hasImage = p.image_url && p.image_url.trim() !== '';
+          const aVariantes = p.variantes && Array.isArray(p.variantes) && p.variantes.length > 1;
+          return `
+            <div class="upsell-card-v2 ${hasImage ? 'has-image' : ''}" 
+                 onclick="${aVariantes ? `ouvrirVariantesUpsell('${p.id}', '${config.type}')` : `ajouterUpsell('${p.id}', '${config.type}')`}"
+                 ${hasImage ? `style="background-image:url('${p.image_url}')"` : ''}>
+              ${!hasImage ? `<div class="upsell-emoji-v2">${emojiCat(p.nom)}</div>` : ''}
+              <div class="upsell-bandeau-v2">
+                <div class="upsell-nom-v2">${p.nom}</div>
+                <div class="upsell-prix-v2">${aVariantes ? 'dès ' : ''}${fmt(p.prix)}</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="upsell-actions-v2">
+        <button class="upsell-btn-skip-v2" onclick="fermerUpsellEtContinuer('${config.type}', 'skip')">Non merci →</button>
+        <button class="upsell-btn-next-v2" onclick="fermerUpsellEtContinuer('${config.type}', 'next')">Suivant ✓</button>
+      </div>
+    </div>
+  `;
+  modal.innerHTML = html;
+  
+  // Stocker le callback dans la modale
+  modal.dataset.onNext = '';
+  window._upsellOnNext = config.onNext;
+  window._upsellOnSkip = config.onSkip;
+}
+
+function creerModaleUpsell() {
+  // Si elle n'existe pas, on la crée
+  let modal = document.getElementById('modal-upsell');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'modal-upsell';
+  modal.className = 'parcours-modal';
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function ajouterUpsell(produitId, type) {
+  const p = produits.find(x => x.id === produitId);
+  if (!p) return;
+  
+  // Ajout direct au panier
+  const ligne = panier.find(l => l.produit_id === p.id && !l.options && !l.variante);
+  if (ligne) {
+    ligne.quantite++;
+  } else {
+    panier.push({
+      produit_id: p.id,
+      nom: p.nom,
+      prix: parseFloat(p.prix),
+      quantite: 1,
+      emoji: emojiCat(p.nom)
+    });
+  }
+  majBarrePanier();
+  
+  // Animation de feedback
+  const card = event.target.closest('.upsell-card-v2');
+  if (card) {
+    card.classList.add('ajoute');
+  }
+  
+  // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout
+  setTimeout(() => {
+    if (window._upsellOnNext) {
+      window._upsellOnNext();
+    }
+  }, 500);
+}
+
+function ouvrirVariantesUpsell(produitId, type) {
+  const p = produits.find(x => x.id === produitId);
+  if (!p) return;
+  
+  const modal = document.getElementById('modal-upsell');
+  const html = `
+    <div class="upsell-content-v2">
+      <div class="upsell-head-v2">
+        <h2 class="upsell-titre-v2">${p.nom}</h2>
+        <p class="upsell-sous-v2">Choisissez la quantité</p>
+      </div>
+      <div class="upsell-variantes-v2">
+        ${p.variantes.map((v, i) => `
+          <div class="upsell-variante-v2" onclick="choisirVarianteUpsell('${p.id}', ${i})">
+            <span class="upsell-variante-label">${v.label}</span>
+            <span class="upsell-variante-prix">${fmt(v.prix)}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="upsell-actions-v2">
+        <button class="upsell-btn-skip-v2" onclick="declencherUpsellEntrees()">← Retour</button>
+      </div>
+    </div>
+  `;
+  modal.innerHTML = html;
+}
+
+function choisirVarianteUpsell(produitId, indexVariante) {
+  const p = produits.find(x => x.id === produitId);
+  if (!p) return;
+  const variante = p.variantes[indexVariante];
+  if (!variante) return;
+  
+  // Ajout au panier (toujours nouvelle ligne car variante différente)
+  panier.push({
+    produit_id: p.id,
+    nom: p.nom + ' (' + variante.label + ')',
+    prix: parseFloat(variante.prix),
+    quantite: 1,
+    emoji: emojiCat(p.nom),
+    variante: variante.label
+  });
+  majBarrePanier();
+  
+  // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout
+  if (window._upsellOnNext) {
+    window._upsellOnNext();
+  }
+}
+
+function fermerUpsellEtContinuer(type, action) {
+  const modal = document.getElementById('modal-upsell');
+  if (modal) modal.classList.remove('actif');
+  
+  if (action === 'skip' && window._upsellOnSkip) {
+    window._upsellOnSkip();
+  } else if (action === 'next' && window._upsellOnNext) {
+    window._upsellOnNext();
+  }
+}
+
+// ============================================================
+//  🍜 PARCOURS PLAT — McDo style (modales successives)
+// ============================================================
+// État du parcours en cours
+let parcoursPlatEnCours = null;
+
+function demarrerParcoursPlat(produit) {
+  // Reset la pile de navigation
+  pileEtapes = [];
+  
+  parcoursPlatEnCours = {
+    produit: produit,
+    retirables: [],
+    supplements: [],
+    sauces: [],
+    options_base: {},
+    // ✨ NOUVEAU pour les formules
+    est_formule: produit.est_formule === true,
+    formule_boisson_id: null,
+    formule_entree_id: null,
+    formule_entree_label: null,  // pour les variantes (2 pièces)
+    formule_plat_id: null,       // ✨ NOUVEAU : plat choisi dans la formule
+    formule_plat_obj: null,
+    etape: 'options_base'
+  };
+
+  // Étape 0 : Options de base
+  if (produit.options_base && Array.isArray(produit.options_base) && produit.options_base.length > 0) {
+    afficherModaleOptionsBase();
+  } else {
+    passerEtapeSuivante();
+  }
+}
+
+function passerEtapeSuivante() {
+  const p = parcoursPlatEnCours.produit;
+  const estFormule = parcoursPlatEnCours.est_formule;
+  const etapeActuelle = parcoursPlatEnCours.etape;
+
+  if (etapeActuelle === 'options_base') {
+    pileEtapes.push('options_base');
+    parcoursPlatEnCours.etape = 'retirables';
+    if (p.ingredients_retirable && p.ingredients_retirable.length > 0) {
+      afficherModaleRetirables();
+    } else {
+      passerEtapeSuivante();
+    }
+  } else if (etapeActuelle === 'retirables') {
+    pileEtapes.push('retirables');
+    parcoursPlatEnCours.etape = 'supplements';
+    if (p.supplements_ids && p.supplements_ids.length > 0) {
+      afficherModaleSupplements();
+    } else {
+      passerEtapeSuivante();
+    }
+  } else if (etapeActuelle === 'supplements') {
+    pileEtapes.push('supplements');
+    parcoursPlatEnCours.etape = 'sauces';
+    if (p.sauces_ids && p.sauces_ids.length > 0) {
+      afficherModaleSauces();
+    } else {
+      passerEtapeSuivante();
+    }
+  } else if (etapeActuelle === 'sauces') {
+    pileEtapes.push('sauces');
+    // ✨ Si formule : aller à l'écran boisson plein écran
+    if (parcoursPlatEnCours.est_formule) {
+      afficherEcranFormuleBoisson();
+    } else {
+      finaliserParcoursPlat();
+    }
+  }
+}
+
+function finaliserParcoursPlat() {
+  const p = parcoursPlatEnCours.produit;
+  const options = {
+    retirable: parcoursPlatEnCours.retirables,
+    supplements: parcoursPlatEnCours.supplements,
+    sauces: parcoursPlatEnCours.sauces,         // ✨ Array maintenant
+    options_base: parcoursPlatEnCours.options_base
+  };
+
+  // Ajouter le plat au panier avec options
+  ajouterDirect(p, options);
+
+  // Ajouter chaque supplément comme ligne séparée
+  options.supplements.forEach(suppId => {
+    const supp = produits.find(pp => pp.id === suppId);
+    if (supp) {
+      panier.push({
+        produit_id: supp.id,
+        nom: '  ↳ ' + supp.nom,
+        prix: parseFloat(supp.prix),
+        quantite: 1,
+        emoji: '➕',
+        lien_plat: p.id
+      });
+    }
+  });
+
+  // ✨ Ajouter chaque sauce PAYANTE comme ligne séparée
+  const saucesPayantes = !p.sauces_incluses;
+  if (saucesPayantes) {
+    options.sauces.forEach(sauceId => {
+      const sauce = produits.find(pp => pp.id === sauceId);
+      if (sauce && parseFloat(sauce.prix) > 0) {
+        panier.push({
+          produit_id: sauce.id,
+          nom: '  ↳ ' + sauce.nom,
+          prix: parseFloat(sauce.prix),
+          quantite: 1,
+          emoji: '🌶️',
+          lien_plat: p.id
+        });
+      }
+    });
+  }
+
+  // ✨ NOUVEAU : Si formule, ajouter boisson + entrée OFFERTES (prix 0€ — inclus dans le prix formule)
+  if (parcoursPlatEnCours.est_formule) {
+    if (parcoursPlatEnCours.formule_boisson_id) {
+      const boisson = produits.find(pp => pp.id === parcoursPlatEnCours.formule_boisson_id);
+      if (boisson) {
+        panier.push({
+          produit_id: boisson.id,
+          nom: '  ↳ ' + boisson.nom + ' (formule)',
+          prix: 0,  // OFFERT, prix dans la formule
+          quantite: 1,
+          emoji: '🍹',
+          lien_plat: p.id
+        });
+      }
+    }
+    if (parcoursPlatEnCours.formule_entree_id) {
+      const entree = produits.find(pp => pp.id === parcoursPlatEnCours.formule_entree_id);
+      if (entree) {
+        const label = parcoursPlatEnCours.formule_entree_label || entree.nom;
+        panier.push({
+          produit_id: entree.id,
+          nom: '  ↳ ' + label + ' (formule)',
+          prix: 0,  // OFFERT, prix dans la formule
+          quantite: 1,
+          emoji: '🥟',
+          lien_plat: p.id
+        });
+      }
+    }
+  }
+
+  majBarrePanier();
+  fermerModaleParcours();
+  const etaitFormule = parcoursPlatEnCours.est_formule;
+  parcoursPlatEnCours = null;
+
+  // ✨ NOUVEAU : si pas une formule, déclencher mini-upsell boisson après le plat
+  // Si formule : pas d'upsell (le combo est complet, retour à l'accueil)
+  if (etaitFormule) {
+    // Retour à l'accueil catégories après une formule
+    allerEcran('ecran-accueil-cats');
+  } else {
+    // Mini-upsell boisson par catégorie : on propose juste la boisson
+    declencherMiniUpsellBoisson(p);
+  }
+}
+
+// ✨ NOUVEAU : Mini upsell boisson après chaque plat
+function declencherMiniUpsellBoisson(produitAjoute) {
+  // Si le plat ajouté EST une boisson, on ne propose pas une boisson
+  const catBoisson = categories.find(c => c.nom === 'Boissons');
+  if (catBoisson && produitAjoute.categorie_id === catBoisson.id) {
+    return;  // pas de mini-upsell après une boisson
+  }
+  
+  if (!catBoisson) return;
+  const boissons = produits.filter(p => p.categorie_id === catBoisson.id && p.actif !== false);
+  if (boissons.length === 0) return;
+  
+  afficherUpsellGrille({
+    titre: '🍹 Une boisson avec ça ?',
+    sous: 'Ou continuez vos achats',
+    items: boissons,
+    type: 'boisson',
+    onNext: () => fermerUpsellModal(),
+    onSkip: () => fermerUpsellModal()
+  });
+}
+
+function fermerUpsellModal() {
+  const modal = document.getElementById('modal-upsell');
+  if (modal) {
+    modal.classList.remove('actif');
+    modal.innerHTML = '';
+  }
+}
+
+// ============================================================
+//  ✨ PARCOURS FORMULE PLEIN ÉCRAN (Entrée → Plat → Boisson)
+// ============================================================
+
+// État formule en cours
+let formuleEnCours = null;
+
+// Démarre le parcours formule complet (depuis le clic sur sous-cat formule)
+function lancerParcoursFormule(sousCatFormule) {
+  // sousCatFormule = ex { nom: "Formule Pad Thaï", parent_id: ... }
+  
+  // Récupérer la catégorie SOURCE correspondante (sans "Formule ")
+  const nomSource = sousCatFormule.nom.replace(/^Formule\s+/, '');
+  const catSource = categories.find(c => c.nom === nomSource && !c.parent_id);
+  if (!catSource) {
+    alert('Catégorie source introuvable : ' + nomSource);
+    return;
+  }
+  
+  // Initialiser l'état
+  formuleEnCours = {
+    sousCatFormule: sousCatFormule,    // ex: Formule Pad Thaï
+    catSource: catSource,              // ex: Pad Thaï
+    entree_id: null,
+    entree_label: null,
+    plat: null,                        // plat (Formule) choisi
+    boisson_id: null,
+    boisson_obj: null
+  };
+  
+  // Étape 1 : afficher écran Entrée
+  afficherEcranFormuleEntree();
+}
+
+// Helper : génère la barre panier flottante pour les écrans formule
+function barrePanierFormule() {
+  const n = nbArticles();
+  const total = totalPanier();
+  const [e, c] = total.toFixed(2).split('.');
+  const lbl = n === 0 ? 'Panier vide' : n + ' article' + (n > 1 ? 's' : '');
+  return `
+    <div class="formule-panier-bar">
+      <div class="formule-panier-info">
+        <div class="formule-panier-count">${lbl}</div>
+        <div class="formule-panier-total">${e}<span>,${c} €</span></div>
+      </div>
+      <button class="formule-panier-btn" ${n === 0 ? 'disabled' : ''} onclick="allerPanier()">Voir le panier</button>
+    </div>
+  `;
+}
+
+function afficherEcranFormuleEntree() {
+  const catEntrees = categories.find(c => c.nom === 'Entrées');
+  if (!catEntrees) {
+    alert('Catégorie Entrées introuvable');
+    return;
+  }const entrees = produits.filter(p => p.categorie_id === catEntrees.id && p.actif !== false);
+  
+  // Pour chaque entrée, prendre la variante 2 pièces ou label par défaut
+  const items = entrees.map(e => {
+    if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
+      const variante2p = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces', prix: 0 };
+      return { id: e.id, nom: e.nom, label: e.nom + ' (' + variante2p.label + ')', image_url: e.image_url };
+    }
+    return { id: e.id, nom: e.nom, label: e.nom, image_url: e.image_url };
+  });
+  
+  let ecran = document.getElementById('ecran-formule-step');
+  if (!ecran) {
+    ecran = document.createElement('div');
+    ecran.id = 'ecran-formule-step';
+    ecran.className = 'ecran';
+    document.body.appendChild(ecran);
+  }
+  
+  ecran.innerHTML = `
+    <div class="formule-step-header">
+      <button class="btn-retour-cats" onclick="annulerFormule()">← Annuler</button>
+      <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
+      <div class="formule-step-num">Étape 1/3</div>
+    </div>
+    <div class="formule-step-titre">
+      <h2>🥟 Choisissez votre entrée</h2>
+      <p>Incluse dans la formule</p>
+    </div>
+    <div class="formule-grille">
+      ${items.map(it => {
+        const hasImage = it.image_url && it.image_url.trim() !== '';
+        return `
+          <div class="formule-card ${hasImage?'has-image':''}" onclick="choisirFormuleEntree('${it.id}', '${it.label.replace(/'/g, "\\'")}')"
+               ${hasImage?`style="background-image:url('${it.image_url}')"`:''}>
+            ${!hasImage ? `<div class="formule-card-emoji">🥟</div>` : ''}
+            <div class="formule-card-bandeau">
+              <div class="formule-card-nom">${it.label}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    ${barrePanierFormule()}
+  `;
+  
+  allerEcran('ecran-formule-step');
+}
+
+function choisirFormuleEntree(entreeId, label) {
+  formuleEnCours.entree_id = entreeId;
+  formuleEnCours.entree_label = label;
+  // Petite anim feedback
+  setTimeout(() => afficherEcranFormulePlat(), 200);
+}
+
+function afficherEcranFormulePlat() {
+  // Lister les plats de la sous-cat formule (les versions "(Formule)")
+  const platsFormule = produits.filter(p => p.categorie_id === formuleEnCours.sousCatFormule.id && p.actif !== false);
+  
+  const ecran = document.getElementById('ecran-formule-step');
+  ecran.innerHTML = `
+    <div class="formule-step-header">
+      <button class="btn-retour-cats" onclick="afficherEcranFormuleEntree()">← Retour</button>
+      <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
+      <div class="formule-step-num">Étape 2/3</div>
+    </div>
+    <div class="formule-step-titre">
+      <h2>🍜 Choisissez votre plat</h2>
+      <p>Personnalisez vos options ensuite</p>
+    </div>
+    <div class="formule-grille">
+      ${platsFormule.map(p => {
+        const hasImage = p.image_url && p.image_url.trim() !== '';
+        const nomPropre = p.nom.replace(/ \(Formule\)$/, '');
+        return `
+          <div class="formule-card ${hasImage?'has-image':''}" onclick="choisirFormulePlat('${p.id}')"
+               ${hasImage?`style="background-image:url('${p.image_url}')"`:''}>
+            ${!hasImage ? `<div class="formule-card-emoji">🍜</div>` : ''}
+            <div class="formule-card-bandeau">
+              <div class="formule-card-nom">${nomPropre}</div>
+              <div class="formule-card-prix">${parseFloat(p.prix).toFixed(2).replace('.', ',')} €</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    ${barrePanierFormule()}
+  `;
+}
+
+function choisirFormulePlat(platId) {
+  const plat = produits.find(p => p.id === platId);
+  if (!plat) return;
+  formuleEnCours.plat = plat;
+  
+  // Démarrer le parcours classique du plat (Spicy/Normal, sauces, suppléments)
+  // À la fin, on enchaînera sur l'écran Boisson
+  // On utilise une variante de demarrerParcoursPlat qui sait qu'on est en mode formule
+  demarrerParcoursPlatFormule(plat);
+}
+
+// Variante de demarrerParcoursPlat pour le mode formule
+function demarrerParcoursPlatFormule(produit) {
+  pileEtapes = [];
+  parcoursPlatEnCours = {
+    produit: produit,
+    retirables: [],
+    supplements: [],
+    sauces: [],
+    options_base: {},
+    est_formule: true,
+    formule_boisson_id: null,
+    formule_entree_id: formuleEnCours.entree_id,
+    formule_entree_label: formuleEnCours.entree_label,
+    formule_plat_id: produit.id,
+    etape: 'options_base'
+  };
+  
+  if (produit.options_base && Array.isArray(produit.options_base) && produit.options_base.length > 0) {
+    afficherModaleOptionsBase();
+  } else {
+    passerEtapeSuivante();
+  }
+}
+
+function afficherEcranFormuleBoisson() {
+  const catBoissons = categories.find(c => c.nom === 'Boissons');
+  if (!catBoissons) {
+    finaliserFormule();
+    return;
+  }
+  const boissons = produits.filter(p => {
+    if (p.categorie_id !== catBoissons.id || p.actif === false) return false;
+    return p.nom.includes('33cl') || p.nom.toLowerCase().includes('cristalline');
+  });
+  
+  // Fermer la modale parcours (Spicy/sauces/etc.) si encore ouverte
+  const modal = document.getElementById('modal-parcours');
+  if (modal) {
+    modal.classList.remove('actif');
+    modal.innerHTML = '';
+  }
+  
+  let ecran = document.getElementById('ecran-formule-step');
+  if (!ecran) {
+    ecran = document.createElement('div');
+    ecran.id = 'ecran-formule-step';
+    ecran.className = 'ecran';
+    document.body.appendChild(ecran);
+  }
+  
+  ecran.innerHTML = `
+    <div class="formule-step-header">
+      <button class="btn-retour-cats" onclick="afficherEcranFormulePlat()">← Retour</button>
+      <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
+      <div class="formule-step-num">Étape 3/3</div>
+    </div>
+    <div class="formule-step-titre">
+      <h2>🍹 Choisissez votre boisson</h2>
+      <p>Incluse dans la formule</p>
+    </div>
+    <div class="formule-grille">
+      ${boissons.map(b => {
+        const hasImage = b.image_url && b.image_url.trim() !== '';
+        return `
+          <div class="formule-card ${hasImage?'has-image':''}" onclick="choisirFormuleBoissonEcran('${b.id}')"
+               ${hasImage?`style="background-image:url('${b.image_url}')"`:''}>
+            ${!hasImage ? `<div class="formule-card-emoji">🍹</div>` : ''}
+            <div class="formule-card-bandeau">
+              <div class="formule-card-nom">${b.nom.replace(' 33cl','').replace(' 50cl','')}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    ${barrePanierFormule()}
+  `;
+  
+  allerEcran('ecran-formule-step');
+}
+
+function choisirFormuleBoissonEcran(boissonId) {
+  formuleEnCours.boisson_id = boissonId;
+  formuleEnCours.boisson_obj = produits.find(p => p.id === boissonId);
+  // Synchroniser avec parcoursPlatEnCours pour la finalisation
+  if (parcoursPlatEnCours) {
+    parcoursPlatEnCours.formule_boisson_id = boissonId;
+  }
+  setTimeout(() => finaliserFormule(), 200);
+}
+
+function finaliserFormule() {
+  // On utilise la finalisation classique du parcours (qui sait gérer les formules)
+  if (parcoursPlatEnCours) {
+    finaliserParcoursPlat();
+  }
+  
+  // Nettoyer
+  formuleEnCours = null;
+  
+  // Retour à l'accueil catégories
+  allerEcran('ecran-accueil-cats');
+}
+
+function annulerFormule() {
+  if (!confirm('Annuler la formule ?')) return;
+  formuleEnCours = null;
+  parcoursPlatEnCours = null;
+  fermerModaleParcours();
+  // Retour à l'accueil catégories
+  const formulesCat = categories.find(c => c.nom === 'Formules' && !c.parent_id);
+  if (formulesCat) {
+    afficherSousCategories(formulesCat.id);
+  } else {
+    allerEcran('ecran-accueil-cats');
+  }
+}
+
+// ============================================================
+//  MODALE OPTIONS DE BASE (Spicy/Normal, Riz/Nouilles)
+// ============================================================
+function afficherModaleOptionsBase() {
+  const p = parcoursPlatEnCours.produit;
+  const modal = document.getElementById('modal-parcours');
+  modal.classList.add('actif');
+
+  const groupes = p.options_base;
+  // Calculer nombre total d'étapes pour l'indicateur
+  let totalEtapes = 0;
+  if (groupes && groupes.length > 0) totalEtapes += groupes.length;
+  if (p.ingredients_retirable && p.ingredients_retirable.length > 0) totalEtapes++;
+  if (p.supplements_ids && p.supplements_ids.length > 0) totalEtapes++;
+  if (p.sauces_ids && p.sauces_ids.length > 0) totalEtapes++;
+
+  // On affiche le premier groupe qui n'est pas encore choisi
+  const groupeEnCours = groupes.find(g => !parcoursPlatEnCours.options_base[g.groupe]);
+  if (!groupeEnCours) {
+    // Tous les groupes traités, on passe à l'étape suivante
+    passerEtapeSuivante();
+    return;
+  }
+
+  const html = `
+    <div class="parcours-content">
+      ${headerParcours(groupeEnCours.groupe, 'Personnalisation', groupeEnCours.obligatoire ? 'Sélection obligatoire' : 'Optionnel')}
+      <div class="parcours-options">
+        ${groupeEnCours.choix.map(choix => `
+          <div class="parcours-option-radio" onclick="selectionnerOptionBase('${groupeEnCours.groupe.replace(/'/g, "\\'")}', '${choix.replace(/'/g, "\\'")}', this)">
+            <span class="parcours-option-label">${choix}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  modal.innerHTML = html;
+}
+
+function selectionnerOptionBase(groupe, choix, element) {
+  // Désélectionner tous
+  document.querySelectorAll('.parcours-option-radio').forEach(el => el.classList.remove('actif'));
+  // Sélectionner celui cliqué
+  element.classList.add('actif');
+  parcoursPlatEnCours.options_base[groupe] = choix;
+
+  // Attendre 400ms pour montrer la sélection puis passer au groupe suivant
+  setTimeout(() => {
+    afficherModaleOptionsBase();
+  }, 400);
+}
+
+// ============================================================
+//  MODALES DU PARCOURS
+// ============================================================
+
+function afficherModaleRetirables() {
+  const p = parcoursPlatEnCours.produit;
+  const modal = document.getElementById('modal-parcours');
+  modal.classList.add('actif');
+
+  const html = `
+    <div class="parcours-content">
+      ${headerParcours('🌿 Personnaliser votre ' + p.nom, 'Personnalisation', 'Décochez les ingrédients que vous ne voulez pas')}
+      <div class="parcours-options">
+        ${p.ingredients_retirable.map(ing => `
+          <label class="parcours-option" data-ing="${ing}">
+            <input type="checkbox" checked onchange="toggleRetirable('${ing.replace(/'/g, "\\'")}', this.checked)">
+            <span class="parcours-option-label">${ing}</span>
+          </label>
+        `).join('')}
+      </div>
+      <div class="parcours-actions">
+        <button class="parcours-btn-valider" onclick="passerEtapeSuivante()">Suivant ✓</button>
+      </div>
+    </div>
+  `;
+  modal.innerHTML = html;
+}
+
+function toggleRetirable(ingredient, checked) {
+  if (!checked) {
+    // Ajouter à la liste des retirés
+    if (!parcoursPlatEnCours.retirables.includes(ingredient)) {
+      parcoursPlatEnCours.retirables.push(ingredient);
+    }
+  } else {
+    // Retirer de la liste des retirés
+    parcoursPlatEnCours.retirables = parcoursPlatEnCours.retirables.filter(i => i !== ingredient);
+  }
+}
+
+function afficherModaleSupplements() {
+  const p = parcoursPlatEnCours.produit;
+  const modal = document.getElementById('modal-parcours');
+  modal.classList.add('actif');
+
+  const supps = p.supplements_ids
+    .map(id => produits.find(pp => pp.id === id))
+    .filter(s => s);
+
+  const html = `
+    <div class="parcours-content">
+      ${headerParcours('➕ Suppléments ?', 'Suppléments', 'Ajoutez des protéines à votre ' + p.nom)}
+      <div class="parcours-options">
+        ${supps.map(s => `
+          <label class="parcours-option-pay" data-supp="${s.id}">
+            <input type="checkbox" onchange="toggleSupplement('${s.id}', this.checked)">
+            <span class="parcours-option-label">${s.nom.replace('Suppl. ', '')}</span>
+            <span class="parcours-option-prix">+${parseFloat(s.prix).toFixed(2).replace('.', ',')} €</span>
+          </label>
+        `).join('')}
+      </div>
+      <div class="parcours-actions">
+        <button class="parcours-btn-passer" onclick="passerEtapeSuivante()">Sans supplément →</button>
+        <button class="parcours-btn-valider" id="parcours-btn-supp-valider" onclick="passerEtapeSuivante()">Suivant ✓</button>
+      </div>
+    </div>
+  `;
+  modal.innerHTML = html;
+}
+
+function toggleSupplement(suppId, checked) {
+  if (checked) {
+    if (!parcoursPlatEnCours.supplements.includes(suppId)) {
+      parcoursPlatEnCours.supplements.push(suppId);
+    }
+  } else {
+    parcoursPlatEnCours.supplements = parcoursPlatEnCours.supplements.filter(id => id !== suppId);
+  }
+}
+
+function afficherModaleSauces() {
+  const p = parcoursPlatEnCours.produit;
+  const modal = document.getElementById('modal-parcours');
+  modal.classList.add('actif');
+
+  const sauces = p.sauces_ids
+    .map(id => produits.find(pp => pp.id === id))
+    .filter(s => s);
+
+  const obligatoire = p.sauce_required === true;
+  const max = p.sauces_max || 1;
+  const incluses = p.sauces_incluses === true;
+  const multiChoix = max > 1;
+
+  // Choix actuel
+  const dejaChoisies = parcoursPlatEnCours.sauces || [];
+
+  let titre, sous;
+  if (multiChoix) {
+    titre = obligatoire ? '🌶️ Choisissez vos sauces' : '🌶️ Sauces ?';
+    sous = `Jusqu'à ${max} sauce${max > 1 ? 's' : ''} · ${dejaChoisies.length}/${max} sélectionnée${dejaChoisies.length > 1 ? 's' : ''}`;
+  } else {
+    titre = obligatoire ? '🌶️ Choisissez votre sauce' : '🌶️ Une sauce ?';
+    sous = obligatoire ? 'Sélection obligatoire' : 'Optionnel';
+  }
+
+  const html = `
+    <div class="parcours-content">
+      ${headerParcours(titre, 'Sauces', sous)}
+      <div class="parcours-options" id="parcours-sauces-zone">
+        ${sauces.map(s => {
+          const dejaChoisie = dejaChoisies.includes(s.id);
+          const prixAffiche = (!incluses && parseFloat(s.prix) > 0)
+            ? '+' + parseFloat(s.prix).toFixed(2).replace('.', ',') + ' €'
+            : 'inclus';
+          return `
+            <div class="parcours-option-radio ${dejaChoisie ? 'actif' : ''}" onclick="toggleSauce('${s.id}', this)">
+              <span class="parcours-option-label">${s.nom.replace('Sauce ', '')}</span>
+              <span class="parcours-option-prix">${prixAffiche}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="parcours-actions">
+        <button class="parcours-btn-passer" onclick="parcoursPlatEnCours.sauces = []; passerEtapeSuivante()">Passer (aucune sauce) →</button>
+        <button class="parcours-btn-valider" id="parcours-btn-valider" ${(obligatoire && dejaChoisies.length === 0) ? 'disabled' : ''} onclick="passerEtapeSuivante()">Valider ✓</button>
+      </div>
+    </div>
+  `;
+  modal.innerHTML = html;
+}
+
+function toggleSauce(sauceId, element) {
+  const p = parcoursPlatEnCours.produit;
+  const max = p.sauces_max || 1;
+  const multiChoix = max > 1;
+
+  if (!multiChoix) {
+    // Mode mono : désélectionner tout sauf l'élément cliqué
+    document.querySelectorAll('.parcours-option-radio').forEach(el => el.classList.remove('actif'));
+    element.classList.add('actif');
+    parcoursPlatEnCours.sauces = [sauceId];
+  } else {
+    // Mode multi avec limite
+    const dejaChoisies = parcoursPlatEnCours.sauces;
+    const indexExistant = dejaChoisies.indexOf(sauceId);
+
+    if (indexExistant >= 0) {
+      // Déjà choisie → on désélectionne
+      dejaChoisies.splice(indexExistant, 1);
+      element.classList.remove('actif');
+    } else {
+      // Pas encore choisie → on ajoute si limite pas atteinte
+      if (dejaChoisies.length >= max) {
+        // Limite atteinte, on retire la première et on ajoute la nouvelle
+        // OU on bloque - on choisit de bloquer pour être plus prévisible
+        return; // Bloque
+      }
+      dejaChoisies.push(sauceId);
+      element.classList.add('actif');
+    }
+  }
+
+  // Mettre à jour le compteur et l'état du bouton
+  const dejaChoisies2 = parcoursPlatEnCours.sauces;
+  const compteur = document.getElementById('parcours-sauces-compteur');
+  if (compteur && multiChoix) {
+    compteur.textContent = `Jusqu'à ${max} sauce${max > 1 ? 's' : ''} · ${dejaChoisies2.length}/${max} sélectionnée${dejaChoisies2.length > 1 ? 's' : ''}`;
+  }
+  const btnValider = document.getElementById('parcours-btn-valider');
+  if (btnValider) {
+    if (p.sauce_required && dejaChoisies2.length === 0) {
+      btnValider.disabled = true;
+    } else {
+      btnValider.disabled = false;
+    }
+  }
+}
+
+// Compat : ancienne fonction selectionnerSauce (au cas où elle est appelée par ailleurs)
+function selectionnerSauce(sauceId, element) {
+  toggleSauce(sauceId, element);
+}
+
+function fermerModaleParcours() {
+  const modal = document.getElementById('modal-parcours');
+  modal.classList.remove('actif');
+  modal.innerHTML = '';
+}
+
+function annulerParcoursPlat() {
+  parcoursPlatEnCours = null;
+  fermerModaleParcours();
+}
+
+// ============================================================
+//  🔙 NAVIGATION RETOUR DANS LE PARCOURS
+// ============================================================
+// Pile des étapes parcourues pour retour
+let pileEtapes = [];
+
+function pushEtape(etape) {
+  pileEtapes.push(etape);
+}
+
+function revenirEtapePrecedente() {
+  if (!parcoursPlatEnCours) {
+    fermerModaleParcours();
+    return;
+  }
+  if (pileEtapes.length === 0) {
+    // Pas d'étape précédente → on annule tout
+    annulerParcoursPlat();
+    return;
+  }
+  // Retirer l'étape actuelle de la pile et y revenir
+  const etapePrecedente = pileEtapes.pop();
+  parcoursPlatEnCours.etape = etapePrecedente;
+  
+  // Rejouer l'affichage de l'étape précédente
+  if (etapePrecedente === 'options_base') afficherModaleOptionsBase();
+  else if (etapePrecedente === 'retirables') afficherModaleRetirables();
+  else if (etapePrecedente === 'supplements') afficherModaleSupplements();
+  else if (etapePrecedente === 'sauces') afficherModaleSauces();
+  else if (etapePrecedente === 'formule_entree') afficherModaleFormuleEntree();
+  else if (etapePrecedente === 'formule_plat') afficherEcranFormulePlat();
+  else if (etapePrecedente === 'formule_boisson') afficherModaleFormuleBoisson();
+}
+
+// Helper : génère le header avec ← Retour et ✕ Fermer
+function headerParcours(titre, etape, sousTitre = '') {
+  const peutRevenir = pileEtapes.length > 0;
+  return `
+    <div class="parcours-head-nav">
+      <button class="parcours-btn-retour" onclick="revenirEtapePrecedente()" ${peutRevenir ? '' : 'style="visibility:hidden;"'}>
+        ← Retour
+      </button>
+      <button class="parcours-btn-close" onclick="annulerParcoursPlat()" title="Fermer">
+        ✕
+      </button>
+    </div>
+    <div class="parcours-head">
+      <div class="parcours-etape">${etape}</div>
+      <h2 class="parcours-titre">${titre}</h2>
+      ${sousTitre ? '<p class="parcours-sous">' + sousTitre + '</p>' : ''}
+    </div>`;
+}
+
+// ============================================================
+//  🎉 CONFETTIS DE CÉLÉBRATION
+// ============================================================
+function declencherConfettis() {
+  const conteneur = document.getElementById('conteneur-confettis');
+  if (!conteneur) return;
+  
+  conteneur.innerHTML = '';
+  
+  const couleurs = ['#FF6B35', '#FFD23F', '#06D6A0', '#118AB2', '#EF476F', '#FFFFFF'];
+  const nbConfettis = 80;
+  
+  for (let i = 0; i < nbConfettis; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + '%';
+    c.style.background = couleurs[Math.floor(Math.random() * couleurs.length)];
+    c.style.animationDelay = (Math.random() * 0.6) + 's';
+    c.style.animationDuration = (2.5 + Math.random() * 1.5) + 's';
+    c.style.transform = `rotate(${Math.random() * 360}deg)`;
+    c.style.width = (8 + Math.random() * 6) + 'px';
+    c.style.height = (12 + Math.random() * 8) + 'px';
+    conteneur.appendChild(c);
+  }
+  
+  // Nettoyer après la fin de l'animation
+  setTimeout(() => {
+    if (conteneur) conteneur.innerHTML = '';
+  }, 5000);
+}
+
+function afficherUpsell(produitAjoute, suggestions) {
+  const modal = document.getElementById('modal-upsell');
+  const titre = document.getElementById('upsell-titre');
+  const liste = document.getElementById('upsell-liste');
+
+  titre.textContent = produitAjoute.nom + ' ajouté ! 🎉';
+
+  liste.innerHTML = suggestions.map(p => {
+    const cat = categories.find(c => c.id === p.categorie_id);
+    const emoji = emojiCat(cat ? cat.nom : '');
+    return `
+      <div class="upsell-card" onclick="ajouterUpsell('${p.id}', this)">
+        <div class="upsell-emoji">${emoji}</div>
+        <div class="upsell-nom">${p.nom}</div>
+        <div class="upsell-prix">${fmt(p.prix)}</div>
+        <div class="upsell-plus">+</div>
+      </div>
+    `;
+  }).join('');
+
+  modal.classList.add('actif');
+}
+
+function fermerUpsell() {
+  document.getElementById('modal-upsell').classList.remove('actif');
+}
+
+function ajouterUpsell(produitId, btnEl) {
+  const p = produits.find(x => x.id === produitId);
+  if (!p) return;
+  const cat = categories.find(c => c.id === p.categorie_id);
+  const emoji = emojiCat(cat ? cat.nom : '');
+
+  // Ajout direct au panier (SANS redéclencher l'upsell)
+  const ligne = panier.find(l => l.produit_id === produitId);
   if (ligne) ligne.quantite++;
   else panier.push({ produit_id: p.id, nom: p.nom, prix: parseFloat(p.prix), quantite: 1, emoji });
   majBarrePanier();
+
+  // Animation visuelle d'ajout
+  if (btnEl) {
+    btnEl.classList.add('upsell-ajoute');
+    setTimeout(() => fermerUpsell(), 600);
+  }
 }
 
 function modifierQte(produitId, delta) {
@@ -808,11 +3957,41 @@ function majBarrePanier() {
 
 function afficherPanier() {
   const liste = document.getElementById('panier-liste');
-  liste.innerHTML = panier.map(l => `
-    <div class="panier-ligne">
+  liste.innerHTML = panier.map(l => {
+    // Affichage des options
+    let optionsHtml = '';
+    if (l.options) {
+      // Options de base (Spicy/Normal, Riz/Nouilles)
+      if (l.options.options_base) {
+        Object.entries(l.options.options_base).forEach(([groupe, choix]) => {
+          optionsHtml += `<div class="pl-options">${groupe} : <b>${choix}</b></div>`;
+        });
+      }
+      // Retirables
+      if (l.options.retirable && l.options.retirable.length > 0) {
+        optionsHtml += `<div class="pl-options">🚫 Sans : ${l.options.retirable.join(', ')}</div>`;
+      }
+      // Sauces (si incluses, sinon elles sont en lignes séparées payantes)
+      if (l.options.sauces && l.options.sauces.length > 0) {
+        const sauceNoms = l.options.sauces
+          .map(sid => {
+            const s = produits.find(p => p.id === sid);
+            return s ? s.nom.replace('Sauce ', '') : null;
+          })
+          .filter(n => n);
+        if (sauceNoms.length > 0) {
+          optionsHtml += `<div class="pl-options">🌶️ ${sauceNoms.join(', ')}</div>`;
+        }
+      }
+    }
+    // Style spécial pour les lignes liées (supplément, sauce sous un plat)
+    const classe = l.lien_plat ? 'panier-ligne pl-lie' : 'panier-ligne';
+    return `
+    <div class="${classe}">
       <div class="pl-emoji">${l.emoji}</div>
       <div class="pl-info">
         <div class="pl-nom">${l.nom}</div>
+        ${optionsHtml}
         <div class="pl-prix">${fmt(l.prix)} / unité</div>
       </div>
       <div class="pl-qte">
@@ -821,7 +4000,8 @@ function afficherPanier() {
         <button class="pl-qbtn" onclick="modifierQte('${l.produit_id}', 1)">+</button>
       </div>
       <div class="pl-st">${fmt(l.prix * l.quantite)}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const [e, c] = totalPanier().toFixed(2).split('.');
   document.getElementById('panier-total-final').innerHTML = `${e}<span>,${c} €</span>`;
 }
@@ -861,8 +4041,15 @@ async function payer(methode) {
     const numero = data.numero ?? '?';
     const venteId = data.vente_id;
 
-    // 🧾 Impression auto du ticket cuisine (fire-and-forget)
-    imprimerTicketCuisine(venteId, numero, lignes).catch(e => console.error('Impression KO:', e));
+    // 🧾 Impression cuisine UNIQUEMENT si payé maintenant (carte)
+    // Si paiement au comptoir → la cuisine n'imprime QUE quand le caissier encaisse
+    if (methode === 'carte') {
+      imprimerTicketCuisine(venteId, numero, lignes).catch(e => console.error('Impression KO:', e));
+    }
+
+    // 🖨️ Impression du ticket BORNE client (numéro géant) via RawBT
+    // → Sortir le ticket que le client récupère devant la borne
+    imprimerTicketBorneRawBT(numero, methode, lignes).catch(e => console.error('RawBT KO:', e));
 
     afficherConfirmation(numero, methode);
   } catch (e) {
@@ -908,6 +4095,9 @@ function afficherConfirmation(numero, methode) {
   }
 
   allerEcran('ecran-fin');
+  
+  // ✨ Confettis de célébration !
+  declencherConfettis();
 
   // Reset auto au bout de 10 secondes pour le client suivant
   setTimeout(() => {
@@ -917,6 +4107,7 @@ function afficherConfirmation(numero, methode) {
     envoiEnCours = false;
     clientFid = null;
     sumupCheckoutId = null;
+    upsellDejaProposees.clear();  // ✨ Reset des upsells proposés
     if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
     majBarrePanier();
     afficherCats();
@@ -992,8 +4183,62 @@ function onScanError(err) { /* silent : on ignore les "no qr code found" */ }
 
 async function onScanSuccess(decodedText) {
   await arreterScanner();
-  // Le QR code contient l'ID du client (UUID) ou un lien
+  await traiterScanFidelite(decodedText);
+}
+
+// ============================================================
+//  🔫 SCANNER PHYSIQUE INTÉGRÉ (mode HID/Clavier)
+// ============================================================
+// Détecte automatiquement les scans rapides depuis un scanner physique
+// qui tape le contenu comme un clavier (mode HID).
+// Le scan typique : "GINKHAO:UUID" + Entrée, tapé en < 100ms
+// ============================================================
+
+let scanBuffer = '';
+let scanLastKeyTime = 0;
+const SCAN_TIMEOUT_MS = 50; // Délai max entre 2 touches pour considérer que c'est un scan
+
+document.addEventListener('keydown', function(e) {
+  const now = Date.now();
+  const isScanFast = (now - scanLastKeyTime) < SCAN_TIMEOUT_MS;
+
+  // Si trop lent depuis la dernière touche, on reset (c'est de la frappe humaine)
+  if (!isScanFast && scanBuffer.length > 0) {
+    scanBuffer = '';
+  }
+
+  // Touche Entrée = fin du scan
+  if (e.key === 'Enter') {
+    if (scanBuffer.length >= 8) {  // Minimum sensé pour un QR
+      const scanned = scanBuffer;
+      scanBuffer = '';
+      // Si ça ressemble à un QR fidélité, on traite
+      if (/^GINKHAO:|^[0-9a-f]{8}-[0-9a-f]{4}/i.test(scanned)) {
+        e.preventDefault();
+        traiterScanFidelite(scanned);
+      }
+    } else {
+      scanBuffer = '';
+    }
+    return;
+  }
+
+  // Caractères imprimables seulement
+  if (e.key.length === 1) {
+    scanBuffer += e.key;
+    scanLastKeyTime = now;
+  }
+});
+
+// ============================================================
+//  Traitement du scan (commun caméra + scanner physique)
+// ============================================================
+async function traiterScanFidelite(decodedText) {
   let clientId = decodedText.trim();
+
+  // ✨ Format Gin Khao : "GINKHAO:UUID"
+  const matchGinKhao = clientId.match(/^GINKHAO:([0-9a-f-]{36})$/i);
+  if (matchGinKhao) clientId = matchGinKhao[1];
 
   // Extraire l'UUID si c'est une URL (ex: https://gin-khao.com/?c=UUID)
   const matchUrl = clientId.match(/[?&]c=([0-9a-f-]{36})/i);
@@ -1001,8 +4246,8 @@ async function onScanSuccess(decodedText) {
 
   // Vérifier que c'est bien un UUID
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)) {
-    alert('QR code non reconnu. Veuillez réessayer avec votre carte fidélité Gin Khao.');
-    allerEcran('ecran-panier');
+    // Si le scan n'est pas un UUID valide, ne RIEN faire (silencieux)
+    // Évite d'afficher des erreurs intempestives quand on tape au clavier
     return;
   }
 
@@ -1015,16 +4260,42 @@ async function onScanSuccess(decodedText) {
       .single();
     if (error || !data) {
       alert('Client introuvable. Veuillez réessayer ou demander de l\'aide au comptoir.');
-      allerEcran('ecran-panier');
       return;
     }
     clientFid = data;
     afficherFidelite();
-    allerEcran('ecran-panier');
+    // Si on est sur l'écran scanner caméra, on retourne au panier
+    const ecranScanQr = document.getElementById('ecran-scan-qr');
+    if (ecranScanQr && ecranScanQr.classList.contains('actif')) {
+      allerEcran('ecran-panier');
+    }
+    // Sinon (depuis menu, accueil-cats, panier), on reste sur la page actuelle
+
+    // Toast/feedback visuel
+    afficherToastFidelite(data.nom);
   } catch (e) {
     alert('Erreur : ' + e.message);
-    allerEcran('ecran-panier');
   }
+}
+
+function afficherToastFidelite(nom) {
+  // Petit toast en bas pour confirmer l'identification
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg, var(--gold), var(--gold-soft));
+    color:var(--bg-deep); padding:18px 32px; border-radius:999px;
+    font-size:18px; font-weight:700; z-index:9999;
+    box-shadow:0 10px 40px rgba(0,0,0,0.5);
+    animation: toastIn 0.3s ease;
+  `;
+  toast.textContent = '👋 Bienvenue ' + nom;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.transition = 'opacity 0.3s';
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
 }
 
 function afficherFidelite() {
@@ -1055,8 +4326,16 @@ function afficherInfoFidelite() {
 }
 
 // ============================================================
-//  💳 PAIEMENT SUMUP (online checkout)
+//  💳 PAIEMENT SUMUP (online checkout - DEPRECATED, voir Reader API plus bas)
 // ============================================================
+
+// ============================================================
+//  💳 SUMUP SOLO — Paiement direct au terminal via Reader API
+// ============================================================
+// Configuration du Reader (le Solo physique)
+const SUMUP_READER_ID = 'rdr_2SD5M6R7GJ9SJAKDEBV2TRQ5PW';
+
+let sumupRealtimeChannel = null;
 let sumupCheckoutId = null;
 let sumupPolling = null;
 
@@ -1064,28 +4343,73 @@ async function lancerPaiementSumUp() {
   if (envoiEnCours || panier.length === 0) return;
   envoiEnCours = true;
   const montant = totalPanier();
+  
   document.getElementById('paie-sumup-montant').textContent = fmt(montant);
-  document.getElementById('paie-sumup-sub').textContent = 'Suivez les instructions sur le terminal SumUp Solo';
+  document.getElementById('paie-sumup-sub').textContent = 'Préparation du paiement...';
   allerEcran('ecran-paiement-sumup');
 
   try {
-    // Appel notre Netlify Function qui crée un checkout SumUp
-    const resp = await fetch('/.netlify/functions/sumup-create-checkout', {
+    // Envoyer le paiement au Solo via la nouvelle Reader API
+    const resp = await fetch('/.netlify/functions/sumup-reader-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        reader_id: SUMUP_READER_ID,
         montant: montant.toFixed(2),
         description: 'Gin Khao - Borne',
-        return_url: window.location.origin + '/borne.html'
+        restaurant_id: RESTO_ID
       })
     });
     const data = await resp.json();
-    if (!data.ok) throw new Error(data.erreur || 'Erreur création checkout');
+    
+    if (!data.ok) {
+      throw new Error(data.erreur || 'Erreur création paiement');
+    }
 
-    sumupCheckoutId = data.checkout_id;
+    sumupCheckoutId = data.client_transaction_id;
+    
+    document.getElementById('paie-sumup-sub').textContent = '✨ Présentez votre carte sur le terminal';
 
-    // On lance le polling pour vérifier le statut toutes les 2 secondes
-    sumupPolling = setInterval(verifierStatutSumUp, 2000);
+    // S'abonner aux changements en temps réel sur la table paiements_sumup
+    if (sumupRealtimeChannel) {
+      try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
+    }
+    
+    sumupRealtimeChannel = sb
+      .channel('sumup-paiement-' + sumupCheckoutId)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'paiements_sumup',
+        filter: 'client_transaction_id=eq.' + sumupCheckoutId
+      }, (payload) => {
+        const nouvelEnregistrement = payload.new;
+        console.log('Paiement maj:', nouvelEnregistrement);
+        if (nouvelEnregistrement.statut === 'PAID') {
+          gererPaiementSumUpReussi();
+        } else if (nouvelEnregistrement.statut === 'FAILED') {
+          gererPaiementSumUpEchoue();
+        }
+      })
+      .subscribe();
+    
+    // FALLBACK : Polling en cas de souci avec le Realtime (toutes les 3s)
+    sumupPolling = setInterval(async () => {
+      try {
+        const { data: paiement } = await sb
+          .from('paiements_sumup')
+          .select('statut')
+          .eq('client_transaction_id', sumupCheckoutId)
+          .single();
+        
+        if (paiement && paiement.statut === 'PAID') {
+          gererPaiementSumUpReussi();
+        } else if (paiement && paiement.statut === 'FAILED') {
+          gererPaiementSumUpEchoue();
+        }
+      } catch (e) {}
+    }, 3000);
+    
   } catch (e) {
     alert('Erreur SumUp : ' + e.message + '\n\nVeuillez payer au comptoir.');
     envoiEnCours = false;
@@ -1093,33 +4417,46 @@ async function lancerPaiementSumUp() {
   }
 }
 
-async function verifierStatutSumUp() {
-  if (!sumupCheckoutId) return;
-  try {
-    const resp = await fetch('/.netlify/functions/sumup-check-status?checkout_id=' + encodeURIComponent(sumupCheckoutId));
-    const data = await resp.json();
-    if (data.statut === 'PAID') {
-      clearInterval(sumupPolling);
-      sumupPolling = null;
-      // Paiement réussi ! On enregistre la vente
-      await payer('carte');
-    } else if (data.statut === 'FAILED' || data.statut === 'EXPIRED') {
-      clearInterval(sumupPolling);
-      sumupPolling = null;
-      alert('Paiement échoué ou expiré. Veuillez réessayer.');
-      envoiEnCours = false;
-      allerEcran('ecran-paiement');
-    }
-    // PENDING / autre : on continue à attendre
-  } catch (e) {
-    console.error('Polling SumUp:', e);
+async function gererPaiementSumUpReussi() {
+  // Nettoyer
+  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
+  if (sumupRealtimeChannel) { 
+    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
+    sumupRealtimeChannel = null;
   }
+  
+  // Animation succès
+  document.getElementById('paie-sumup-sub').innerHTML = '<span style="color:#10b981;">✅ Paiement validé !</span>';
+  
+  // Enregistrer la vente
+  setTimeout(async () => {
+    await payer('carte');
+  }, 800);
+}
+
+function gererPaiementSumUpEchoue() {
+  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
+  if (sumupRealtimeChannel) { 
+    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
+    sumupRealtimeChannel = null;
+  }
+  
+  alert('❌ Paiement refusé ou annulé.\n\nVeuillez réessayer ou payer au comptoir.');
+  envoiEnCours = false;
+  sumupCheckoutId = null;
+  allerEcran('ecran-paiement');
+}
+
+// Ancienne fonction conservée pour compat (no-op)
+async function verifierStatutSumUp() {
+  // Plus utilisée — remplacée par le Realtime + polling
 }
 
 function annulerPaiementSumUp() {
-  if (sumupPolling) {
-    clearInterval(sumupPolling);
-    sumupPolling = null;
+  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
+  if (sumupRealtimeChannel) { 
+    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
+    sumupRealtimeChannel = null;
   }
   sumupCheckoutId = null;
   envoiEnCours = false;
@@ -1129,6 +4466,153 @@ function annulerPaiementSumUp() {
 // ============================================================
 //  🧾 IMPRESSION TICKET CUISINE (auto)
 // ============================================================
+// ============================================================
+//  🖨️ IMPRESSION RawBT — Ticket borne client (numéro géant)
+// ============================================================
+// RawBT est une app Android (ru.a402d.rawbtprinter) qui reçoit
+// des commandes ESC/POS en base64 via intent et les imprime
+// sur l'imprimante USB connectée.
+// ============================================================
+async function imprimerTicketBorneRawBT(numero, methode, lignes) {
+  try {
+    // Construire le contenu ESC/POS du ticket
+    const escpos = genererTicketBorneEscPos(numero, methode, lignes);
+    // Encoder en base64
+    const base64 = btoa(escpos);
+
+    // ✨ Méthode RawBT — Utiliser le format intent:// standard Android
+    // Documentation : https://rawbt.ru/docs
+    // Format officiel : "rawbt:" SUIVI par le contenu base64
+    // OU avec intent: si rawbt: ne marche pas (Kiosk Browser bloque les schemes inconnus)
+
+    // Méthode 1 : Lien classique rawbt: avec window.open
+    // Si ça ne marche pas, on essaie l'intent
+    try {
+      window.open('rawbt:' + base64, '_self');
+      return;
+    } catch (e) {}
+
+    // Méthode 2 : Fallback avec intent://
+    const intentUrl = 'intent:#Intent;scheme=rawbt;action=android.intent.action.VIEW;package=ru.a402d.rawbtprinter;S.android.intent.extra.TEXT=' + encodeURIComponent(base64) + ';end';
+    window.location.href = intentUrl;
+  } catch (e) {
+    console.error('Erreur impression RawBT:', e);
+  }
+}
+
+function genererTicketBorneEscPos(numero, methode, lignes) {
+  const ESC = '\x1B';
+  const GS = '\x1D';
+  const LF = '\x0A';
+  let s = '';
+
+  // Init imprimante
+  s += ESC + '@';
+
+  // Logo / en-tête (gros, centré, gras)
+  s += ESC + 'a' + '\x01';      // Centré
+  s += GS + '!' + '\x11';        // Double hauteur + largeur
+  s += ESC + 'E' + '\x01';       // Gras
+  s += 'Gin Khao' + LF;
+  s += ESC + 'E' + '\x00';       // Gras off
+  s += GS + '!' + '\x00';        // Taille normale
+  s += 'Street Food Thai' + LF;
+  s += LF;
+
+  // Mode service
+  const modeLabel = modeService === 'sur_place' ? 'SUR PLACE' : 'A EMPORTER';
+  s += ESC + 'E' + '\x01';
+  s += '[' + modeLabel + ']' + LF;
+  s += ESC + 'E' + '\x00';
+  s += LF;
+
+  // Séparateur
+  s += '========================================' + LF;
+  s += LF;
+
+  // Numéro de commande GÉANT
+  s += 'VOTRE NUMERO' + LF;
+  s += LF;
+  s += GS + '!' + '\x77';        // TAILLE GÉANTE (8x8)
+  s += ESC + 'E' + '\x01';
+  s += '#' + numero + LF;
+  s += ESC + 'E' + '\x00';
+  s += GS + '!' + '\x00';        // Taille normale
+
+  // Séparateur
+  s += LF;
+  s += '========================================' + LF;
+  s += LF;
+
+  // Détail commande
+  s += ESC + 'a' + '\x00';        // Aligné à gauche
+  s += 'Date : ' + new Date().toLocaleString('fr-FR') + LF;
+  if (clientFid && clientFid.nom) {
+    s += 'Client : ' + clientFid.nom + LF;
+  }
+  s += '----------------------------------------' + LF;
+
+  // Lignes
+  let total = 0;
+  lignes.forEach(l => {
+    const qte = l.quantite || 1;
+    const nom = l.nom || l.nom_produit || '';
+    const prix = parseFloat(l.prix) * qte;
+    total += prix;
+    const debut = qte + 'x ' + nom;
+    const prixStr = prix.toFixed(2).replace('.', ',') + ' EUR';
+    // Padding pour aligner à droite
+    const espacesMax = 42 - debut.length - prixStr.length;
+    if (espacesMax > 0) {
+      s += debut + ' '.repeat(espacesMax) + prixStr + LF;
+    } else {
+      s += debut + LF;
+      s += '  ' + ' '.repeat(40 - prixStr.length - 2) + prixStr + LF;
+    }
+  });
+
+  s += '----------------------------------------' + LF;
+
+  // Total
+  s += ESC + 'E' + '\x01';
+  s += GS + '!' + '\x11';
+  const totalStr = total.toFixed(2).replace('.', ',') + ' EUR';
+  s += 'TOTAL : ' + totalStr + LF;
+  s += GS + '!' + '\x00';
+  s += ESC + 'E' + '\x00';
+  s += LF;
+
+  // Instructions selon mode de paiement
+  s += ESC + 'a' + '\x01';        // Centré
+  if (methode === 'comptoir') {
+    s += ESC + 'E' + '\x01';
+    s += '*** A REGLER AU COMPTOIR ***' + LF;
+    s += ESC + 'E' + '\x00';
+    s += 'Presentez ce ticket au comptoir' + LF;
+    s += 'pour regler votre commande' + LF;
+  } else {
+    s += ESC + 'E' + '\x01';
+    s += '*** PAIEMENT VALIDE ***' + LF;
+    s += ESC + 'E' + '\x00';
+    s += 'Merci, patientez svp' + LF;
+    s += 'Nous preparons votre commande' + LF;
+  }
+
+  s += LF;
+  s += 'Vous serez appele(e) par votre numero' + LF;
+  s += LF;
+  s += LF;
+  s += 'Merci pour votre commande !' + LF;
+  s += LF;
+  s += LF;
+  s += LF;
+
+  // Couper le papier
+  s += GS + 'V' + '\x00';
+
+  return s;
+}
+
 async function imprimerTicketCuisine(venteId, numero, lignes) {
   try {
     // Appel du serveur d'impression local (déjà en place au resto)
