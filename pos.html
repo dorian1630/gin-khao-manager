@@ -3105,6 +3105,7 @@ html, body {
   position: relative;
   padding: 10px 12px 12px;
   z-index: 2;
+  background: var(--surface);
 }
 .produit-card.has-image .produit-nom {
   color: var(--text);
@@ -3245,6 +3246,10 @@ html, body {
   background: linear-gradient(135deg, var(--gold-soft), var(--gold));
   color: #fff;
   border-bottom: 2px solid var(--gold);
+}
+  /* ✨ Force le fond blanc sur tous les bandeaux de cartes avec image */
+.produit-card.has-image .produit-bandeau {
+  background: #fff !important;
 }
 </style>
 </head>
