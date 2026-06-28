@@ -3131,9 +3131,8 @@ html, body {
   .topbar { padding: 14px 18px; }
   .produit-nom { font-size: 13px; }
   .produit-prix { font-size: 17px; }
-  .produit-card.has-image { min-height: 160px; }
-}
-@media (max-width: 920px) {
+.produit-card.has-image { min-height: auto; }
+  @media (max-width: 920px) {
   .caisse { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
   .ticket-zone {
     border-top: 1px solid var(--border);
@@ -3146,8 +3145,7 @@ html, body {
   .produits-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
   .ticket-head h2 { font-size: 18px; }
   .total-row .val { font-size: 30px; }
-  .produit-card.has-image { min-height: 140px; }
-}
+.produit-card.has-image { min-height: auto; }
   /* ✨ FIX z-index : la modale PIN passe AU-DESSUS du cadenas */
 #overlay-caissier-pin {
   z-index: 8000 !important;
@@ -3235,6 +3233,14 @@ html, body {
   /* ✨ Force le fond blanc sur tous les bandeaux de cartes avec image */
 .produit-card.has-image .produit-bandeau {
   background: #fff !important;
+}
+  /* ✨ Force le bandeau à être TOUJOURS visible */
+.produit-card.has-image .produit-bandeau {
+  display: block !important;
+  min-height: 50px;
+}
+.produit-card.has-image {
+  overflow: visible;
 }
 </style>
 </head>
