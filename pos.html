@@ -4661,8 +4661,8 @@ function afficherModaleSauces() {
         <button class="btn-passer" onclick="passerSauces()">⏭️ Passer</button>
         <button class="btn-valider" onclick="validerSauces()">Suivant</button>
       </div>
-
-function toggleSauce(sauceId, max, btn) {
+    </div>`;
+}function toggleSauce(sauceId, max, btn) {
   const idx = parcoursPlat.sauces.indexOf(sauceId);
   if (idx >= 0) {
     parcoursPlat.sauces.splice(idx, 1);
