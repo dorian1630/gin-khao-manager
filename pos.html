@@ -3207,6 +3207,17 @@ html, body {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(46, 204, 113, 0.5);
 }
+  .hv-badge-borne {
+  background: #6366F1;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 6px;
+}
 </style>
 </head>
 <body>
@@ -5668,44 +5679,95 @@ async function chargerHistorique() {
     const debut = new Date();
     debut.setHours(0, 0, 0, 0);
 
-    // Récupère les ventes du jour + leurs lignes complètes (pour le ticket)
+    // 1) Ventes (caisse + borne encaissées)
     const { data: ventes, error } = await sb.from('ventes')
       .select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, lignes_vente(nom_produit, prix_unitaire, quantite, sous_total)')
       .eq('restaurant_id', RESTO_ID)
       .gte('cree_le', debut.toISOString())
       .order('numero', { ascending: false });
-
     if (error) throw error;
 
-    // Mémorise pour la génération de ticket
+    // 2) Commandes borne ANNULÉES uniquement (les encaissées ont créé une vente liée)
+    const { data: bornesAnnulees } = await sb.from('commandes_en_cours')
+      .select('id, numero, total, source, statut, cree_le, lignes, client_nom, client_telephone')
+      .eq('restaurant_id', RESTO_ID)
+      .eq('statut', 'annulee')
+      .gte('cree_le', debut.toISOString());
+
     ventesDuJour = ventes || [];
 
-    if (!ventes || ventes.length === 0) {
+    // Construction liste fusionnée triée par heure décroissante
+    const tousElements = [];
+    
+    (ventes || []).forEach(v => {
+      tousElements.push({
+        type: 'vente',
+        cree_le: v.cree_le,
+        data: v
+      });
+    });
+    
+    (bornesAnnulees || []).forEach(c => {
+      tousElements.push({
+        type: 'borne_annulee',
+        cree_le: c.cree_le,
+        data: c
+      });
+    });
+    
+    tousElements.sort((a, b) => new Date(b.cree_le) - new Date(a.cree_le));
+
+    if (tousElements.length === 0) {
       liste.innerHTML = '<div class="histo-vide"><div class="ic">🧾</div>Aucune vente aujourd\'hui pour l\'instant</div>';
       sub.innerHTML = '0 vente';
       document.getElementById('histo-total').innerHTML = '<span>0,00 €</span>';
       return;
     }
 
-    // Calculs
-    const valides = ventes.filter(v => v.statut === 'validee');
+    // Calculs (uniquement sur les ventes validées)
+    const valides = (ventes || []).filter(v => v.statut === 'validee');
     const totalJour = valides.reduce((s, v) => s + Number(v.total || 0), 0);
-    const nbAnnulees = ventes.length - valides.length;
+    const nbAnnulees = (ventes || []).length - valides.length;
+    const nbBornesAnnulees = (bornesAnnulees || []).length;
 
-    sub.innerHTML = `<b>${valides.length}</b> vente${valides.length > 1 ? 's' : ''} validée${valides.length > 1 ? 's' : ''}` +
-      (nbAnnulees > 0 ? ` · ${nbAnnulees} annulée${nbAnnulees > 1 ? 's' : ''}` : '');
+    let subTxt = `<b>${valides.length}</b> vente${valides.length > 1 ? 's' : ''} validée${valides.length > 1 ? 's' : ''}`;
+    if (nbAnnulees > 0) subTxt += ` · ${nbAnnulees} annulée${nbAnnulees > 1 ? 's' : ''}`;
+    if (nbBornesAnnulees > 0) subTxt += ` · ${nbBornesAnnulees} borne annulée${nbBornesAnnulees > 1 ? 's' : ''}`;
+    sub.innerHTML = subTxt;
 
     const [eu, ce] = totalJour.toFixed(2).split('.');
     document.getElementById('histo-total').innerHTML = `${eu},${ce} <span>€</span>`;
 
-    // Affichage des ventes
     const CANAL_BADGE = {
       sur_place: '', uber_eats: '🛵 Uber', deliveroo: '🛵 Deliveroo',
       just_eat: '🛵 Just Eat', click_collect: '📦 C&C', livraison: '🚗 Livraison'
     };
-    liste.innerHTML = ventes.map(v => {
-      const h = new Date(v.cree_le);
+    
+    // Affichage
+    liste.innerHTML = tousElements.map(el => {
+      const h = new Date(el.cree_le);
       const heure = String(h.getHours()).padStart(2,'0') + ':' + String(h.getMinutes()).padStart(2,'0');
+      
+      // === COMMANDE BORNE ANNULÉE ===
+      if (el.type === 'borne_annulee') {
+        const c = el.data;
+        const lignes = Array.isArray(c.lignes) ? c.lignes : [];
+        const articles = lignes.map(l => (l.quantite || 1) + '× ' + (l.nom || '?')).join(', ') || '—';
+        return `
+          <div class="histo-vente annulee">
+            <div class="hv-num">#${c.numero}</div>
+            <div class="hv-info">
+              <div class="hv-heure">${heure} · <span class="hv-mode">🖥️ Borne</span></div>
+              <div class="hv-detail">${escapeHtmlPos(articles)}</div>
+            </div>
+            <div class="hv-total">${fmt(c.total || 0)}</div>
+            <div class="hv-badge-borne">Borne</div>
+            <div class="hv-badge-annulee">Annulée</div>
+          </div>`;
+      }
+      
+      // === VENTE NORMALE ===
+      const v = el.data;
       const articles = (v.lignes_vente || [])
         .map(l => l.quantite + '× ' + l.nom_produit).join(', ') || '—';
       const modeLbl = v.mode_paiement === 'carte' ? 'Carte'
@@ -5714,6 +5776,8 @@ async function chargerHistorique() {
                     : v.mode_paiement;
       const canalBadge = CANAL_BADGE[v.canal] ? ` · ${CANAL_BADGE[v.canal]}` : '';
       const annulee = v.statut === 'annulee';
+      const estBorne = v.canal === 'borne' || (v.mode_paiement === 'carte' && v.canal === 'sur_place'); 
+      // Note : le canal 'borne' n'existe pas par défaut, donc on identifie par d'autres moyens si besoin
 
       return `
         <div class="histo-vente ${annulee ? 'annulee' : ''}">
