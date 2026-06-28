@@ -3224,21 +3224,6 @@ html, body {
   color: #fff;
   border-style: solid;
 }
-  /* 🎁 Cartes Formules - juste différenciation visuelle légère */
-.produit-card.carte-formule .pc-img.cf-no-img {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 80px;
-  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
-  color: #fff;
-  aspect-ratio: 1 / 1;
-}
-.produit-card.carte-formule .cf-nb {
-  font-size: 13px;
-  color: var(--gold);
-  font-weight: 700;
-}
 .produit-card.carte-formule .cf-emoji {
   font-size: 64px;
   text-align: center;
@@ -4231,14 +4216,12 @@ function afficherCartesFormules(parentId) {
     const img = premierPlat && premierPlat.image_url ? premierPlat.image_url : '';
     const hasImage = img && img.trim() !== '';
     return `
-      <div class="produit-card carte-formule ${hasImage?'has-image':''}" onclick="filtrerCat('${sc.id}')">
-        ${hasImage 
-          ? `<div class="pc-img" style="background-image:url('${img}')"></div>` 
-          : '<div class="pc-img cf-no-img">🎁</div>'}
+      <div class="produit-card ${hasImage?'has-image':''}" onclick="filtrerCat('${sc.id}')">
+        ${hasImage ? `<div class="pc-img" style="background-image:url('${img}')"></div>` : ''}
         <div class="produit-bandeau">
           <div class="produit-nom">${sc.nom}</div>
           <div class="produit-bas">
-            <div class="cf-nb">${nb} plat${nb > 1 ? 's' : ''} au choix</div>
+            <div class="produit-prix" style="font-size:13px;color:var(--gold);">${nb} plat${nb > 1 ? 's' : ''} au choix</div>
           </div>
         </div>
       </div>
