@@ -4573,8 +4573,9 @@ function afficherModaleRetirables() {
         <button class="btn-annuler" onclick="annulerParcours()">Annuler</button>
         <button class="btn-passer" onclick="passerRetirables()">⏭️ Passer</button>
         <button class="btn-valider" onclick="validerRetirables()">Suivant</button>
+      </div>
+    </div>`;
 }
-
 function toggleRetirable(ing, btn) {
   const idx = parcoursPlat.retirables.indexOf(ing);
   if (idx >= 0) {
@@ -4695,7 +4696,6 @@ function validerSauces() {
   parcoursPlat.etape = 'formule_boisson';
   passerEtapeParcours();
 }
-
 function afficherModaleFormuleBoisson() {
   ouvrirModaleParcours();
   const catBoissons = categories.find(c => c.nom === 'Boissons');
