@@ -5151,7 +5151,8 @@ async function validerVente() {
   p_canal: canalPourBase,
   p_taux_commission: CANAUX_COMMISSION.includes(canalVente) ? tauxCommission : null,
   p_caissier_id: caissierActif ? caissierActif.id : null,
-  p_caissier_nom: caissierActif ? caissierActif.nom : null
+  p_caissier_nom: caissierActif ? caissierActif.nom : null,
+  p_client_id: clientActif ? clientActif.id : null
 });
     if (error) throw error;
 
@@ -5163,27 +5164,7 @@ async function validerVente() {
     // ✨ Enregistrer le caissier sur la vente
     
     // ✨ Enregistrer le client lié à la vente + incrémenter ses visites
-    if (venteId && clientActif) {
-      try {
-        await sb.from('ventes')
-          .update({ 
-            client_id: clientActif.id,
-            client_nom: clientActif.nom,
-            client_telephone: clientActif.telephone
-          })
-          .eq('id', venteId);
-        // Incrémenter le nombre de visites du client
-        await sb.from('clients')
-          .update({ 
-            nb_visites: (clientActif.nb_visites || 0) + 1,
-            derniere_visite: new Date().toISOString().split('T')[0],
-            maj_le: new Date().toISOString()
-          })
-          .eq('id', clientActif.id);
-      } catch (e) {
-        console.error('Erreur enregistrement client:', e);
-      }
-    }
+    
     
     // ✨ Si la vente vient d'une commande borne en attente, lier + passer en "à préparer"
     if (window.commandeEnCoursLiee) {
