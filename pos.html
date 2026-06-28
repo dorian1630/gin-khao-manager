@@ -3160,6 +3160,13 @@ html, body {
   .total-row .val { font-size: 30px; }
   .produit-card.has-image { min-height: 140px; }
 }
+  /* ✨ FIX z-index : la modale PIN passe AU-DESSUS du cadenas */
+#overlay-caissier-pin {
+  z-index: 8000 !important;
+}
+.bloque-caisse {
+  z-index: 4500 !important;
+}
 </style>
 </head>
 <body>
