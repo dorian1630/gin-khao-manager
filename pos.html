@@ -3205,6 +3205,24 @@ html, body {
   letter-spacing: 0.05em;
   margin-left: 6px;
 }
+  .btn-passer {
+  flex: 1.2;
+  padding: 14px;
+  background: var(--bg-soft);
+  border: 2px dashed var(--gold);
+  color: var(--gold);
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  font-size: 14px;
+  transition: all 0.18s;
+}
+.btn-passer:hover {
+  background: var(--gold);
+  color: #fff;
+  border-style: solid;
+}
 </style>
 </head>
 <body>
@@ -4024,7 +4042,13 @@ const catsAvecContenu = topCats.filter(c => {
 
 // ✨ Tri custom : ordre choisi par Dorian
 const ORDRE_CATS = [
-  'formule', 'loc lac', 'pad thaï', 'pad thai', 'pad riz', 'riz',
+  'formule', 
+  'loc lac', 
+  'pad thaï', 'pad thai', 
+  'pad riz', 
+  'gin bo bun', 'bo bun', 'bobun',
+  'crousty khao', 'crousty', 'crispy',
+  'nouilles thaï', 'nouilles thai', 'nouille',
   'sushi', 'sashimi', 'maki', 'california',
   'entrée', 'entree',
   'salade', 'pokébowl', 'pokebowl',
@@ -4547,9 +4571,8 @@ function afficherModaleRetirables() {
       </div>
       <div class="mpp-actions">
         <button class="btn-annuler" onclick="annulerParcours()">Annuler</button>
+        <button class="btn-passer" onclick="passerRetirables()">⏭️ Passer</button>
         <button class="btn-valider" onclick="validerRetirables()">Suivant</button>
-      </div>
-    </div>`;
 }
 
 function toggleRetirable(ing, btn) {
@@ -4591,10 +4614,9 @@ function afficherModaleSupplements() {
       </div>
       <div class="mpp-actions">
         <button class="btn-annuler" onclick="annulerParcours()">Annuler</button>
+        <button class="btn-passer" onclick="passerSupplements()">⏭️ Passer</button>
         <button class="btn-valider" onclick="validerSupplements()">Suivant</button>
       </div>
-    </div>`;
-}
 
 function toggleSupplement(suppId, btn) {
   const idx = parcoursPlat.supplements.indexOf(suppId);
@@ -4635,10 +4657,9 @@ function afficherModaleSauces() {
       </div>
       <div class="mpp-actions">
         <button class="btn-annuler" onclick="annulerParcours()">Annuler</button>
+        <button class="btn-passer" onclick="passerSauces()">⏭️ Passer</button>
         <button class="btn-valider" onclick="validerSauces()">Suivant</button>
       </div>
-    </div>`;
-}
 
 function toggleSauce(sauceId, max, btn) {
   const idx = parcoursPlat.sauces.indexOf(sauceId);
@@ -4654,7 +4675,21 @@ function toggleSauce(sauceId, max, btn) {
     btn.classList.add('active');
   }
 }
-
+// ⏭️ Boutons "Passer" — skip l'étape sans rien ajouter
+function passerRetirables() {
+  parcoursPlat.retirables = [];
+  parcoursPlat.etape = 'supplements';
+  passerEtapeParcours();
+}
+function passerSupplements() {
+  parcoursPlat.supplements = [];
+  parcoursPlat.etape = 'sauces';
+  passerEtapeParcours();
+}
+function passerSauces() {
+  parcoursPlat.sauces = [];
+  validerSauces();
+}
 function validerSauces() {
   parcoursPlat.etape = 'formule_boisson';
   passerEtapeParcours();
