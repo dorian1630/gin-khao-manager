@@ -1952,6 +1952,335 @@ html, body {
   font-weight: 700;
 }
 
+/* ===== BARRE RECHERCHE CLIENT (en bas) ===== */
+.barre-client {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 2px solid var(--gold);
+  padding: 10px 20px;
+  z-index: 100;
+  box-shadow: 0 -4px 16px rgba(28, 24, 20, 0.08);
+}
+.barre-client-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(135deg, var(--bg-soft), #fff);
+  border: 2px solid var(--gold);
+  color: var(--text);
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.18s;
+}
+.barre-client-btn:hover {
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.barre-client-icon { font-size: 18px; }
+.barre-client-arrow { color: var(--gold); font-weight: 700; }
+.barre-client-btn:hover .barre-client-arrow { color: #fff; }
+
+/* Ajout d'un padding bottom à .caisse pour que la barre ne masque rien */
+.caisse {
+  padding-bottom: 60px;
+}
+
+/* ===== BANDEAU CLIENT ACTIF (dans le ticket) ===== */
+.bandeau-client {
+  margin: 12px 20px 0;
+  background: linear-gradient(135deg, #fff, #fef9ec);
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(201, 165, 90, 0.15);
+}
+.bandeau-client-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--gold);
+  color: #fff;
+}
+.bandeau-client-titre {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.bandeau-client-close {
+  background: rgba(255,255,255,0.3);
+  border: none;
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+.bandeau-client-body {
+  padding: 12px 14px;
+  font-size: 13px;
+}
+.bandeau-client-nom {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.bandeau-client-info {
+  color: var(--text-soft);
+  margin: 2px 0;
+}
+.bandeau-client-info b {
+  color: var(--gold);
+  font-weight: 700;
+}
+.bandeau-client-notes {
+  background: #fef9ec;
+  border-left: 3px solid var(--gold);
+  padding: 6px 10px;
+  margin-top: 8px;
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-soft);
+}
+.bandeau-client-fid {
+  display: inline-block;
+  background: var(--gold);
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.bandeau-client-edit {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-soft);
+  cursor: pointer;
+  font-family: var(--body);
+}
+.bandeau-client-edit:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ===== MODALE RECHERCHE CLIENT ===== */
+.modal-client {
+  max-width: 560px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.client-search-zone {
+  position: relative;
+  margin-bottom: 16px;
+}
+.client-search-input {
+  width: 100%;
+  padding: 16px 50px 16px 20px;
+  font-size: 18px;
+  font-weight: 600;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+}
+.client-search-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(201, 165, 90, 0.15);
+}
+.client-clear-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-soft);
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-mute);
+}
+.client-clear-btn:hover { background: var(--border); color: var(--text); }
+
+.client-resultats {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  background: var(--bg-soft);
+  border-radius: 12px;
+  padding: 8px;
+}
+.client-vide {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-mute);
+}
+.client-vide .ic { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
+
+.client-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.client-item:hover {
+  border-color: var(--gold);
+  background: #fef9ec;
+  transform: translateX(-2px);
+}
+.client-item-info { flex: 1; min-width: 0; }
+.client-item-nom {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+}
+.client-item-tel {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-top: 2px;
+}
+.client-item-adresse {
+  font-size: 11px;
+  color: var(--text-soft);
+  margin-top: 4px;
+}
+.client-item-fid {
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 700;
+  margin-top: 2px;
+}
+.client-item-arrow {
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.client-actions-bas {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.btn-nouveau-client {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+}
+.btn-nouveau-client:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+
+/* ===== MODALE FORM CLIENT ===== */
+.modal-form-client {
+  max-width: 520px;
+}
+.form-client-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.form-row {
+  display: flex;
+  flex-direction: column;
+}
+.form-row label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-mute);
+  margin-bottom: 4px;
+}
+.form-row input,
+.form-row textarea {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--body);
+  resize: vertical;
+}
+.form-row input:focus,
+.form-row textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.form-row-double {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+}
+.form-client-actions {
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.btn-form-annuler {
+  flex: 1;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+}
+.btn-form-save {
+  flex: 2;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+}
+
 /* ===== BOUTON CAISSIER (rouge/vert) ===== */
 .btn-caissier {
   display: inline-flex;
@@ -2755,7 +3084,10 @@ html, body {
       </div>
     </div>
 
-    <div class="cats" id="cats"></div>
+    <div class="cats" id="cats-old" style="display:none;"></div>
+
+    <!-- Sous-catégories en bandeau -->
+    <div id="sous-cats-wrap"></div>
 
     <div class="produits-grid" id="produits-grid">
       <div class="empty-state">
@@ -2779,6 +3111,15 @@ html, body {
         <span class="encart-attente-count" id="encart-attente-count">0</span>
       </div>
       <div class="encart-attente-liste" id="encart-attente-liste"></div>
+    </div>
+
+    <!-- ✨ BANDEAU CLIENT ACTIF (visible si client chargé) -->
+    <div class="bandeau-client" id="bandeau-client" style="display:none;">
+      <div class="bandeau-client-head">
+        <span class="bandeau-client-titre">📞 Commande téléphone</span>
+        <button class="bandeau-client-close" onclick="retirerClientCommande()">✕</button>
+      </div>
+      <div class="bandeau-client-body" id="bandeau-client-body"></div>
     </div>
 
     <div class="ticket-lignes" id="ticket-lignes">
@@ -2810,6 +3151,96 @@ html, body {
           <button class="btn-sec" onclick="viderTicket()">Vider</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✨ BARRE RECHERCHE CLIENT (en bas, toujours visible) -->
+<div class="barre-client" id="barre-client">
+  <button class="barre-client-btn" onclick="ouvrirRechercheClient()">
+    <span class="barre-client-icon">📞</span>
+    <span class="barre-client-label">Rechercher un client par téléphone</span>
+    <span class="barre-client-arrow">→</span>
+  </button>
+</div>
+
+<!-- ===== MODALE RECHERCHE CLIENT ===== -->
+<div class="overlay" id="overlay-client">
+  <div class="modal modal-client">
+    <div class="histo-head">
+      <h3>📞 Recherche client</h3>
+      <button class="link-btn" onclick="fermerRechercheClient()">Fermer</button>
+    </div>
+    
+    <div class="client-search-zone">
+      <input 
+        type="tel" 
+        class="client-search-input" 
+        id="client-search-input" 
+        placeholder="Téléphone du client (06...)" 
+        autocomplete="off"
+        oninput="rechercheClientLive()"
+        autofocus
+      />
+      <button class="client-clear-btn" id="client-clear-btn" onclick="effacerRechercheClient()" style="display:none;">✕</button>
+    </div>
+    
+    <div class="client-resultats" id="client-resultats">
+      <div class="client-vide">
+        <div class="ic">📱</div>
+        <p>Tapez un numéro de téléphone pour rechercher</p>
+        <p style="font-size:11px; margin-top:4px; opacity:0.6;">Recherche dans la base des 3500+ clients</p>
+      </div>
+    </div>
+    
+    <div class="client-actions-bas">
+      <button class="btn-nouveau-client" onclick="ouvrirFormNouveauClient()">
+        ➕ Créer un nouveau client
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALE NOUVEAU CLIENT / EDITION CLIENT ===== -->
+<div class="overlay" id="overlay-form-client">
+  <div class="modal modal-form-client">
+    <div class="histo-head">
+      <h3 id="form-client-titre">➕ Nouveau client</h3>
+      <button class="link-btn" onclick="fermerFormClient()">Annuler</button>
+    </div>
+    
+    <div class="form-client-grid">
+      <div class="form-row">
+        <label>Nom *</label>
+        <input type="text" id="fc-nom" placeholder="Nom du client" />
+      </div>
+      <div class="form-row">
+        <label>Téléphone *</label>
+        <input type="tel" id="fc-telephone" placeholder="06 12 34 56 78" />
+      </div>
+      <div class="form-row">
+        <label>Adresse</label>
+        <input type="text" id="fc-adresse" placeholder="Numéro et rue" />
+      </div>
+      <div class="form-row form-row-double">
+        <div>
+          <label>Code postal</label>
+          <input type="text" id="fc-cp" placeholder="13003" />
+        </div>
+        <div>
+          <label>Ville</label>
+          <input type="text" id="fc-ville" placeholder="Marseille" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Notes (interphone, code, étage…)</label>
+        <textarea id="fc-notes" placeholder="Bât. A, 3e étage, code 1234, sonner à Dupont..." rows="2"></textarea>
+      </div>
+    </div>
+    
+    <div class="form-client-actions">
+      <button class="btn-form-annuler" onclick="fermerFormClient()">Annuler</button>
+      <button class="btn-form-save" id="btn-form-save" onclick="sauverClient()">💾 Enregistrer</button>
     </div>
   </div>
 </div>
@@ -3476,32 +3907,25 @@ function emojiPourCat(nom) {
 }
 
 function afficherSousCats(parentId) {
-  let zoneSC = document.getElementById('sous-cats');
+  const wrap = document.getElementById('sous-cats-wrap');
+  if (!wrap) return;
   
   const sousCats = categories
     .filter(sc => sc.parent_id === parentId)
     .sort((a, b) => (a.ordre || 999) - (b.ordre || 999));
   
-  // Si pas de sous-cats, on cache la zone
   if (sousCats.length === 0) {
-    if (zoneSC) zoneSC.innerHTML = '';
+    wrap.innerHTML = '';
     return;
   }
   
-  // Créer la zone si elle n'existe pas
-  if (!zoneSC) {
-    zoneSC = document.createElement('div');
-    zoneSC.id = 'sous-cats';
-    zoneSC.className = 'sous-cats';
-    document.getElementById('cats').after(zoneSC);
-  }
-  
-  let html = '';
+  let html = '<div class="sous-cats">';
   sousCats.forEach(sc => {
     const isActive = (sc.id === catActive);
     html += `<div class="sous-cat-chip ${isActive?'active':''}" onclick="filtrerCat('${sc.id}')">${sc.nom}</div>`;
   });
-  zoneSC.innerHTML = html;
+  html += '</div>';
+  wrap.innerHTML = html;
 }
 
 function filtrerCat(id) {
@@ -4612,6 +5036,29 @@ async function validerVente() {
       }
     }
     
+    // ✨ Enregistrer le client lié à la vente + incrémenter ses visites
+    if (venteId && clientActif) {
+      try {
+        await sb.from('ventes')
+          .update({ 
+            client_id: clientActif.id,
+            client_nom: clientActif.nom,
+            client_telephone: clientActif.telephone
+          })
+          .eq('id', venteId);
+        // Incrémenter le nombre de visites du client
+        await sb.from('clients')
+          .update({ 
+            nb_visites: (clientActif.nb_visites || 0) + 1,
+            derniere_visite: new Date().toISOString().split('T')[0],
+            maj_le: new Date().toISOString()
+          })
+          .eq('id', clientActif.id);
+      } catch (e) {
+        console.error('Erreur enregistrement client:', e);
+      }
+    }
+    
     // ✨ Si la vente vient d'une commande borne en attente, lier + passer en "à préparer"
     if (window.commandeEnCoursLiee) {
       try {
@@ -4659,6 +5106,8 @@ async function validerVente() {
     clientFid = null;
     platOffertApplique = false;
     remise = null;
+    clientActif = null;  // ✨ Reset client téléphone
+    afficherBandeauClient();
     
     // Reset visuel ticket-num
     const ticketNumEl = document.getElementById('ticket-num');
@@ -6535,6 +6984,294 @@ document.getElementById('overlay-perf-equipe').addEventListener('click', e => {
 });
 document.getElementById('overlay-fiche-caissier').addEventListener('click', e => {
   if (e.target.id === 'overlay-fiche-caissier') fermerFicheCaissier();
+});
+
+// ============================================
+//  📞 RECHERCHE CLIENT (téléphone)
+// ============================================
+let clientActif = null;       // Client lié à la commande en cours
+let rechercheTimeout = null;
+let modeFormClient = 'creation';  // 'creation' ou 'edition'
+
+function ouvrirRechercheClient() {
+  fermerMenuHamburger();
+  document.getElementById('overlay-client').classList.add('show');
+  document.getElementById('client-search-input').value = '';
+  document.getElementById('client-clear-btn').style.display = 'none';
+  document.getElementById('client-resultats').innerHTML = `
+    <div class="client-vide">
+      <div class="ic">📱</div>
+      <p>Tapez un numéro de téléphone pour rechercher</p>
+      <p style="font-size:11px; margin-top:4px; opacity:0.6;">Recherche dans la base des 3500+ clients</p>
+    </div>
+  `;
+  setTimeout(() => {
+    document.getElementById('client-search-input').focus();
+  }, 100);
+}
+
+function fermerRechercheClient() {
+  document.getElementById('overlay-client').classList.remove('show');
+}
+
+function effacerRechercheClient() {
+  document.getElementById('client-search-input').value = '';
+  document.getElementById('client-clear-btn').style.display = 'none';
+  rechercheClientLive();
+  document.getElementById('client-search-input').focus();
+}
+
+function rechercheClientLive() {
+  const input = document.getElementById('client-search-input');
+  const valeur = input.value.trim();
+  document.getElementById('client-clear-btn').style.display = valeur ? 'block' : 'none';
+  
+  if (rechercheTimeout) clearTimeout(rechercheTimeout);
+  
+  if (valeur.length < 2) {
+    document.getElementById('client-resultats').innerHTML = `
+      <div class="client-vide">
+        <div class="ic">📱</div>
+        <p>Tapez au moins 2 chiffres ou lettres</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Debounce 200ms pour ne pas spammer la DB
+  rechercheTimeout = setTimeout(() => effectuerRechercheClient(valeur), 200);
+}
+
+async function effectuerRechercheClient(terme) {
+  const zone = document.getElementById('client-resultats');
+  zone.innerHTML = '<div class="client-vide"><div class="spinner" style="margin:0 auto;"></div></div>';
+  
+  try {
+    // Recherche : téléphone OU nom (insensible casse)
+    const termeNettoye = terme.replace(/\s+/g, '');
+    const isNumerique = /^\d+$/.test(termeNettoye);
+    
+    let query = sb.from('clients')
+      .select('id, nom, telephone, adresse, code_postal, ville, notes, points, nb_visites')
+      .eq('restaurant_id', RESTO_ID)
+      .limit(20);
+    
+    if (isNumerique) {
+      query = query.ilike('telephone', '%' + termeNettoye + '%');
+    } else {
+      query = query.ilike('nom', '%' + terme + '%');
+    }
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      zone.innerHTML = `
+        <div class="client-vide">
+          <div class="ic">🔍</div>
+          <p>Aucun client trouvé pour "${escapeHtmlPos(terme)}"</p>
+          <p style="font-size:11px; margin-top:8px; opacity:0.7;">Vous pouvez créer un nouveau client ci-dessous</p>
+        </div>
+      `;
+      return;
+    }
+    
+    zone.innerHTML = data.map(c => {
+      const adresse = c.adresse ? c.adresse + (c.ville ? ', ' + c.ville : '') : '';
+      const fid = (c.points > 0 || c.nb_visites > 0) ? 
+        `<div class="client-item-fid">⭐ ${c.points || 0} pts · ${c.nb_visites || 0} visites</div>` : '';
+      return `
+        <div class="client-item" onclick="selectionnerClient('${c.id}')">
+          <div class="client-item-info">
+            <div class="client-item-nom">${escapeHtmlPos(c.nom || 'Sans nom')}</div>
+            <div class="client-item-tel">📱 ${escapeHtmlPos(c.telephone || '')}</div>
+            ${adresse ? '<div class="client-item-adresse">📍 ' + escapeHtmlPos(adresse) + '</div>' : ''}
+            ${fid}
+          </div>
+          <div class="client-item-arrow">→</div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Erreur recherche client:', e);
+    zone.innerHTML = '<div class="client-vide" style="color:var(--danger);">Erreur : ' + e.message + '</div>';
+  }
+}
+
+async function selectionnerClient(id) {
+  try {
+    const { data, error } = await sb.from('clients')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    
+    chargerClientCommande(data);
+    fermerRechercheClient();
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  }
+}
+
+function chargerClientCommande(client) {
+  clientActif = client;
+  afficherBandeauClient();
+  toast('✅ ' + (client.nom || 'Client') + ' chargé');
+}
+
+function afficherBandeauClient() {
+  const bandeau = document.getElementById('bandeau-client');
+  const body = document.getElementById('bandeau-client-body');
+  
+  if (!clientActif) {
+    bandeau.style.display = 'none';
+    return;
+  }
+  
+  bandeau.style.display = 'block';
+  
+  const c = clientActif;
+  const adresseHtml = c.adresse ? `<div class="bandeau-client-info">📍 <b>${escapeHtmlPos(c.adresse)}</b>${c.code_postal ? ' · ' + escapeHtmlPos(c.code_postal) : ''}${c.ville ? ' ' + escapeHtmlPos(c.ville) : ''}</div>` : '';
+  const notesHtml = c.notes ? `<div class="bandeau-client-notes">📝 ${escapeHtmlPos(c.notes)}</div>` : '';
+  const fidHtml = (c.points > 0 || c.nb_visites > 0) ? 
+    `<span class="bandeau-client-fid">⭐ ${c.points || 0} pts · ${c.nb_visites || 0} visites</span>` : '';
+  
+  body.innerHTML = `
+    <div class="bandeau-client-nom">${escapeHtmlPos(c.nom || 'Sans nom')}</div>
+    <div class="bandeau-client-info">📞 <b>${escapeHtmlPos(c.telephone || '')}</b></div>
+    ${adresseHtml}
+    ${notesHtml}
+    ${fidHtml}
+    <button class="bandeau-client-edit" onclick="ouvrirEditionClient()">✏️ Modifier les infos du client</button>
+  `;
+}
+
+function retirerClientCommande() {
+  clientActif = null;
+  afficherBandeauClient();
+  toast('Client retiré de la commande');
+}
+
+// ============================================
+//  📝 CRÉATION / ÉDITION CLIENT
+// ============================================
+function ouvrirFormNouveauClient() {
+  modeFormClient = 'creation';
+  document.getElementById('form-client-titre').textContent = '➕ Nouveau client';
+  
+  // Pré-remplir téléphone depuis la recherche
+  const tel = document.getElementById('client-search-input').value.trim().replace(/\s+/g, '');
+  document.getElementById('fc-nom').value = '';
+  document.getElementById('fc-telephone').value = /^\d+$/.test(tel) ? tel : '';
+  document.getElementById('fc-adresse').value = '';
+  document.getElementById('fc-cp').value = '';
+  document.getElementById('fc-ville').value = 'Marseille';
+  document.getElementById('fc-notes').value = '';
+  
+  fermerRechercheClient();
+  document.getElementById('overlay-form-client').classList.add('show');
+  setTimeout(() => document.getElementById('fc-nom').focus(), 100);
+}
+
+function ouvrirEditionClient() {
+  if (!clientActif) return;
+  modeFormClient = 'edition';
+  document.getElementById('form-client-titre').textContent = '✏️ Modifier le client';
+  
+  document.getElementById('fc-nom').value = clientActif.nom || '';
+  document.getElementById('fc-telephone').value = clientActif.telephone || '';
+  document.getElementById('fc-adresse').value = clientActif.adresse || '';
+  document.getElementById('fc-cp').value = clientActif.code_postal || '';
+  document.getElementById('fc-ville').value = clientActif.ville || 'Marseille';
+  document.getElementById('fc-notes').value = clientActif.notes || '';
+  
+  document.getElementById('overlay-form-client').classList.add('show');
+}
+
+function fermerFormClient() {
+  document.getElementById('overlay-form-client').classList.remove('show');
+}
+
+async function sauverClient() {
+  const nom = document.getElementById('fc-nom').value.trim();
+  const tel = document.getElementById('fc-telephone').value.trim().replace(/\s+/g, '');
+  const adresse = document.getElementById('fc-adresse').value.trim();
+  const cp = document.getElementById('fc-cp').value.trim();
+  const ville = document.getElementById('fc-ville').value.trim();
+  const notes = document.getElementById('fc-notes').value.trim();
+  
+  if (!nom) { alert('Le nom est obligatoire'); return; }
+  if (!tel) { alert('Le téléphone est obligatoire'); return; }
+  
+  const btn = document.getElementById('btn-form-save');
+  btn.disabled = true;
+  btn.textContent = '⏳ Enregistrement…';
+  
+  try {
+    const payload = {
+      nom, telephone: tel,
+      adresse: adresse || null,
+      code_postal: cp || null,
+      ville: ville || null,
+      notes: notes || null,
+      restaurant_id: RESTO_ID,
+      maj_le: new Date().toISOString()
+    };
+    
+    let resultat;
+    if (modeFormClient === 'creation') {
+      const { data, error } = await sb.from('clients').insert(payload).select().single();
+      if (error) throw error;
+      resultat = data;
+      toast('✅ Client créé');
+    } else {
+      const { data, error } = await sb.from('clients')
+        .update(payload)
+        .eq('id', clientActif.id)
+        .select()
+        .single();
+      if (error) throw error;
+      resultat = data;
+      toast('✅ Client mis à jour');
+    }
+    
+    // Charger automatiquement le client dans la commande
+    chargerClientCommande(resultat);
+    fermerFormClient();
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Enregistrer';
+  }
+}
+
+// Petite fonction toast si elle n'existe pas
+if (typeof toast === 'undefined') {
+  window.toast = function(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 24px;border-radius:999px;z-index:10000;font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,0.3);';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  };
+}
+
+// Fermer modales au clic dehors
+document.getElementById('overlay-client').addEventListener('click', e => {
+  if (e.target.id === 'overlay-client') fermerRechercheClient();
+});
+document.getElementById('overlay-form-client').addEventListener('click', e => {
+  if (e.target.id === 'overlay-form-client') fermerFormClient();
+});
+
+// Touche Entrée dans le champ recherche
+document.getElementById('client-search-input').addEventListener('keypress', e => {
+  if (e.key === 'Enter') {
+    // Si un seul résultat, sélectionne-le
+    const items = document.querySelectorAll('.client-item');
+    if (items.length === 1) items[0].click();
+  }
 });
 
 // ============================================
