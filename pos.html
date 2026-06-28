@@ -5419,12 +5419,12 @@ function montantRemise() {
 }
 
 // Total du ticket = articles − plat offert − remise manuelle.
-function totalTicket() {
+function totalT() {
   return Math.max(0, sousTotalApresPlatOffert() - montantRemise());
 }
 
 function majTotal() {
-  const t = totalTicket();
+  const t = totalT();
   const [euros, cents] = t.toFixed(2).split('.');
   document.getElementById('total-aff').innerHTML = `${euros}<span>,${cents} €</span>`;
 
@@ -5664,7 +5664,7 @@ function ouvrirPaiement() {
   }
   modePaiement = 'especes';
   canalVente = 'sur_place';
-  document.getElementById('modal-total').textContent = fmt(totalTicket());
+  document.getElementById('modal-total').textContent = fmt(totalT());
   document.getElementById('cash-input').value = '';
   document.getElementById('rendu-val').textContent = '—';
   document.getElementById('rendu-val').className = 'val';
@@ -5717,7 +5717,7 @@ function choisirCanal(canal) {
     uberZone.classList.add('show');
     modePaiement = 'plateforme';
     // pré-remplit le montant avec le total boutique comme base de départ
-    document.getElementById('uber-montant').value = totalTicket().toFixed(2);
+    document.getElementById('uber-montant').value = totalT().toFixed(2);
     choisirCommission(18);   // défaut : 18%
     majUberApercu();
   } else if (CANAUX_PLATEFORME.includes(canal)) {
@@ -5785,8 +5785,8 @@ function setValeurTR(v) {
 function calculTR() {
   const valeur = parseFloat(document.getElementById('tr-valeur').value) || 0;
   const total = trNbTickets * valeur;
-  const totalTicket = totalTicket();
-  const complement = Math.max(0, totalTicket - total);
+  const totalT = totalT();
+  const complement = Math.max(0, totalT - total);
   
   document.getElementById('tr-total').textContent = fmt(total);
   document.getElementById('tr-comp').textContent = fmt(complement);
@@ -5815,8 +5815,8 @@ function calculTR() {
   }
   
   // Si TR > total ticket, pas autorisé (pas de rendu en espèces)
-  if (total > totalTicket && totalTicket > 0) {
-    const diff = total - totalTicket;
+  if (total > totalT && totalT > 0) {
+    const diff = total - totalT;
     blocages.push('⚠️ Surplus de ' + fmt(diff) + ' — le commerçant ne peut pas rendre la différence');
   }
   
@@ -5831,7 +5831,7 @@ function trEstValide() {
   
   const valeur = parseFloat(document.getElementById('tr-valeur').value) || 0;
   const total = trNbTickets * valeur;
-  const totalT = totalTicket();
+  const totalT = totalT();
   
   if (valeur > TR_PLAFOND_TICKET) return false;
   if (new Date().getDay() === 0) return false;
@@ -5866,7 +5866,7 @@ function choisirMode(mode) {
   }
 }
 function genererQuickCash() {
-  const total = totalTicket();
+  const total = totalT();
   const zone = document.getElementById('quick-cash');
   // Billets utiles : montant exact + billets ronds au-dessus
   const billets = [5, 10, 20, 50];
@@ -5886,7 +5886,7 @@ function setCash(montant) {
 
 function calculerRendu() {
   const recu = parseFloat(document.getElementById('cash-input').value) || 0;
-  const total = totalTicket();
+  const total = totalT();
   const rendu = recu - total;
   const el = document.getElementById('rendu-val');
   const btnValider = document.getElementById('btn-valider');
@@ -6048,7 +6048,7 @@ async function validerVente() {
 
     // Succès — la vente est enregistrée
     const numero = data?.numero ?? '?';
-    const totalVente = data?.total ?? totalTicket();
+    const totalVente = data?.total ?? totalT();
     const venteId = data?.vente_id ?? data?.id;
     
     // ✨ Enregistrer le caissier sur la vente
