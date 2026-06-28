@@ -3794,7 +3794,8 @@ console.log('Style forcé injecté !');
     </div>
 
     <!-- ÉTAPE B : mode de paiement (affiché seulement si encaissement nécessaire) -->
-    <div class="pay-mode" data-mode="especes" onclick="choisirMode('especes')">
+    <div class="pay-modes" id="pay-modes-zone" style="display: flex;">
+      <div class="pay-mode" data-mode="especes" onclick="choisirMode('especes')">
         <div class="ic">💵</div>
         <div class="nm">Espèces</div>
       </div>
