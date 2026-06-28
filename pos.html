@@ -4966,12 +4966,48 @@ function retirerRemise() {
   afficherTicket();
 }
 
-function viderTicket() {
+async function viderTicket() {
   if (ticket.length === 0) return;
-  if (!confirm('Vider la commande en cours ?')) return;
+  
+  // ✨ Si c'est une commande borne chargée → annulation = marquer 'annulee'
+  const estCommandeBorne = window.commandeEnCoursLiee != null;
+  const msg = estCommandeBorne 
+    ? '⚠️ Annuler la commande borne ?\nElle sera marquée comme annulée et disparaîtra de l\'écran.'
+    : 'Vider la commande en cours ?';
+  
+  if (!confirm(msg)) return;
+  
+  // Si commande borne → marquer en base comme 'annulee'
+  if (estCommandeBorne) {
+    try {
+      await sb.from('commandes_en_cours')
+        .update({ 
+          statut: 'annulee',
+          vu_caisse: true,
+          vu_le: new Date().toISOString()
+        })
+        .eq('id', window.commandeEnCoursLiee);
+      toast('🗑️ Commande borne annulée');
+    } catch (e) {
+      console.error('Erreur annulation commande borne:', e);
+      alert('Erreur lors de l\'annulation : ' + e.message);
+    }
+    window.commandeEnCoursLiee = null;
+  }
+  
+  // Reset du ticket
   ticket = [];
   platOffertApplique = false;
   remise = null;
+  
+  // Reset visuel ticket-num
+  const ticketNumEl = document.getElementById('ticket-num');
+  if (ticketNumEl) {
+    ticketNumEl.textContent = 'Nouveau ticket';
+    ticketNumEl.style.color = '';
+    ticketNumEl.style.fontWeight = '';
+  }
+  
   afficherClientFid();
   afficherTicket();
 }
