@@ -5667,7 +5667,27 @@ async function validerVente() {
       }));
     }
   }
-
+// ✨ Si des articles ont une remise par ligne : on ajoute des lignes de remise négatives
+  ticket.forEach(l => {
+    if (l.remise_ligne) {
+      const stLigne = l.prix * l.quantite;
+      let mRl = l.remise_ligne.type === 'pct'
+        ? stLigne * (l.remise_ligne.valeur / 100)
+        : l.remise_ligne.valeur;
+      mRl = Math.min(mRl, stLigne);
+      
+      const libelle = l.remise_ligne.type === 'pct'
+        ? `↳ Remise ${l.remise_ligne.valeur}% sur ${l.nom}${l.remise_ligne.raison ? ' (' + l.remise_ligne.raison + ')' : ''}`
+        : `↳ Remise -${fmt(l.remise_ligne.valeur)} sur ${l.nom}${l.remise_ligne.raison ? ' (' + l.remise_ligne.raison + ')' : ''}`;
+      
+      lignes.push({
+        produit_id: null,
+        nom: libelle,
+        prix: -mRl,
+        quantite: 1
+      });
+    }
+  });
   // Si plat offert appliqué : on ajoute une ligne de remise négative
   // pour que le total enregistré reflète le montant réellement payé.
   if (platOffertApplique) {
