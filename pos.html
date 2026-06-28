@@ -3190,6 +3190,23 @@ html, body {
 .btn-ajout-direct:active {
   transform: translateY(0);
 }
+  /* ⚡ Bouton Encaisser dans pop-up notif */
+.btn-notif-encaisser {
+  background: linear-gradient(135deg, #2ECC71, #27AE60);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--body);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.35);
+}
+.btn-notif-encaisser:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(46, 204, 113, 0.5);
+}
 </style>
 </head>
 <body>
@@ -3604,8 +3621,9 @@ html, body {
     <div class="popup-notif-articles" id="popup-notif-articles"></div>
     <div class="popup-notif-total" id="popup-notif-total">--,-- €</div>
     <div class="popup-notif-actions">
-      <button class="btn-notif-voir" onclick="vuEtOuvrirKDS()">Voir et imprimer</button>
-    </div>
+  <button class="btn-notif-voir" onclick="vuEtOuvrirKDS()">Voir KDS</button>
+  <button class="btn-notif-encaisser" onclick="encaisserDirectBorne()">💳 Encaisser</button>
+</div>
   </div>
 </div>
 
@@ -7802,7 +7820,37 @@ function afficherPopupNotif(commande) {
   if (popupNotifTimeout) clearTimeout(popupNotifTimeout);
   popupNotifTimeout = setTimeout(() => popup.classList.remove('actif'), 8000);
 }
-
+// ⚡ Encaisser direct depuis la pop-up borne
+async function encaisserDirectBorne() {
+  const popup = document.getElementById('popup-notif-nouvelle');
+  const id = popup.dataset.commandeId;
+  popup.classList.remove('actif');
+  if (popupNotifTimeout) clearTimeout(popupNotifTimeout);
+  
+  if (!id) return;
+  
+  // Vérifier qu'un caissier est connecté
+  if (!caissierActif) {
+    alert('🔒 Aucun caissier connecté. Connectez-vous d\'abord.');
+    ouvrirModaleCaissier();
+    return;
+  }
+  
+  // Vérifier que le ticket actuel est vide
+  if (ticket.length > 0) {
+    if (!confirm('Un ticket est en cours. Le remplacer par cette commande ?')) return;
+    ticket = [];
+    afficherTicket();
+  }
+  
+  // Charger la commande dans le ticket (réutilise la fonction existante)
+  await chargerCommandeAttente(id);
+  
+  // Ouvrir directement la modale paiement
+  setTimeout(() => {
+    ouvrirPaiement();
+  }, 200);
+}
 async function vuEtOuvrirKDS() {
   const popup = document.getElementById('popup-notif-nouvelle');
   const id = popup.dataset.commandeId;
