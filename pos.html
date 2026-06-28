@@ -3376,6 +3376,143 @@ console.log('Style forcé injecté !');
   color: var(--gold);
   font-weight: 700;
 }
+  /* 💼 Bouton et Ticket Pro */
+.btn-ticket-pro {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #4A5568, #2D3748);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.btn-ticket-pro:hover { 
+  transform: translateY(-1px); 
+  box-shadow: 0 4px 12px rgba(74, 85, 104, 0.4);
+}
+.btn-ticket-pro.actif {
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+}
+
+/* Le ticket pro lui-même */
+.ticket-pro {
+  background: #fff;
+  color: #111;
+  font-family: var(--mono);
+  width: 320px;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 26px 24px;
+  border: 2px solid #111;
+  border-radius: 4px;
+}
+.tp-head {
+  text-align: center;
+  border-bottom: 2px solid #111;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+}
+.tp-resto-nom {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.tp-resto-sous {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 4px;
+  color: #444;
+}
+.tp-resto-adresse {
+  font-size: 11px;
+  margin-top: 6px;
+  color: #666;
+}
+.tp-info {
+  margin-bottom: 18px;
+  border-bottom: 1px dashed #999;
+  padding-bottom: 12px;
+}
+.tp-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 3px 0;
+}
+.tp-info-row b { font-weight: 800; }
+.tp-objet {
+  background: #f5f2ec;
+  padding: 14px;
+  border-radius: 4px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.tp-objet-titre {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 4px;
+}
+.tp-objet-val {
+  font-size: 16px;
+  font-weight: 700;
+}
+.tp-totaux {
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #111;
+}
+.tp-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+}
+.tp-total-row b { font-weight: 700; }
+.tp-total-row.tp-ttc {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #999;
+  font-size: 18px;
+  font-weight: 900;
+}
+.tp-total-row.tp-ttc b { font-size: 22px; }
+.tp-paiement {
+  text-align: center;
+  margin-bottom: 18px;
+  padding: 10px;
+  background: #f5f2ec;
+  border-radius: 4px;
+}
+.tp-pay-titre {
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.tp-pay-val {
+  font-size: 16px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+.tp-foot {
+  text-align: center;
+  font-size: 12px;
+  border-top: 1px dashed #999;
+  padding-top: 14px;
+}
+.tp-foot-row { padding: 2px 0; }
+.tp-merci {
+  font-weight: 700;
+  margin-top: 8px;
+  font-style: italic;
+}
 </style>
 </head>
 <body>
@@ -3802,6 +3939,7 @@ console.log('Style forcé injecté !');
     <div id="ticket-contenu"></div>
     <div class="modal-actions actions-ticket">
       <button class="btn-annuler" onclick="fermerTicket()">Fermer</button>
+      <button class="btn-ticket-pro" onclick="basculerTicketPro()" id="btn-ticket-pro">💼 Ticket pro</button>
       <button class="btn-valider" onclick="imprimerTicket()">🖨️ Imprimer</button>
     </div>
   </div>
@@ -5824,6 +5962,13 @@ async function validerVente() {
     // Si client lié, ajouter aussi le bon de livraison
     const bonHTML = genererBonsPreparationHTML(lignesPourCuisine, numero);
     const livraisonHTML = clientPourTicket ? genererBonLivraisonHTML(venteLocale, clientPourTicket, lignesPourCuisine) : '';
+    // ✨ Mémoriser pour le bouton "Ticket pro"
+    derniereVenteLocale = venteLocale;
+    modeTicketPro = false;
+    setTimeout(() => {
+      const btnPro = document.getElementById('btn-ticket-pro');
+      if (btnPro) { btnPro.textContent = '💼 Ticket pro'; btnPro.classList.remove('actif'); }
+    }, 100);
     document.getElementById('ticket-contenu').innerHTML = livraisonHTML + bonHTML + genererTicketHTML(venteLocale);
     document.getElementById('overlay-ticket').classList.add('show');
 
@@ -6311,12 +6456,54 @@ function genererTicketHTML(v) {
       </div>
     </div>`;
 }
+// 💼 Bascule entre ticket normal et ticket pro dans la modale
+let modeTicketPro = false;
+let derniereVenteLocale = null;  // pour réutiliser dans basculerTicketPro
 
+function basculerTicketPro() {
+  if (!derniereVenteLocale) {
+    alert('Aucun ticket disponible');
+    return;
+  }
+  modeTicketPro = !modeTicketPro;
+  const btn = document.getElementById('btn-ticket-pro');
+  const zone = document.getElementById('ticket-contenu');
+  
+  if (modeTicketPro) {
+    zone.innerHTML = genererTicketProHTML(derniereVenteLocale);
+    btn.textContent = '🧾 Ticket normal';
+    btn.classList.add('actif');
+  } else {
+    // Re-afficher le ticket normal (avec les bons cuisine + livraison si applicable)
+    const lignesPourCuisine = (derniereVenteLocale.lignes_vente || []).map(l => ({
+      produit_id: l.produit_id,
+      nom: l.nom_produit || l.nom,
+      quantite: l.quantite,
+      categorie_id: l.categorie_id
+    }));
+    const bonHTML = genererBonsPreparationHTML(lignesPourCuisine, derniereVenteLocale.numero);
+    const livraisonHTML = derniereVenteLocale.client ? genererBonLivraisonHTML(derniereVenteLocale, derniereVenteLocale.client, lignesPourCuisine) : '';
+    zone.innerHTML = livraisonHTML + bonHTML + genererTicketHTML(derniereVenteLocale);
+    btn.textContent = '💼 Ticket pro';
+    btn.classList.remove('actif');
+  }
+}
 function voirTicket(venteId) {
   const v = ventesDuJour.find(x => x.id === venteId);
   if (!v) { alert('Ticket introuvable'); return; }
+  
+  // ✨ Mémoriser pour le bouton "Ticket pro"
+  derniereVenteLocale = v;
+  modeTicketPro = false;
+  
   document.getElementById('ticket-contenu').innerHTML = genererTicketHTML(v);
   document.getElementById('overlay-ticket').classList.add('show');
+  
+  // Reset visuel du bouton Ticket pro
+  setTimeout(() => {
+    const btnPro = document.getElementById('btn-ticket-pro');
+    if (btnPro) { btnPro.textContent = '💼 Ticket pro'; btnPro.classList.remove('actif'); }
+  }, 100);
 }
 
 function fermerTicket() {
