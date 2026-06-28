@@ -3240,11 +3240,17 @@ html, body {
   display: flex !important;
   flex-direction: column !important;
 }
-  /* ✨ Fix taille cartes avec image (formules/entrées/boissons) */
-.produit-card.has-image {
-  min-height: 320px !important;
-  height: 320px !important;
-}
+  // Forcer la taille avec une règle CSS injectée
+const style = document.createElement('style');
+style.id = 'fix-cards-height';
+style.textContent = `
+  .produit-card.has-image {
+    min-height: 320px !important;
+    height: 320px !important;
+  }
+`;
+document.head.appendChild(style);
+console.log('Style forcé injecté !');
 </style>
 </head>
 <body>
