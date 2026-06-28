@@ -7220,6 +7220,14 @@ document.getElementById('overlay-fiche-caissier').addEventListener('click', e =>
 //  📞 RECHERCHE CLIENT (téléphone)
 // ============================================
 let clientActif = null;       // Client lié à la commande en cours
+  // Fonction toast simple
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1612;color:#fff;padding:12px 24px;border-radius:999px;z-index:10000;font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,0.3);';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
 let rechercheTimeout = null;
 let modeFormClient = 'creation';  // 'creation' ou 'edition'
 
@@ -7477,15 +7485,7 @@ async function sauverClient() {
 }
 
 // Petite fonction toast si elle n'existe pas
-if (typeof toast === 'undefined') {
-  window.toast = function(msg) {
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 24px;border-radius:999px;z-index:10000;font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,0.3);';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
-  };
-}
+
 
 // Fermer modales au clic dehors
 document.getElementById('overlay-client').addEventListener('click', e => {
