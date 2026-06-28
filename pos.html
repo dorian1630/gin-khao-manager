@@ -4016,11 +4016,33 @@ function afficherCats() {
   
   // Catégories TOP-LEVEL (pas de parent) qui ont du contenu (produits OU sous-cats)
   const topCats = categories.filter(c => !c.parent_id);
-  const catsAvecContenu = topCats.filter(c => {
-    const aProduits = produits.some(p => p.categorie_id === c.id);
-    const aSousCats = categories.some(sc => sc.parent_id === c.id);
-    return aProduits || aSousCats;
-  });
+const catsAvecContenu = topCats.filter(c => {
+  const aProduits = produits.some(p => p.categorie_id === c.id);
+  const aSousCats = categories.some(sc => sc.parent_id === c.id);
+  return aProduits || aSousCats;
+});
+
+// ✨ Tri custom : ordre choisi par Dorian
+const ORDRE_CATS = [
+  'formule', 'loc lac', 'pad thaï', 'pad thai', 'pad riz', 'riz',
+  'sushi', 'sashimi', 'maki', 'california',
+  'entrée', 'entree',
+  'salade', 'pokébowl', 'pokebowl',
+  'boisson',
+  'dessert',
+  'sauce'
+];
+
+function positionCat(nom) {
+  if (!nom) return 999;
+  const n = nom.toLowerCase();
+  for (let i = 0; i < ORDRE_CATS.length; i++) {
+    if (n.includes(ORDRE_CATS[i])) return i;
+  }
+  return 999; // catégories non listées à la fin
+}
+
+catsAvecContenu.sort((a, b) => positionCat(a.nom) - positionCat(b.nom));
   
   // Auto-sélection : 1ère catégorie au démarrage
   if (!catActive && catsAvecContenu.length > 0) {
