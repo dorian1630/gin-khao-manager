@@ -3223,20 +3223,40 @@ html, body {
   color: #fff;
   border-style: solid;
 }
-  /* 🎁 Grosses cartes Formules */
+  /* 🎁 Grosses cartes Formules - image en haut + texte en bas */
 .produit-card.carte-formule {
-  min-height: 220px;
   border: 2px solid var(--gold);
-  background: linear-gradient(135deg, #fff, #fef9ec);
 }
 .produit-card.carte-formule:hover {
-  background: linear-gradient(135deg, #fef9ec, #fef0d0);
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(201, 165, 90, 0.3);
 }
+.produit-card.carte-formule .pc-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-soft);
+  border-bottom: 2px solid var(--gold);
+}
+.produit-card.carte-formule .pc-img.cf-no-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  color: #fff;
+}
+.produit-card.carte-formule .produit-bandeau {
+  padding: 10px 12px 12px;
+  background: linear-gradient(135deg, #fff, #fef9ec);
+}
 .produit-card.carte-formule .produit-nom {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
+  color: var(--text);
+  text-shadow: none;
+  margin-bottom: 4px;
 }
 .produit-card.carte-formule .cf-nb {
   font-size: 12px;
@@ -4167,7 +4187,13 @@ function afficherSousCats(parentId) {
   const sousCats = categories
     .filter(sc => sc.parent_id === parentId)
     .sort((a, b) => (a.ordre || 999) - (b.ordre || 999));
-  
+  // ✨ Si on est sur la cat parent "Formules", on cache les chips
+  // (les sous-cats sont affichées en grosses cartes à la place)
+  const parentCat = categories.find(c => c.id === parentId);
+  if (parentCat && /^formule/i.test(parentCat.nom) && catActive === parentId) {
+    wrap.innerHTML = '';
+    return;
+  }
   if (sousCats.length === 0) {
     wrap.innerHTML = '';
     return;
@@ -4183,13 +4209,25 @@ function afficherSousCats(parentId) {
 }
 
 function filtrerCat(id) {
-  // Si la cat a des sous-cats, on sélectionne automatiquement la 1ère sous-cat
+  const catCliquee = categories.find(c => c.id === id);
+  const estFormulesParent = catCliquee && /^formule/i.test(catCliquee.nom) && !catCliquee.parent_id;
+  
+  // ✨ Cas spécial : clic sur "Formules" parent → afficher les CARTES de formules
+  // (et pas auto-sélectionner la 1ère sous-cat comme pour les autres)
+  if (estFormulesParent) {
+    catActive = id;  // garde la cat parente active → afficherProduits affichera les cartes
+    afficherCats();
+    afficherProduits();
+    return;
+  }
+  
+  // Comportement normal : auto-sélection 1ère sous-cat
   const sousCats = categories
     .filter(sc => sc.parent_id === id)
     .sort((a, b) => (a.ordre || 999) - (b.ordre || 999));
   
   if (sousCats.length > 0) {
-    catActive = sousCats[0].id;  // active la 1ère sous-cat
+    catActive = sousCats[0].id;
   } else {
     catActive = id;
   }
@@ -4215,7 +4253,9 @@ function afficherCartesFormules(parentId) {
     const hasImage = img && img.trim() !== '';
     return `
       <div class="produit-card carte-formule ${hasImage?'has-image':''}" onclick="filtrerCat('${sc.id}')">
-        ${hasImage ? `<div class="pc-img" style="background-image:url('${img}')"></div>` : '<div class="cf-emoji">🎁</div>'}
+        ${hasImage 
+          ? `<div class="pc-img" style="background-image:url('${img}')"></div>` 
+          : '<div class="pc-img cf-no-img">🎁</div>'}
         <div class="produit-bandeau">
           <div class="produit-nom">${sc.nom}</div>
           <div class="produit-bas">
