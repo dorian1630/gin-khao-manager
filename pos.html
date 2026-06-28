@@ -1213,6 +1213,136 @@ html, body {
 .bon-poste-sushi { border-top: 5px solid #5BBF8A; }
 .bc-meta { font-size: 13px; font-weight: 700; margin-top: 6px; }
 .bc-meta .num { font-size: 22px; }
+
+/* ===== BON DE LIVRAISON (pour le livreur) ===== */
+.bon-livraison {
+  background: #fff;
+  color: #111;
+  font-family: var(--mono);
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto 18px;
+  padding: 22px 20px;
+  border: 3px solid #111;
+  border-top: 8px solid #C9A55A;
+  border-radius: 6px;
+}
+.bl-head {
+  text-align: center;
+  border-bottom: 2px solid #111;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+.bl-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.bl-num {
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+.bl-meta {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #555;
+}
+.bl-client {
+  padding: 10px;
+  background: #f5f2ec;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.bl-client-nom {
+  font-size: 18px;
+  font-weight: 800;
+}
+.bl-client-tel {
+  font-size: 16px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+.bl-adresse {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #999;
+}
+.bl-adresse-titre {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #666;
+  margin-bottom: 4px;
+}
+.bl-adresse-line {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.bl-notes {
+  background: #fffbe6;
+  border: 2px dashed #C9A55A;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+.bl-notes-titre {
+  font-size: 11px;
+  font-weight: 800;
+  color: #8B6914;
+  margin-bottom: 4px;
+}
+.bl-notes-body {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #4A3A0A;
+}
+.bl-articles {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #999;
+}
+.bl-articles-titre {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #666;
+  margin-bottom: 6px;
+}
+.bl-item {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+.bl-qte {
+  font-weight: 800;
+  min-width: 26px;
+}
+.bl-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 2px solid #111;
+  border-bottom: 2px solid #111;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+.bl-total-val {
+  font-size: 22px;
+}
+.bl-foot {
+  text-align: center;
+  font-size: 12px;
+  margin-top: 8px;
+  font-weight: 600;
+}
 .bc-mode {
   display: inline-block;
   margin-top: 6px;
@@ -1952,12 +2082,12 @@ html, body {
   font-weight: 700;
 }
 
-/* ===== BARRE RECHERCHE CLIENT (en bas) ===== */
+/* ===== BARRE RECHERCHE CLIENT (entre sidebar et ticket) ===== */
 .barre-client {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 240px;   /* après la sidebar gauche (240px) */
+  right: 420px;  /* avant le ticket à droite (420px) */
   background: var(--surface);
   border-top: 2px solid var(--gold);
   padding: 10px 20px;
@@ -1991,9 +2121,12 @@ html, body {
 .barre-client-arrow { color: var(--gold); font-weight: 700; }
 .barre-client-btn:hover .barre-client-arrow { color: #fff; }
 
-/* Ajout d'un padding bottom à .caisse pour que la barre ne masque rien */
-.caisse {
-  padding-bottom: 60px;
+/* La zone produits laisse de l'espace en bas pour la barre */
+.produits-zone {
+  padding-bottom: 0;
+}
+.produits-grid {
+  padding-bottom: 80px !important;
 }
 
 /* ===== BANDEAU CLIENT ACTIF (dans le ticket) ===== */
@@ -5101,6 +5234,9 @@ async function validerVente() {
       afficherToast(numero);
     }
 
+    // ✨ Sauvegarder le client AVANT le reset pour le ticket livraison
+    const clientPourTicket = clientActif ? { ...clientActif } : null;
+
     // Réinitialise pour la commande suivante
     ticket = [];
     clientFid = null;
@@ -5121,9 +5257,14 @@ async function validerVente() {
     afficherTicket();
     await chargerMenu(); // recharge le stock à jour
 
+    // ✨ Ajouter le client à venteLocale pour le ticket livraison
+    venteLocale.client = clientPourTicket;
+
     // Affiche les bons de préparation (cuisine + sushi) PUIS le ticket client
+    // Si client lié, ajouter aussi le bon de livraison
     const bonHTML = genererBonsPreparationHTML(lignesPourCuisine, numero);
-    document.getElementById('ticket-contenu').innerHTML = bonHTML + genererTicketHTML(venteLocale);
+    const livraisonHTML = clientPourTicket ? genererBonLivraisonHTML(venteLocale, clientPourTicket, lignesPourCuisine) : '';
+    document.getElementById('ticket-contenu').innerHTML = livraisonHTML + bonHTML + genererTicketHTML(venteLocale);
     document.getElementById('overlay-ticket').classList.add('show');
 
     // Prépare les données pour l'impression auto (le bouton "Imprimer" appellera le relais)
@@ -5616,6 +5757,76 @@ function genererBonsPreparationHTML(lignesTicket, numero) {
 }
 
 // ============================================
+//  📦 BON DE LIVRAISON (à mettre sur le sac)
+// ============================================
+function genererBonLivraisonHTML(vente, client, lignesTicket) {
+  if (!client) return '';
+  
+  const h = new Date();
+  const heure = String(h.getHours()).padStart(2,'0') + ':' + String(h.getMinutes()).padStart(2,'0');
+  const date = String(h.getDate()).padStart(2,'0') + '/' + String(h.getMonth()+1).padStart(2,'0') + '/' + h.getFullYear();
+  
+  // Détail commande
+  const lignesHTML = lignesTicket.filter(l => l.produit_id).map(l => `
+    <div class="bl-item">
+      <span class="bl-qte">${l.quantite}×</span>
+      <span>${escapeHtmlPos(l.nom)}</span>
+    </div>
+  `).join('');
+  
+  const adresseHTML = client.adresse ? 
+    `<div class="bl-adresse-line">${escapeHtmlPos(client.adresse)}</div>` : '';
+  const villeCP = [];
+  if (client.code_postal) villeCP.push(escapeHtmlPos(client.code_postal));
+  if (client.ville) villeCP.push(escapeHtmlPos(client.ville));
+  const villeCPHTML = villeCP.length > 0 ? 
+    `<div class="bl-adresse-line">${villeCP.join(' ')}</div>` : '';
+  
+  const notesHTML = client.notes ? `
+    <div class="bl-notes">
+      <div class="bl-notes-titre">📝 NOTES :</div>
+      <div class="bl-notes-body">${escapeHtmlPos(client.notes)}</div>
+    </div>` : '';
+  
+  return `
+    <div class="bon-livraison">
+      <div class="bl-head">
+        <div class="bl-title">📦 BON DE LIVRAISON</div>
+        <div class="bl-num">Commande #${vente.numero}</div>
+        <div class="bl-meta">${date} · ${heure}</div>
+      </div>
+      
+      <div class="bl-client">
+        <div class="bl-client-nom">👤 ${escapeHtmlPos(client.nom || 'Client')}</div>
+        <div class="bl-client-tel">📞 ${escapeHtmlPos(client.telephone || '')}</div>
+      </div>
+      
+      <div class="bl-adresse">
+        <div class="bl-adresse-titre">📍 ADRESSE :</div>
+        ${adresseHTML}
+        ${villeCPHTML}
+      </div>
+      
+      ${notesHTML}
+      
+      <div class="bl-articles">
+        <div class="bl-articles-titre">🍱 COMMANDE :</div>
+        ${lignesHTML}
+      </div>
+      
+      <div class="bl-total">
+        <span>TOTAL :</span>
+        <span class="bl-total-val">${fmt(vente.total)}</span>
+      </div>
+      
+      <div class="bl-foot">
+        Mode paiement : <b>${escapeHtmlPos((vente.mode_paiement || '').toUpperCase())}</b>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================
 //  IMPRESSION via serveur relais local (Node.js)
 // ============================================
 // Le serveur relais (serveur-impression.js) tourne sur le PC du comptoir
@@ -5710,6 +5921,25 @@ function preparerImpression(lignesTicket, venteLocale) {
       numero: venteLocale.numero,
       heure: heure,
       items: itemsSushi
+    } : null,
+    // ✨ Bon LIVRAISON : uniquement si un client est lié à la commande
+    bonLivraison: venteLocale.client ? {
+      numero: venteLocale.numero,
+      heure: heure,
+      date: dateStr,
+      client: {
+        nom: venteLocale.client.nom || '',
+        telephone: venteLocale.client.telephone || '',
+        adresse: venteLocale.client.adresse || '',
+        code_postal: venteLocale.client.code_postal || '',
+        ville: venteLocale.client.ville || '',
+        notes: venteLocale.client.notes || ''
+      },
+      lignes: lignesTicket.filter(l => l.produit_id).map(l => ({
+        quantite: l.quantite, nom: l.nom, prix: l.prix
+      })),
+      total: venteLocale.total,
+      modePaiement: venteLocale.mode_paiement
     } : null,
     ticketClient: {
       numero: venteLocale.numero,
