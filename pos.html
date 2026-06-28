@@ -275,35 +275,6 @@ html, body {
   cursor: not-allowed;
   pointer-events: none;
 }
-.produit-card.has-image {
-  background-size: cover;
-  background-position: center;
-  min-height: 220px;
-  padding: 0;
-}
-.produit-card.has-image::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
-  z-index: 1;
-}
-.produit-card.has-image .produit-bandeau {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 16px 18px;
-  z-index: 2;
-}
-.produit-card.has-image .produit-nom {
-  color: #fff;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
-}
-.produit-card.has-image .produit-prix {
-  color: #fff;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
-}
 .produit-card.has-image .produit-stock {
   background: rgba(255,255,255,0.9);
   color: var(--text);
@@ -3111,27 +3082,43 @@ html, body {
   color: var(--bg-deep);
 }
 
-/* ===== CARTES PRODUITS AVEC IMAGE ===== */
+/* ===== CARTES PRODUITS AVEC IMAGE (image seule + texte en-dessous) ===== */
 .produit-card.has-image {
-  background-size: cover;
-  background-position: center;
+  background-image: none !important;
   padding: 0;
-  justify-content: flex-end;
-  min-height: 180px;
+  justify-content: flex-start;
+  min-height: auto;
+  overflow: hidden;
 }
 .produit-card.has-image::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(10,9,8,0.95) 0%, rgba(10,9,8,0.6) 45%, transparent 100%);
-  z-index: 1;
+  display: none;
 }
-.produit-bandeau {
-  position: relative;
-  z-index: 2;
+.produit-card.has-image .pc-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
 }
 .produit-card.has-image .produit-bandeau {
-  padding: 12px 12px 10px;
+  position: relative;
+  padding: 10px 12px 12px;
+  z-index: 2;
+}
+.produit-card.has-image .produit-nom {
+  color: var(--text);
+  text-shadow: none;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 4px;
+}
+.produit-card.has-image .produit-prix {
+  color: var(--gold);
+  text-shadow: none;
+  font-size: 17px;
+  font-weight: 800;
 }
 
 /* ===== RESPONSIVE TABLETTE ===== */
@@ -4159,9 +4146,9 @@ function afficherProduits() {
     }
     const hasImage = p.image_url && p.image_url.trim() !== '';
     return `
-      <div class="produit-card ${rupture?'rupture':''} ${hasImage?'has-image':''}" onclick="ajouterAvecParcours('${p.id}')"
-           ${hasImage?`style="background-image:url('${p.image_url}')"`:''}>
+      <div class="produit-card ${rupture?'rupture':''} ${hasImage?'has-image':''}" onclick="ajouterAvecParcours('${p.id}')">
         ${rupture ? '<div class="badge-rupture">Épuisé</div>' : ''}
+        ${hasImage ? `<div class="pc-img" style="background-image:url('${p.image_url}')"></div>` : ''}
         <div class="produit-bandeau">
           <div class="produit-nom">${p.nom}</div>
           <div class="produit-bas">
