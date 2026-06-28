@@ -5420,12 +5420,12 @@ function montantRemise() {
 }
 
 // Total du ticket = articles − plat offert − remise manuelle.
-function totalT() {
+function totalTicket() {
   return Math.max(0, sousTotalApresPlatOffert() - montantRemise());
 }
 
 function majTotal() {
-  const t = totalT();
+  const t = totalTicket();
   const [euros, cents] = t.toFixed(2).split('.');
   document.getElementById('total-aff').innerHTML = `${euros}<span>,${cents} €</span>`;
 
@@ -5665,7 +5665,7 @@ function ouvrirPaiement() {
   }
   modePaiement = 'especes';
   canalVente = 'sur_place';
-  document.getElementById('modal-total').textContent = fmt(totalT());
+  document.getElementById('modal-total').textContent = fmt(totalTicket());
   document.getElementById('cash-input').value = '';
   document.getElementById('rendu-val').textContent = '—';
   document.getElementById('rendu-val').className = 'val';
@@ -5718,7 +5718,7 @@ function choisirCanal(canal) {
     uberZone.classList.add('show');
     modePaiement = 'plateforme';
     // pré-remplit le montant avec le total boutique comme base de départ
-    document.getElementById('uber-montant').value = totalT().toFixed(2);
+    document.getElementById('uber-montant').value = totalTicket().toFixed(2);
     choisirCommission(18);   // défaut : 18%
     majUberApercu();
   } else if (CANAUX_PLATEFORME.includes(canal)) {
@@ -5861,7 +5861,7 @@ function choisirMode(mode) {
   }
 }
 function genererQuickCash() {
-  const total = totalT();
+  const total = totalTicket();
   const zone = document.getElementById('quick-cash');
   // Billets utiles : montant exact + billets ronds au-dessus
   const billets = [5, 10, 20, 50];
@@ -5881,7 +5881,7 @@ function setCash(montant) {
 
 function calculerRendu() {
   const recu = parseFloat(document.getElementById('cash-input').value) || 0;
-  const total = totalT();
+  const total = totalTicket();
   const rendu = recu - total;
   const el = document.getElementById('rendu-val');
   const btnValider = document.getElementById('btn-valider');
@@ -6043,7 +6043,7 @@ async function validerVente() {
 
     // Succès — la vente est enregistrée
     const numero = data?.numero ?? '?';
-    const totalVente = data?.total ?? totalT();
+    const totalVente = data?.total ?? totalTicket();
     const venteId = data?.vente_id ?? data?.id;
     
     // ✨ Enregistrer le caissier sur la vente
