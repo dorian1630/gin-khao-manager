@@ -5145,12 +5145,14 @@ async function validerVente() {
     if (canalVente === 'cc_enligne' || canalVente === 'cc_comptoir') canalPourBase = 'click_collect';
 
     const { data, error } = await sb.rpc('enregistrer_vente', {
-      p_restaurant_id: RESTO_ID,
-      p_mode_paiement: modePaiement,
-      p_lignes: lignes,
-      p_canal: canalPourBase,
-      p_taux_commission: CANAUX_COMMISSION.includes(canalVente) ? tauxCommission : null
-    });
+  p_restaurant_id: RESTO_ID,
+  p_mode_paiement: modePaiement,
+  p_lignes: lignes,
+  p_canal: canalPourBase,
+  p_taux_commission: CANAUX_COMMISSION.includes(canalVente) ? tauxCommission : null,
+  p_caissier_id: caissierActif ? caissierActif.id : null,
+  p_caissier_nom: caissierActif ? caissierActif.nom : null
+});
     if (error) throw error;
 
     // Succès — la vente est enregistrée
@@ -5159,15 +5161,6 @@ async function validerVente() {
     const venteId = data?.vente_id ?? data?.id;
     
     // ✨ Enregistrer le caissier sur la vente
-    if (venteId && caissierActif) {
-      try {
-        await sb.from('ventes')
-          .update({ caissier_id: caissierActif.id, caissier_nom: caissierActif.nom })
-          .eq('id', venteId);
-      } catch (e) {
-        console.error('Erreur enregistrement caissier:', e);
-      }
-    }
     
     // ✨ Enregistrer le client lié à la vente + incrémenter ses visites
     if (venteId && clientActif) {
