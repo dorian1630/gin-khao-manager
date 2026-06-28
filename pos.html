@@ -3223,6 +3223,35 @@ html, body {
   color: #fff;
   border-style: solid;
 }
+  /* 🎁 Grosses cartes Formules */
+.produit-card.carte-formule {
+  min-height: 220px;
+  border: 2px solid var(--gold);
+  background: linear-gradient(135deg, #fff, #fef9ec);
+}
+.produit-card.carte-formule:hover {
+  background: linear-gradient(135deg, #fef9ec, #fef0d0);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(201, 165, 90, 0.3);
+}
+.produit-card.carte-formule .produit-nom {
+  font-size: 16px;
+  font-weight: 800;
+}
+.produit-card.carte-formule .cf-nb {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.produit-card.carte-formule .cf-emoji {
+  font-size: 64px;
+  text-align: center;
+  padding: 30px 0 10px;
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  color: #fff;
+  border-bottom: 2px solid var(--gold);
+}
 </style>
 </head>
 <body>
@@ -4167,12 +4196,48 @@ function filtrerCat(id) {
   afficherCats();
   afficherProduits();
 }
-
+// 🎁 Affichage spécial : grosses cartes des sous-cats de formules
+function afficherCartesFormules(parentId) {
+  const grid = document.getElementById('produits-grid');
+  const sousCats = categories
+    .filter(c => c.parent_id === parentId)
+    .sort((a, b) => (a.ordre || 999) - (b.ordre || 999));
+  
+  if (sousCats.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="big">🎁</div><p>Aucune formule disponible</p></div>';
+    return;
+  }
+  
+  grid.innerHTML = sousCats.map(sc => {
+    const nb = produits.filter(p => p.categorie_id === sc.id).length;
+    const premierPlat = produits.find(p => p.categorie_id === sc.id);
+    const img = premierPlat && premierPlat.image_url ? premierPlat.image_url : '';
+    const hasImage = img && img.trim() !== '';
+    return `
+      <div class="produit-card carte-formule ${hasImage?'has-image':''}" onclick="filtrerCat('${sc.id}')">
+        ${hasImage ? `<div class="pc-img" style="background-image:url('${img}')"></div>` : '<div class="cf-emoji">🎁</div>'}
+        <div class="produit-bandeau">
+          <div class="produit-nom">${sc.nom}</div>
+          <div class="produit-bas">
+            <div class="cf-nb">${nb} plat${nb > 1 ? 's' : ''} au choix</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 function afficherProduits() {
   const grid = document.getElementById('produits-grid');
+  
+  // ✨ Cas spécial : si l'utilisateur a cliqué sur la cat parente "Formules"
+  // → On affiche les SOUS-CATS de formule en GROSSES CARTES (pas les plats)
+  const catActiveObj = categories.find(c => c.id === catActive);
+  if (catActiveObj && /^formule/i.test(catActiveObj.nom) && !catActiveObj.parent_id) {
+    return afficherCartesFormules(catActiveObj.id);
+  }
+  
   let liste = produits;
   if (catActive) liste = produits.filter(p => p.categorie_id === catActive);
-
   if (liste.length === 0) {
     grid.innerHTML = `<div class="empty-state">
       <div class="big">🍜</div>
