@@ -3242,6 +3242,16 @@ html, body {
 .produit-card.has-image {
   overflow: visible;
 }
+  /* ✨ Fix cartes avec image : pas de padding, le contenu prend tout l'espace */
+.produit-card.has-image {
+  padding: 0 !important;
+  justify-content: flex-start !important;
+  min-height: auto !important;
+}
+.produit-card.has-image .produit-bandeau {
+  padding: 10px 12px 12px !important;
+  background: #fff !important;
+}
 </style>
 </head>
 <body>
