@@ -5786,36 +5786,31 @@ function setValeurTR(v) {
 function calculTR() {
   const valeur = parseFloat(document.getElementById('tr-valeur').value) || 0;
   const total = trNbTickets * valeur;
-  const totalT = totalT();
+  const totalT = totalTicket();
   const complement = Math.max(0, totalT - total);
   
   document.getElementById('tr-total').textContent = fmt(total);
   document.getElementById('tr-comp').textContent = fmt(complement);
   
-  // Vérifications
   const warn = document.getElementById('tr-warning');
   warn.style.display = 'none';
   warn.innerHTML = '';
   let blocages = [];
   
-  // Plafond 25€/ticket
   if (valeur > TR_PLAFOND_TICKET) {
     blocages.push('⚠️ Valeur d\'un ticket > ' + TR_PLAFOND_TICKET + '€ — non autorisé');
   }
   
-  // Vérif dimanche (jour 0)
   const jour = new Date().getDay();
   if (jour === 0) {
     blocages.push('⚠️ Dimanche — les tickets restaurant ne sont pas valides');
   }
   
-  // Vérif jours fériés (simplifié : juste 1er mai pour l'instant)
   const d = new Date();
   if (d.getMonth() === 4 && d.getDate() === 1) {
     blocages.push('⚠️ 1er Mai — jour férié, tickets restaurant interdits');
   }
   
-  // Si TR > total ticket, pas autorisé (pas de rendu en espèces)
   if (total > totalT && totalT > 0) {
     const diff = total - totalT;
     blocages.push('⚠️ Surplus de ' + fmt(diff) + ' — le commerçant ne peut pas rendre la différence');
@@ -5826,13 +5821,12 @@ function calculTR() {
     warn.style.display = 'block';
   }
 }
-
 function trEstValide() {
-  if (trType === 'carte') return true; // la carte gère via SumUp
+  if (trType === 'carte') return true;
   
   const valeur = parseFloat(document.getElementById('tr-valeur').value) || 0;
   const total = trNbTickets * valeur;
-  const totalT = totalT();
+  const totalT = totalTicket();
   
   if (valeur > TR_PLAFOND_TICKET) return false;
   if (new Date().getDay() === 0) return false;
