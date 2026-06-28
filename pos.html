@@ -3794,14 +3794,63 @@ console.log('Style forcé injecté !');
     </div>
 
     <!-- ÉTAPE B : mode de paiement (affiché seulement si encaissement nécessaire) -->
-    <div class="pay-modes" id="pay-modes-zone">
-      <div class="pay-mode active" data-mode="especes" onclick="choisirMode('especes')">
+    <div class="pay-mode" data-mode="especes" onclick="choisirMode('especes')">
         <div class="ic">💵</div>
         <div class="nm">Espèces</div>
       </div>
-      <div class="pay-mode" data-mode="carte" onclick="choisirMode('carte')">
+      <div class="pay-mode active" data-mode="carte" onclick="choisirMode('carte')">
         <div class="ic">💳</div>
         <div class="nm">Carte</div>
+      </div>
+      <div class="pay-mode" data-mode="ticket_resto" onclick="choisirMode('ticket_resto')">
+        <div class="ic">🍽️</div>
+        <div class="nm">Ticket Resto</div>
+      </div>
+    </div>
+
+    <!-- ✨ Zone Ticket Restaurant (papier OU carte) -->
+    <div class="tr-zone" id="tr-zone" style="display:none;">
+      <div class="tr-subtitle">Type de ticket restaurant</div>
+      <div class="tr-type-choix">
+        <button type="button" class="tr-type-btn active" id="tr-type-papier" onclick="choisirTypeTR('papier')">
+          📄 Papier
+        </button>
+        <button type="button" class="tr-type-btn" id="tr-type-carte" onclick="choisirTypeTR('carte')">
+          💳 Carte TR
+        </button>
+      </div>
+
+      <!-- Bloc PAPIER -->
+      <div class="tr-papier-zone" id="tr-papier-zone">
+        <div class="cash-label">Nombre de tickets</div>
+        <div class="tr-nb-zone">
+          <button class="tr-nb-btn" onclick="modifierNbTickets(-1)">−</button>
+          <span class="tr-nb-val" id="tr-nb-val">1</span>
+          <button class="tr-nb-btn" onclick="modifierNbTickets(1)">+</button>
+        </div>
+        <div class="cash-label" style="margin-top:14px;">Valeur unitaire d'un ticket</div>
+        <input type="number" class="cash-input" id="tr-valeur" placeholder="9,00" inputmode="decimal" oninput="calculTR()" value="9.25">
+        <div class="quick-cash">
+          <button type="button" onclick="setValeurTR(8)">8 €</button>
+          <button type="button" onclick="setValeurTR(9)">9 €</button>
+          <button type="button" onclick="setValeurTR(9.25)">9,25 €</button>
+          <button type="button" onclick="setValeurTR(10)">10 €</button>
+          <button type="button" onclick="setValeurTR(11)">11 €</button>
+        </div>
+        
+        <div class="tr-apercu" id="tr-apercu">
+          <div class="ua-row"><span>Total TR</span><span id="tr-total">0,00 €</span></div>
+          <div class="ua-row" id="tr-comp-row"><span>Complément (espèces/carte)</span><span id="tr-comp">0,00 €</span></div>
+        </div>
+        
+        <div class="tr-warning" id="tr-warning" style="display:none;"></div>
+      </div>
+
+      <!-- Bloc CARTE -->
+      <div class="tr-carte-zone" id="tr-carte-zone" style="display:none;">
+        <div class="tr-carte-info">
+          💳 La carte TR sera traitée par le terminal SumUp Solo. Le montant total sera débité.
+        </div>
       </div>
     </div>
 
@@ -5706,24 +5755,116 @@ function majUberApercu() {
   document.getElementById('ua-net').textContent = montant > 0 ? fmt(net) : '—';
   document.getElementById('btn-valider').disabled = !(montant > 0);
 }
+// ============================================
+//  🍽️ TICKETS RESTAURANT (papier + carte)
+// ============================================
+let trType = 'papier';     // 'papier' ou 'carte'
+let trNbTickets = 1;
+const TR_PLAFOND_TICKET = 25; // 25€ max par ticket papier
 
+function choisirTypeTR(type) {
+  trType = type;
+  document.getElementById('tr-type-papier').classList.toggle('active', type === 'papier');
+  document.getElementById('tr-type-carte').classList.toggle('active', type === 'carte');
+  document.getElementById('tr-papier-zone').style.display = type === 'papier' ? 'block' : 'none';
+  document.getElementById('tr-carte-zone').style.display = type === 'carte' ? 'block' : 'none';
+  calculTR();
+}
+
+function modifierNbTickets(delta) {
+  trNbTickets = Math.max(1, trNbTickets + delta);
+  document.getElementById('tr-nb-val').textContent = trNbTickets;
+  calculTR();
+}
+
+function setValeurTR(v) {
+  document.getElementById('tr-valeur').value = v;
+  calculTR();
+}
+
+function calculTR() {
+  const valeur = parseFloat(document.getElementById('tr-valeur').value) || 0;
+  const total = trNbTickets * valeur;
+  const totalTicket = totalTicket();
+  const complement = Math.max(0, totalTicket - total);
+  
+  document.getElementById('tr-total').textContent = fmt(total);
+  document.getElementById('tr-comp').textContent = fmt(complement);
+  
+  // Vérifications
+  const warn = document.getElementById('tr-warning');
+  warn.style.display = 'none';
+  warn.innerHTML = '';
+  let blocages = [];
+  
+  // Plafond 25€/ticket
+  if (valeur > TR_PLAFOND_TICKET) {
+    blocages.push('⚠️ Valeur d\'un ticket > ' + TR_PLAFOND_TICKET + '€ — non autorisé');
+  }
+  
+  // Vérif dimanche (jour 0)
+  const jour = new Date().getDay();
+  if (jour === 0) {
+    blocages.push('⚠️ Dimanche — les tickets restaurant ne sont pas valides');
+  }
+  
+  // Vérif jours fériés (simplifié : juste 1er mai pour l'instant)
+  const d = new Date();
+  if (d.getMonth() === 4 && d.getDate() === 1) {
+    blocages.push('⚠️ 1er Mai — jour férié, tickets restaurant interdits');
+  }
+  
+  // Si TR > total ticket, pas autorisé (pas de rendu en espèces)
+  if (total > totalTicket && totalTicket > 0) {
+    const diff = total - totalTicket;
+    blocages.push('⚠️ Surplus de ' + fmt(diff) + ' — le commerçant ne peut pas rendre la différence');
+  }
+  
+  if (blocages.length > 0) {
+    warn.innerHTML = blocages.join('<br>');
+    warn.style.display = 'block';
+  }
+}
+
+function trEstValide() {
+  if (trType === 'carte') return true; // la carte gère via SumUp
+  
+  const valeur = parseFloat(document.getElementById('tr-valeur').value) || 0;
+  const total = trNbTickets * valeur;
+  const totalT = totalTicket();
+  
+  if (valeur > TR_PLAFOND_TICKET) return false;
+  if (new Date().getDay() === 0) return false;
+  if (total > totalT && totalT > 0) return false;
+  
+  return total > 0;
+}
 function choisirMode(mode) {
   modePaiement = mode;
   document.querySelectorAll('.pay-mode').forEach(el => {
     el.classList.toggle('active', el.dataset.mode === mode);
   });
   const cashZone = document.getElementById('cash-zone');
+  const trZone = document.getElementById('tr-zone');
   const btnValider = document.getElementById('btn-valider');
+  
+  // Cache toutes les zones d'abord
+  cashZone.classList.remove('show');
+  trZone.style.display = 'none';
+  
   if (mode === 'especes') {
     cashZone.classList.add('show');
-    calculerRendu(); // recalcule l'état du bouton
+    calculerRendu();
     setTimeout(() => document.getElementById('cash-input').focus(), 50);
+  } else if (mode === 'ticket_resto') {
+    trZone.style.display = 'block';
+    calculTR();
+    btnValider.disabled = false;
   } else {
-    cashZone.classList.remove('show');
-    btnValider.disabled = false; // carte : pas de contrainte de montant
+    // carte : pas de contrainte
+    btnValider.disabled = false;
   }
 }
-
 function genererQuickCash() {
   const total = totalTicket();
   const zone = document.getElementById('quick-cash');
@@ -5771,6 +5912,21 @@ function calculerRendu() {
 let enCours = false;
 async function validerVente() {
   if (enCours || ticket.length === 0) return;
+  
+  // ✨ Vérif Ticket Restaurant
+  if (modePaiement === 'ticket_resto') {
+    if (!trEstValide()) {
+      alert('Le paiement par tickets restaurant n\'est pas valide.\nVérifiez le message d\'avertissement.');
+      return;
+    }
+    // Si paiement carte TR : on bascule sur le mode "carte" pour SumUp
+    if (trType === 'carte') {
+      modePaiement = 'ticket_resto_carte';
+    } else {
+      modePaiement = 'ticket_resto_papier';
+    }
+  }
+  
   enCours = true;
   const btnValider = document.getElementById('btn-valider');
   const txtInit = btnValider.textContent;
@@ -5786,7 +5942,17 @@ async function validerVente() {
     prix: l.prix,
     quantite: l.quantite
   }));
-
+// ✨ Si paiement TR papier : ajouter une ligne de détail
+  if (modePaiement === 'ticket_resto_papier') {
+    const valeur = parseFloat(document.getElementById('tr-valeur').value) || 0;
+    const totalTR = trNbTickets * valeur;
+    lignes.push({
+      produit_id: null,
+      nom: `🍽️ ${trNbTickets} ticket(s) restaurant × ${fmt(valeur)}`,
+      prix: 0,  // info uniquement, pas d'impact sur le total
+      quantite: 1
+    });
+  }
   // ===== CAS UBER EATS / DELIVEROO : montant réel saisi + ajustement proportionnel =====
   // Le caissier a tapé le vrai total du ticket (avec majoration + promos).
   // On ajuste chaque ligne proportionnellement pour que la somme = montant saisi,
@@ -5937,6 +6103,8 @@ async function validerVente() {
 
     // Réinitialise pour la commande suivante
     ticket = [];
+    trNbTickets = 1;  // reset compteur TR
+  modeTicketPro = false;
     clientFid = null;
     platOffertApplique = false;
     remise = null;
@@ -6359,6 +6527,8 @@ async function chargerHistorique() {
       const articles = (v.lignes_vente || [])
         .map(l => l.quantite + '× ' + l.nom_produit).join(', ') || '—';
       const modeLbl = v.mode_paiement === 'carte' ? 'Carte'
+              : v.mode_paiement === 'ticket_resto_papier' ? '🍽️ TR Papier'
+              : v.mode_paiement === 'ticket_resto_carte' ? '🍽️ TR Carte'
                     : v.mode_paiement === 'especes' ? 'Espèces'
                     : v.mode_paiement === 'plateforme' ? 'En ligne'
                     : v.mode_paiement;
