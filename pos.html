@@ -3251,6 +3251,131 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 console.log('Style forcé injecté !');
+  /* 💰 Modale remise sur ligne */
+.modal-remise-ligne { max-width: 480px; }
+.rl-article-info {
+  background: var(--bg-soft);
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+.rl-article-nom {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.rl-article-prix {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.rl-article-prix b { color: var(--gold); font-weight: 800; }
+.rl-type-zone {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.rl-type-btn {
+  flex: 1;
+  padding: 12px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  color: var(--text-soft);
+}
+.rl-type-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+.rl-input-zone {
+  position: relative;
+  margin-bottom: 14px;
+}
+.rl-input-zone input {
+  width: 100%;
+  padding: 16px 50px 16px 20px;
+  font-size: 22px;
+  font-weight: 700;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-family: var(--mono);
+  text-align: center;
+}
+.rl-input-zone input:focus { outline: none; border-color: var(--gold); }
+.rl-unite {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 800;
+  color: var(--gold);
+  font-size: 18px;
+}
+.rl-raison-titre {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-mute);
+  margin: 16px 0 8px;
+}
+.rl-raisons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.rl-raison-btn {
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--body);
+  color: var(--text-soft);
+}
+.rl-raison-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+.rl-apercu {
+  background: linear-gradient(135deg, #fef9ec, #fff);
+  border: 2px solid var(--gold);
+  padding: 14px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+.rl-apercu b {
+  font-size: 22px;
+  color: var(--gold);
+  font-family: var(--display);
+}
+
+/* Styles ligne avec remise */
+.ligne-avec-remise .ligne-nom { color: var(--gold); }
+.ligne-remise-detail {
+  background: linear-gradient(135deg, #fef9ec, transparent);
+  border-left: 3px solid var(--gold);
+  padding-left: 12px !important;
+}
+.ligne-remise-detail .ligne-nom {
+  font-size: 12px;
+  color: var(--gold);
+  font-style: italic;
+}
+.ligne-remise-detail .offert-montant {
+  color: var(--gold);
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -3468,7 +3593,51 @@ console.log('Style forcé injecté !');
     </div>
   </div>
 </div>
-
+<!-- ===== MODALE REMISE LIGNE ===== -->
+<div class="overlay" id="overlay-remise-ligne">
+  <div class="modal modal-remise-ligne">
+    <div class="histo-head">
+      <h3>💰 Remise sur cet article</h3>
+      <button class="link-btn" onclick="fermerRemiseLigne()">Fermer</button>
+    </div>
+    
+    <div class="rl-article-info">
+      <div class="rl-article-nom" id="rl-article">—</div>
+      <div class="rl-article-prix">Prix : <b id="rl-prix-base">0,00 €</b></div>
+    </div>
+    
+    <div class="rl-type-zone">
+      <button class="rl-type-btn active" id="rl-type-pct" onclick="choisirTypeRL('pct')">% Pourcentage</button>
+      <button class="rl-type-btn" id="rl-type-montant" onclick="choisirTypeRL('montant')">€ Montant</button>
+    </div>
+    
+    <div class="rl-input-zone">
+      <input type="number" id="rl-input" placeholder="0" oninput="apercuRL()" min="0" step="0.01" />
+      <span class="rl-unite" id="rl-unite">%</span>
+    </div>
+    
+    <div class="quick-remise" id="rl-quick">
+      <button onclick="setRL(5)">5</button>
+      <button onclick="setRL(10)">10</button>
+      <button onclick="setRL(20)">20</button>
+      <button onclick="setRL(50)">50</button>
+      <button onclick="setRL(100)">100</button>
+    </div>
+    
+    <div class="rl-raison-titre">Raison de la remise :</div>
+    <div class="rl-raisons" id="rl-raisons"></div>
+    <input type="hidden" id="rl-raison-actuelle" value="" />
+    
+    <div class="rl-apercu">
+      Nouveau prix : <b id="rl-apercu">—</b>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn-annuler" id="btn-retirer-rl" onclick="retirerRemiseLigneCourante()" style="display:none;">Retirer la remise</button>
+      <button class="btn-valider" onclick="validerRemiseLigne()">Appliquer</button>
+    </div>
+  </div>
+</div>
 <!-- ===== MODALE PAIEMENT ===== -->
 <div class="overlay" id="overlay-paiement">
   <div class="modal">
@@ -4953,20 +5122,41 @@ function afficherTicket() {
     return;
   }
 
-  zone.innerHTML = ticket.map(l => `
-    <div class="ligne">
-      <div class="ligne-info">
+  zone.innerHTML = ticket.map((l, idx) => {
+    const remiseLigne = l.remise_ligne || null;
+    const stBrut = l.prix * l.quantite;
+    let remiseMontant = 0;
+    if (remiseLigne) {
+      remiseMontant = remiseLigne.type === 'pct' 
+        ? stBrut * (remiseLigne.valeur / 100) 
+        : remiseLigne.valeur;
+      remiseMontant = Math.min(remiseMontant, stBrut);
+    }
+    const stFinal = stBrut - remiseMontant;
+    
+    return `
+    <div class="ligne ${remiseLigne ? 'ligne-avec-remise' : ''}">
+      <div class="ligne-info" onclick="ouvrirRemiseLigne(${idx})" style="cursor:pointer;">
         <div class="ligne-nom">${l.nom}</div>
-        <div class="ligne-pu">${fmt(l.prix)} / unité</div>
+        <div class="ligne-pu">${fmt(l.prix)} / unité ${remiseLigne ? '· <span style="color:var(--danger);font-weight:700;">Remise appliquée</span>' : ''}</div>
       </div>
       <div class="qte-ctrl">
         <button class="qte-btn" onclick="modifierQte('${l.produit_id}', -1)">−</button>
         <span class="qte-val">${l.quantite}</span>
         <button class="qte-btn" onclick="modifierQte('${l.produit_id}', 1)">+</button>
       </div>
-      <div class="ligne-st">${fmt(l.prix * l.quantite)}</div>
+      <div class="ligne-st">${fmt(stFinal)}</div>
     </div>
-  `).join('');
+    ${remiseLigne ? `
+      <div class="ligne ligne-remise-detail">
+        <div class="ligne-info">
+          <div class="ligne-nom">↳ Remise ${remiseLigne.type === 'pct' ? '(' + remiseLigne.valeur + '%)' : ''} ${remiseLigne.raison ? '— ' + remiseLigne.raison : ''}</div>
+        </div>
+        <button class="offert-retirer" onclick="retirerRemiseLigne(${idx})">retirer</button>
+        <div class="ligne-st offert-montant">−${fmt(remiseMontant)}</div>
+      </div>` : ''}
+    `;
+  }).join('');
 
   // Ligne "plat offert" (remise fidélité) si appliquée
   if (platOffertApplique) {
@@ -5017,10 +5207,19 @@ function remisePlatOffert() {
 
 // Sous-total après plat offert, avant remise manuelle.
 function sousTotalApresPlatOffert() {
-  const brut = ticket.reduce((s, l) => s + l.prix * l.quantite, 0);
+  const brut = ticket.reduce((s, l) => {
+    const stLigne = l.prix * l.quantite;
+    let remiseL = 0;
+    if (l.remise_ligne) {
+      remiseL = l.remise_ligne.type === 'pct' 
+        ? stLigne * (l.remise_ligne.valeur / 100)
+        : l.remise_ligne.valeur;
+      remiseL = Math.min(remiseL, stLigne);
+    }
+    return s + (stLigne - remiseL);
+  }, 0);
   return Math.max(0, brut - remisePlatOffert());
 }
-
 // Montant de la remise manuelle, calculé sur le sous-total. 0 si aucune remise.
 function montantRemise() {
   if (!remise) return 0;
@@ -5115,7 +5314,104 @@ function validerRemise() {
   fermerRemise();
   afficherTicket();
 }
+// ============================================
+//  💰 REMISE SUR UN ARTICLE (ligne du ticket)
+// ============================================
+let remiseLigneIdx = null;
+let remiseLigneType = 'pct';
+const RAISONS_REMISE = ['Geste commercial', 'Erreur cuisine', 'Insatisfaction', 'Promo', 'Erreur caisse', 'Autre'];
 
+function ouvrirRemiseLigne(idx) {
+  if (!ticket[idx]) return;
+  remiseLigneIdx = idx;
+  
+  const l = ticket[idx];
+  const r = l.remise_ligne;
+  remiseLigneType = r ? r.type : 'pct';
+  
+  document.getElementById('rl-article').textContent = l.nom;
+  document.getElementById('rl-prix-base').textContent = fmt(l.prix * l.quantite);
+  document.getElementById('rl-input').value = r ? r.valeur : '';
+  
+  // Affichage raisons
+  const raisonZone = document.getElementById('rl-raisons');
+  const raisonActuelle = r ? r.raison : '';
+  raisonZone.innerHTML = RAISONS_REMISE.map(raison => 
+    `<button class="rl-raison-btn ${raison === raisonActuelle ? 'active' : ''}" onclick="choisirRaisonRL('${raison}', this)">${raison}</button>`
+  ).join('');
+  
+  document.getElementById('rl-raison-actuelle').textContent = raisonActuelle || '';
+  document.getElementById('btn-retirer-rl').style.display = r ? 'block' : 'none';
+  
+  choisirTypeRL(remiseLigneType);
+  document.getElementById('overlay-remise-ligne').classList.add('show');
+  setTimeout(() => document.getElementById('rl-input').focus(), 100);
+}
+
+function fermerRemiseLigne() {
+  document.getElementById('overlay-remise-ligne').classList.remove('show');
+  remiseLigneIdx = null;
+}
+
+function choisirTypeRL(type) {
+  remiseLigneType = type;
+  document.getElementById('rl-type-pct').classList.toggle('active', type === 'pct');
+  document.getElementById('rl-type-montant').classList.toggle('active', type === 'montant');
+  document.getElementById('rl-unite').textContent = type === 'pct' ? '%' : '€';
+  apercuRL();
+}
+
+function apercuRL() {
+  const val = parseFloat(document.getElementById('rl-input').value) || 0;
+  const l = ticket[remiseLigneIdx];
+  if (!l) return;
+  const base = l.prix * l.quantite;
+  let m = remiseLigneType === 'pct' ? base * (val / 100) : val;
+  m = Math.min(Math.max(0, m), base);
+  document.getElementById('rl-apercu').textContent = fmt(base - m) + '  (−' + fmt(m) + ')';
+}
+
+function choisirRaisonRL(raison, btn) {
+  document.querySelectorAll('.rl-raison-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('rl-raison-actuelle').textContent = raison;
+}
+
+function validerRemiseLigne() {
+  if (remiseLigneIdx === null) return;
+  const val = parseFloat(document.getElementById('rl-input').value) || 0;
+  if (val <= 0) { retirerRemiseLigneCourante(); return; }
+  
+  const raison = document.getElementById('rl-raison-actuelle').textContent;
+  if (!raison) { alert('Choisissez une raison'); return; }
+  
+  ticket[remiseLigneIdx].remise_ligne = {
+    type: remiseLigneType,
+    valeur: val,
+    raison: raison
+  };
+  fermerRemiseLigne();
+  afficherTicket();
+}
+
+function retirerRemiseLigneCourante() {
+  if (remiseLigneIdx === null) return;
+  delete ticket[remiseLigneIdx].remise_ligne;
+  fermerRemiseLigne();
+  afficherTicket();
+}
+
+function retirerRemiseLigne(idx) {
+  if (!ticket[idx]) return;
+  delete ticket[idx].remise_ligne;
+  afficherTicket();
+}
+
+// Petit bouton pour ajouter "Remise" à chaque input clic-friendly
+function setRL(v) {
+  document.getElementById('rl-input').value = v;
+  apercuRL();
+}
 function retirerRemise() {
   remise = null;
   fermerRemise();
