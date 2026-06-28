@@ -3230,45 +3230,15 @@ html, body {
   color: #fff;
   border-bottom: 2px solid var(--gold);
 }
-  /* ✨✨✨ FIX DÉFINITIF cartes avec image ✨✨✨ */
-.produit-card.has-image,
+ .produit-card.has-image,
 .produits-grid .produit-card.has-image {
   padding: 0 !important;
   overflow: visible !important;
-  min-height: 0 !important;
+  min-height: 260px !important;
   height: auto !important;
   justify-content: flex-start !important;
   display: flex !important;
   flex-direction: column !important;
-}
-
-.produit-card.has-image .pc-img {
-  width: 100% !important;
-  aspect-ratio: 1 / 1 !important;
-  flex-shrink: 0 !important;
-  display: block !important;
-}
-
-.produit-card.has-image .produit-bandeau {
-  position: relative !important;
-  background: #fff !important;
-  padding: 10px 12px 12px !important;
-  display: block !important;
-  flex-shrink: 0 !important;
-  width: 100% !important;
-  z-index: 5 !important;
-}
-
-.produit-card.has-image .produit-nom {
-  color: #1A1612 !important;
-  text-shadow: none !important;
-  font-size: 14px !important;
-  position: relative !important;
-}
-
-.produit-card.has-image .produit-prix {
-  color: var(--gold) !important;
-  text-shadow: none !important;
 }
 </style>
 </head>
