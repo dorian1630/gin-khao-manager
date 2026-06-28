@@ -3167,6 +3167,29 @@ html, body {
 .bloque-caisse {
   z-index: 4500 !important;
 }
+/* ⚡ BOUTON AJOUTER DIRECT */
+.btn-ajout-direct {
+  flex: 2;
+  padding: 16px;
+  background: linear-gradient(135deg, #2ECC71, #27AE60);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--body);
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgba(46, 204, 113, 0.35);
+  transition: all 0.18s;
+}
+.btn-ajout-direct:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.5);
+}
+.btn-ajout-direct:active {
+  transform: translateY(0);
+}
 </style>
 </head>
 <body>
@@ -4218,7 +4241,53 @@ function passerEtapeParcours() {
     finaliserParcours();
   }
 }
-
+// ⚡ AJOUT DIRECT : skip toutes les étapes et finalise avec valeurs par défaut
+function ajouterDirect() {
+  if (!parcoursPlat) return;
+  const p = parcoursPlat.produit;
+  
+  // 1ère variante si elle existe
+  if (p.variantes && p.variantes.length > 0 && !parcoursPlat.variante) {
+    parcoursPlat.variante = p.variantes[0];
+  }
+  
+  // Options_base : 1er choix de chaque
+  if (p.options_base && p.options_base.length > 0) {
+    p.options_base.forEach(opt => {
+      if (!parcoursPlat.options_base[opt.label] && opt.choix && opt.choix.length > 0) {
+        parcoursPlat.options_base[opt.label] = opt.choix[0];
+      }
+    });
+  }
+  
+  // Pas de retirables (tout garder), pas de suppléments
+  parcoursPlat.retirables = [];
+  parcoursPlat.supplements = [];
+  
+  // 1ère sauce si plat à sauces
+  if (p.sauces_ids && p.sauces_ids.length > 0 && parcoursPlat.sauces.length === 0) {
+    parcoursPlat.sauces = [p.sauces_ids[0]];
+  }
+  
+  // Si formule : 1ère boisson + 1ère entrée
+  if (parcoursPlat.est_formule) {
+    const catBoissons = categories.find(c => /boisson/i.test(c.nom));
+    if (catBoissons && !parcoursPlat.formule_boisson_id) {
+      const premiereBoisson = produits.find(pp => pp.categorie_id === catBoissons.id);
+      if (premiereBoisson) parcoursPlat.formule_boisson_id = premiereBoisson.id;
+    }
+    const catEntrees = categories.find(c => /entr[eé]e/i.test(c.nom));
+    if (catEntrees && !parcoursPlat.formule_entree_id) {
+      const premiereEntree = produits.find(pp => pp.categorie_id === catEntrees.id);
+      if (premiereEntree) {
+        parcoursPlat.formule_entree_id = premiereEntree.id;
+        parcoursPlat.formule_entree_label = premiereEntree.nom;
+      }
+    }
+  }
+  
+  finaliserParcours();
+}
 function finaliserParcours() {
   if (!parcoursPlat) return;
   const p = parcoursPlat.produit;
@@ -4356,6 +4425,7 @@ function afficherModaleVariante() {
       </div>
       <div class="mpp-actions">
         <button class="btn-annuler" onclick="annulerParcours()">Annuler</button>
+        <button class="btn-ajout-direct" onclick="ajouterDirect()">⚡ Ajouter direct</button>
       </div>
     </div>`;
 }
@@ -4395,6 +4465,7 @@ function afficherModaleOptionsBase() {
   html += `
       <div class="mpp-actions">
         <button class="btn-annuler" onclick="annulerParcours()">Annuler</button>
+        <button class="btn-ajout-direct" onclick="ajouterDirect()">⚡ Ajouter direct</button>
         <button class="btn-valider" onclick="validerOptionsBase()" id="btn-valider-opt-pos">Suivant</button>
       </div>
     </div>`;
