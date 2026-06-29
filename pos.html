@@ -1140,21 +1140,30 @@ html, body {
   width: 300px;
   max-width: 100%;
   margin: 0 auto 18px;
-  padding: 22px 20px;
+  padding: 24px 22px;
   border-radius: 6px;
   font-size: 12px;
   line-height: 1.5;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.10);
 }
 .tr-center { text-align: center; }
-.tr-logo { font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.tr-logo { font-family: var(--display); font-size: 25px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #111; }
 .tr-sub { font-size: 11px; color: #555; margin-top: 2px; }
-.tr-sep { border: none; border-top: 1px dashed #aaa; margin: 12px 0; }
+.tr-canal {
+  text-align: center; margin: 13px auto 0;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: #8a6d1f; border: 1px solid #d8c38a; background: #fbf6e9;
+  border-radius: 999px; padding: 4px 0;
+}
+.tr-sep { border: none; border-top: 1px dashed #b0b0b0; margin: 12px 0; }
 .tr-row { display: flex; justify-content: space-between; gap: 8px; }
 .tr-row.mute { color: #666; font-size: 11px; }
-.tr-art { display: flex; justify-content: space-between; gap: 8px; margin: 3px 0; }
-.tr-art .q { color: #555; }
-.tr-art.remise { color: #c0392b; }
-.tr-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; margin-top: 6px; }
+.tr-art { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0 0; font-weight: 600; }
+.tr-art .q { color: #555; font-weight: 700; }
+.tr-art.remise { color: #c0392b; font-weight: 600; }
+.tr-pu { font-size: 10px; color: #888; margin: 0 0 2px 16px; }
+.tr-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; margin-top: 8px; padding-top: 8px; border-top: 2px solid #111; }
+.tr-legal { font-size: 9.5px; color: #999; text-align: center; line-height: 1.45; }
 .tr-foot { text-align: center; font-size: 11px; color: #555; margin-top: 14px; }
 .tr-annulee {
   text-align: center; color: #c0392b; font-weight: 700;
@@ -7573,7 +7582,8 @@ async function validerVente() {
       numero: numero,
       total: totalVente,
       mode_paiement: modePaiement,
-      statut: 'validee',
+     statut: 'validee',
+      canal: canalVente,
       cree_le: new Date().toISOString(),
       lignes_vente: lignes.map(l => ({
         nom_produit: l.nom,
@@ -8079,7 +8089,29 @@ async function annulerVente(venteId, numero) {
 const RESTO_INFOS = {
   nom: 'Gin Khao',
   sousTitre: 'Street Food Thaï',
-  adresse: 'Saint Just · Marseille'
+  adresse: 'Saint Just · Marseille',
+  tel: '',          // ☎ 04.91.89.38.50
+  siret: '',        // n° 922 266 960 00017
+  tva: '',          // n° FR52 922 266 960
+  mentionTva: ''    // ex: 'TVA incluse'
+};
+};
+
+// Libellés lisibles du mode de règlement
+const MODE_PAIEMENT_LBL = {
+  carte: 'Carte bancaire',
+  especes: 'Espèces',
+  ticket_resto_papier: 'Ticket Resto (papier)',
+  ticket_resto_carte: 'Ticket Resto (carte)',
+  plateforme: 'Payé en ligne',
+  mixte: 'Paiement mixte'
+};
+// Libellés du canal (badge en haut du ticket)
+const CANAL_TICKET = {
+  sur_place: 'Sur place', emporter: 'À emporter', a_emporter: 'À emporter',
+  livraison: 'Livraison', uber_eats: 'Uber Eats', deliveroo: 'Deliveroo',
+  just_eat: 'Just Eat', click_collect: 'Click & Collect',
+  cc_comptoir: 'Click & Collect', cc_enligne: 'Click & Collect'
 };
 
 // Construit le HTML du reçu à partir d'un objet vente (avec lignes_vente)
@@ -8087,38 +8119,78 @@ function genererTicketHTML(v) {
   const h = new Date(v.cree_le);
   const date = h.toLocaleDateString('fr-FR') + ' à ' +
     String(h.getHours()).padStart(2,'0') + ':' + String(h.getMinutes()).padStart(2,'0');
-  const modeLbl = v.mode_paiement === 'carte' ? 'Carte bancaire' : (v.mode_paiement === 'especes' ? 'Espèces' : v.mode_paiement);
+  const modeLbl = MODE_PAIEMENT_LBL[v.mode_paiement] || v.mode_paiement || '—';
+  const canalLbl = CANAL_TICKET[v.canal] || '';
   const annulee = v.statut === 'annulee';
 
-  const lignesHTML = (v.lignes_vente || []).map(l => {
+  const lignes = v.lignes_vente || [];
+
+  // Compteur d'articles + sous-total (lignes positives uniquement)
+  let nbArticles = 0, sousTotal = 0, aRemise = false;
+  lignes.forEach(l => {
+    const st = Number(l.sous_total), pu = Number(l.prix_unitaire);
+    if (pu < 0 || st < 0) { aRemise = true; }
+    else { nbArticles += Number(l.quantite) || 0; sousTotal += st; }
+  });
+
+  const lignesHTML = lignes.map(l => {
     const pu = Number(l.prix_unitaire);
     const st = Number(l.sous_total);
+    const q  = Number(l.quantite) || 1;
     const estRemise = pu < 0 || st < 0;
-    return `
-      <div class="tr-art ${estRemise ? 'remise' : ''}">
-        <span>${estRemise ? '' : '<span class="q">' + l.quantite + '× </span>'}${l.nom_produit}</span>
+    if (estRemise) {
+      return `
+      <div class="tr-art remise">
+        <span>${escapeHtmlPos(l.nom_produit)}</span>
         <span>${fmt(st)}</span>
       </div>`;
+    }
+    const sousLigne = q > 1 ? `<div class="tr-pu">${fmt(pu)} × ${q}</div>` : '';
+    return `
+      <div class="tr-art">
+        <span><span class="q">${q}× </span>${escapeHtmlPos(l.nom_produit)}</span>
+        <span>${fmt(st)}</span>
+      </div>${sousLigne}`;
   }).join('');
+
+  // Bloc mentions légales (affiché seulement si renseigné dans RESTO_INFOS)
+  const legalParts = [];
+  if (RESTO_INFOS.siret) legalParts.push('SIRET ' + escapeHtmlPos(RESTO_INFOS.siret));
+  if (RESTO_INFOS.tva)   legalParts.push('TVA ' + escapeHtmlPos(RESTO_INFOS.tva));
+  const legalHTML = (RESTO_INFOS.mentionTva || legalParts.length)
+    ? `<hr class="tr-sep">
+      <div class="tr-legal">
+        ${RESTO_INFOS.mentionTva ? escapeHtmlPos(RESTO_INFOS.mentionTva) + '<br>' : ''}${legalParts.join(' · ')}
+      </div>`
+    : '';
+
+  const telHTML     = RESTO_INFOS.tel ? `<div class="tr-sub">☎ ${escapeHtmlPos(RESTO_INFOS.tel)}</div>` : '';
+  const canalHTML   = canalLbl ? `<div class="tr-canal">${canalLbl}</div>` : '';
+  const sousTotHTML = aRemise ? `<div class="tr-row mute"><span>Sous-total</span><span>${fmt(sousTotal)}</span></div>` : '';
 
   return `
     <div class="ticket-recu" id="ticket-recu">
       ${annulee ? '<div class="tr-annulee">★ Ticket annulé ★</div>' : ''}
       <div class="tr-center">
-        <div class="tr-logo">${RESTO_INFOS.nom}</div>
-        <div class="tr-sub">${RESTO_INFOS.sousTitre}</div>
-        <div class="tr-sub">${RESTO_INFOS.adresse}</div>
+        <div class="tr-logo">${escapeHtmlPos(RESTO_INFOS.nom)}</div>
+        <div class="tr-sub">${escapeHtmlPos(RESTO_INFOS.sousTitre)}</div>
+        <div class="tr-sub">${escapeHtmlPos(RESTO_INFOS.adresse)}</div>
+        ${telHTML}
       </div>
+      ${canalHTML}
       <hr class="tr-sep">
       <div class="tr-row mute"><span>Ticket n°</span><span>#${v.numero}</span></div>
       <div class="tr-row mute"><span>Date</span><span>${date}</span></div>
       <hr class="tr-sep">
       ${lignesHTML}
       <hr class="tr-sep">
+      <div class="tr-row mute"><span>Articles</span><span>${nbArticles}</span></div>
+      ${sousTotHTML}
       <div class="tr-total"><span>TOTAL</span><span>${fmt(v.total)}</span></div>
       <div class="tr-row mute" style="margin-top:6px;"><span>Règlement</span><span>${modeLbl}</span></div>
+      ${legalHTML}
       <div class="tr-foot">
-        Merci de votre visite !<br>À très bientôt chez ${RESTO_INFOS.nom} 🍜
+        Merci de votre visite !<br>À très bientôt chez ${escapeHtmlPos(RESTO_INFOS.nom)} 🍜
       </div>
     </div>`;
 }
