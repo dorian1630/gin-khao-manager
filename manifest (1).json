@@ -1,0 +1,27 @@
+{
+  "name": "Gin Khao — Caisse",
+  "short_name": "Caisse",
+  "description": "Caisse Gin Khao — Saint-Just Marseille",
+  "start_url": "/pos.html",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0A0908",
+  "theme_color": "#E4B860",
+  "lang": "fr",
+  "categories": ["business", "food", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
