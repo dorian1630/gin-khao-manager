@@ -5326,11 +5326,26 @@ html, body {
     </div>
 
     <div class="field-remise">
-      <input type="number" class="cash-input" id="remise-input" placeholder="0" inputmode="decimal" oninput="apercuRemise()">
+      <input type="text" class="cash-input" id="remise-input" placeholder="0" readonly inputmode="none">
       <span class="remise-unite" id="remise-unite">%</span>
     </div>
 
     <div class="quick-remise" id="quick-remise"></div>
+
+    <div class="erl-keypad" style="margin-bottom:18px;">
+      <button type="button" class="erl-key" onclick="tapKeypad('1','remise-input',apercuRemise)">1</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('2','remise-input',apercuRemise)">2</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('3','remise-input',apercuRemise)">3</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('4','remise-input',apercuRemise)">4</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('5','remise-input',apercuRemise)">5</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('6','remise-input',apercuRemise)">6</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('7','remise-input',apercuRemise)">7</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('8','remise-input',apercuRemise)">8</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('9','remise-input',apercuRemise)">9</button>
+      <button type="button" class="erl-key erl-key-action" onclick="tapKeypad('.','remise-input',apercuRemise)">,</button>
+      <button type="button" class="erl-key" onclick="tapKeypad('0','remise-input',apercuRemise)">0</button>
+      <button type="button" class="erl-key erl-key-back" onclick="effacerKeypad('remise-input',apercuRemise)">⌫</button>
+    </div>
 
     <div class="rendu" style="margin-bottom:22px;">
       <div class="lbl">Nouveau total</div>
@@ -10460,14 +10475,28 @@ function modifierFraisLivraison() {
   ov.innerHTML = `
     <div class="fl-box">
       <h3>🚗 Frais de livraison</h3>
-      <p>Modifie le montant à la main</p>
+      <p>Choisis ou saisis le montant</p>
       <div class="fl-quick">
         <button onclick="setFraisLivr(2)">2 €</button>
         <button onclick="setFraisLivr(4)">4 €</button>
         <button onclick="setFraisLivr(6)">6 €</button>
         <button onclick="setFraisLivr(0)">Gratuit</button>
       </div>
-      <input type="number" id="fl-input" inputmode="decimal" step="0.5" min="0" value="${Number(fraisLivraison).toFixed(2)}" />
+      <input type="text" id="fl-input" class="fl-display" readonly inputmode="none" placeholder="0,00" value="" />
+      <div class="erl-keypad" style="margin-top:12px;">
+        <button type="button" class="erl-key" onclick="tapKeypad('1','fl-input')">1</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('2','fl-input')">2</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('3','fl-input')">3</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('4','fl-input')">4</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('5','fl-input')">5</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('6','fl-input')">6</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('7','fl-input')">7</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('8','fl-input')">8</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('9','fl-input')">9</button>
+        <button type="button" class="erl-key erl-key-action" onclick="tapKeypad('.','fl-input')">,</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('0','fl-input')">0</button>
+        <button type="button" class="erl-key erl-key-back" onclick="effacerKeypad('fl-input')">⌫</button>
+      </div>
       <div class="fl-actions">
         <button class="fl-annuler" onclick="fermerFraisLivr()">Annuler</button>
         <button class="fl-ok" onclick="validerFraisLivr()">Valider</button>
@@ -10475,7 +10504,6 @@ function modifierFraisLivraison() {
       <button class="fl-auto" onclick="fraisLivraisonAuto()">↺ Revenir au calcul automatique</button>
     </div>`;
   ov.classList.add('show');
-  setTimeout(() => { const i = document.getElementById('fl-input'); if (i) { i.focus(); i.select(); } }, 50);
 }
 function setFraisLivr(v) { const i = document.getElementById('fl-input'); if (i) i.value = v; }
 function validerFraisLivr() {
