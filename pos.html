@@ -6148,7 +6148,10 @@ function ajouterDirect() {
 function finaliserParcours() {
   if (!parcoursPlat) return;
   const p = parcoursPlat.produit;
-  
+
+  // Identifiant unique de ce plat (pour pouvoir le ré-éditer + lier ses sous-lignes)
+  const uid = genUid();
+
   // Calculer prix unitaire (avec variante éventuelle)
   let prixUnit = parseFloat(p.prix);
   let nomFinal = p.nom;
@@ -6157,7 +6160,7 @@ function finaliserParcours() {
     nomFinal = p.nom + ' (' + parcoursPlat.variante.label + ')';
   }
 
-  // Ajouter le plat principal
+  // Ajouter le plat principal (toute la sélection est mémorisée pour l'édition)
   ticket.push({
     produit_id: p.id,
     nom: nomFinal,
@@ -6166,8 +6169,16 @@ function finaliserParcours() {
     stock_actif: p.stock_actif,
     stock: p.stock,
     categorie_id: p.categorie_id,
-    options_base: parcoursPlat.options_base,
-    retirables: parcoursPlat.retirables
+    ligne_uid: uid,
+    variante: parcoursPlat.variante || null,
+    options_base: parcoursPlat.options_base || {},
+    retirables: parcoursPlat.retirables || [],
+    sauces_sel: parcoursPlat.sauces || [],
+    supplements_sel: parcoursPlat.supplements || [],
+    est_formule: !!parcoursPlat.est_formule,
+    formule_boisson_id: parcoursPlat.formule_boisson_id || null,
+    formule_entree_id: parcoursPlat.formule_entree_id || null,
+    formule_entree_label: parcoursPlat.formule_entree_label || null
   });
 
   // Ajouter les suppléments en lignes séparées
@@ -6182,7 +6193,7 @@ function finaliserParcours() {
         stock_actif: false,
         stock: 0,
         categorie_id: supp.categorie_id,
-        lien_plat: p.id
+        lien_plat: uid
       });
     }
   });
@@ -6201,7 +6212,7 @@ function finaliserParcours() {
           stock_actif: false,
           stock: 0,
           categorie_id: sauce.categorie_id,
-          lien_plat: p.id
+          lien_plat: uid
         });
       }
     });
@@ -6220,7 +6231,7 @@ function finaliserParcours() {
           stock_actif: false,
           stock: 0,
           categorie_id: boisson.categorie_id,
-          lien_plat: p.id
+          lien_plat: uid
         });
       }
     }
@@ -6235,7 +6246,7 @@ function finaliserParcours() {
           stock_actif: false,
           stock: 0,
           categorie_id: entree.categorie_id,
-          lien_plat: p.id
+          lien_plat: uid
         });
       }
     }
@@ -6256,6 +6267,309 @@ function fermerModaleParcours() {
 function annulerParcours() {
   parcoursPlat = null;
   fermerModaleParcours();
+}
+
+// ============================================
+//  ✏️ ÉDITEUR DE PLAT (appui long sur une ligne du ticket)
+//  Écran unique, toutes les options visibles, modif appliquée en direct.
+// ============================================
+let editeurUid = null;
+
+function genUid() {
+  return 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+function ligneParUid(uid) {
+  return ticket.find(l => l.ligne_uid === uid);
+}
+// Un produit est éditable s'il a au moins une option de personnalisation
+function platEditable(p) {
+  return !!(p && (
+    (p.variantes && p.variantes.length) ||
+    (p.options_base && p.options_base.length) ||
+    (p.ingredients_retirable && p.ingredients_retirable.length) ||
+    (p.supplements_ids && p.supplements_ids.length) ||
+    (p.sauces_ids && p.sauces_ids.length) ||
+    p.est_formule === true
+  ));
+}
+
+// Ouvre l'éditeur pour la ligne d'index idx (ou son plat parent si c'est une sous-ligne)
+function ouvrirEditeurLigne(idx) {
+  let l = ticket[idx];
+  if (!l) return;
+  if (l.lien_plat) l = ticket.find(x => x.ligne_uid === l.lien_plat); // sous-ligne → plat parent
+  if (!l) return;
+  const p = produits.find(pp => pp.id === l.produit_id);
+  if (!p || !platEditable(p)) return; // rien à éditer sur ce plat
+
+  // Sécurité : ligne sans uid (ancienne) → on l'initialise
+  if (!l.ligne_uid) {
+    l.ligne_uid = genUid();
+    l.options_base = l.options_base || {};
+    l.retirables = l.retirables || [];
+    l.sauces_sel = l.sauces_sel || [];
+    l.supplements_sel = l.supplements_sel || [];
+    if (l.est_formule === undefined) l.est_formule = (p.est_formule === true);
+  }
+
+  editeurUid = l.ligne_uid;
+  let modal = document.getElementById('modal-editeur-plat');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-editeur-plat';
+    modal.className = 'mpp-modal';
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('actif');
+  rendreEditeur();
+}
+
+function fermerEditeurPlat() {
+  const m = document.getElementById('modal-editeur-plat');
+  if (m) m.classList.remove('actif');
+  editeurUid = null;
+}
+
+// Construit une sous-ligne (supplément / sauce / formule) liée à un plat
+function sousLignePlat(prod, nom, prix, uid) {
+  return {
+    produit_id: prod.id, nom: nom, prix: prix, quantite: 1,
+    stock_actif: false, stock: 0, categorie_id: prod.categorie_id, lien_plat: uid
+  };
+}
+
+// Reconstruit prix/nom du plat + ses sous-lignes à partir de la sélection mémorisée
+function reconstruireSousLignes(uid) {
+  const i = ticket.findIndex(l => l.ligne_uid === uid);
+  if (i < 0) { afficherTicket(); return; }
+  const main = ticket[i];
+  const p = produits.find(pp => pp.id === main.produit_id);
+
+  // Prix + nom du plat principal (selon variante)
+  if (p) {
+    if (main.variante) {
+      main.prix = parseFloat(main.variante.prix);
+      main.nom = p.nom + ' (' + main.variante.label + ')';
+    } else {
+      main.prix = parseFloat(p.prix);
+      main.nom = p.nom;
+    }
+  }
+
+  // Retire les anciennes sous-lignes de ce plat
+  ticket = ticket.filter(l => l.lien_plat !== uid);
+
+  // Reconstruit
+  const subs = [];
+  (main.supplements_sel || []).forEach(id => {
+    const s = produits.find(pp => pp.id === id);
+    if (s) subs.push(sousLignePlat(s, '  ↳ ' + s.nom, parseFloat(s.prix), uid));
+  });
+  if (p && !p.sauces_incluses) {
+    (main.sauces_sel || []).forEach(id => {
+      const s = produits.find(pp => pp.id === id);
+      if (s && parseFloat(s.prix) > 0) subs.push(sousLignePlat(s, '  ↳ ' + s.nom, parseFloat(s.prix), uid));
+    });
+  }
+  if (main.est_formule) {
+    if (main.formule_boisson_id) {
+      const b = produits.find(pp => pp.id === main.formule_boisson_id);
+      if (b) subs.push(sousLignePlat(b, '  ↳ ' + b.nom + ' (formule)', 0, uid));
+    }
+    if (main.formule_entree_id) {
+      const e = produits.find(pp => pp.id === main.formule_entree_id);
+      if (e) subs.push(sousLignePlat(e, '  ↳ ' + (main.formule_entree_label || e.nom) + ' (formule)', 0, uid));
+    }
+  }
+
+  // Réinsère juste après le plat principal
+  const j = ticket.findIndex(l => l.ligne_uid === uid);
+  ticket.splice(j + 1, 0, ...subs);
+
+  afficherTicket();
+  rendreEditeur();
+}
+
+// --- Handlers : chaque action modifie la sélection puis reconstruit en direct ---
+function edSetVariante(i) {
+  const l = ligneParUid(editeurUid); if (!l) return;
+  const p = produits.find(pp => pp.id === l.produit_id);
+  l.variante = p.variantes[i];
+  reconstruireSousLignes(editeurUid);
+}
+function edSetOption(label, choix) {
+  const l = ligneParUid(editeurUid); if (!l) return;
+  l.options_base = l.options_base || {};
+  l.options_base[label] = choix;
+  reconstruireSousLignes(editeurUid);
+}
+function edToggleRetirable(ing) {
+  const l = ligneParUid(editeurUid); if (!l) return;
+  l.retirables = l.retirables || [];
+  const i = l.retirables.indexOf(ing);
+  if (i >= 0) l.retirables.splice(i, 1); else l.retirables.push(ing);
+  reconstruireSousLignes(editeurUid);
+}
+function edToggleSupp(id) {
+  const l = ligneParUid(editeurUid); if (!l) return;
+  l.supplements_sel = l.supplements_sel || [];
+  const i = l.supplements_sel.indexOf(id);
+  if (i >= 0) l.supplements_sel.splice(i, 1); else l.supplements_sel.push(id);
+  reconstruireSousLignes(editeurUid);
+}
+function edToggleSauce(id, max) {
+  const l = ligneParUid(editeurUid); if (!l) return;
+  l.sauces_sel = l.sauces_sel || [];
+  const i = l.sauces_sel.indexOf(id);
+  if (i >= 0) {
+    l.sauces_sel.splice(i, 1);
+  } else {
+    if (l.sauces_sel.length >= max) { alert('Maximum ' + max + ' sauces'); return; }
+    l.sauces_sel.push(id);
+  }
+  reconstruireSousLignes(editeurUid);
+}
+function edSetBoisson(id) {
+  const l = ligneParUid(editeurUid); if (!l) return;
+  l.formule_boisson_id = id;
+  reconstruireSousLignes(editeurUid);
+}
+function edSetEntree(id, label) {
+  const l = ligneParUid(editeurUid); if (!l) return;
+  l.formule_entree_id = id;
+  l.formule_entree_label = label;
+  reconstruireSousLignes(editeurUid);
+}
+
+// Rendu de l'écran d'édition (toutes les sections d'un coup)
+function rendreEditeur() {
+  if (!editeurUid) return;
+  const l = ligneParUid(editeurUid);
+  const modal = document.getElementById('modal-editeur-plat');
+  if (!l || !modal) { fermerEditeurPlat(); return; }
+  const p = produits.find(pp => pp.id === l.produit_id);
+  if (!p) { fermerEditeurPlat(); return; }
+
+  let html = `<div class="mpp-content">
+    <div class="mpp-head">
+      <h3>${escapeHtmlPos(p.nom)}</h3>
+      <p>Modifier — appliqué en direct</p>
+    </div>`;
+
+  // Variante / format
+  if (p.variantes && p.variantes.length > 0) {
+    html += `<div class="mpp-bloc"><div class="mpp-lbl">Format</div><div class="mpp-options">`;
+    p.variantes.forEach((v, i) => {
+      const act = (l.variante && l.variante.label === v.label) ? ' active' : '';
+      html += `<button class="mpp-option${act}" onclick="edSetVariante(${i})"><div class="mpp-opt-lbl">${escapeHtmlPos(v.label)}</div><div class="mpp-opt-prix">${fmt(v.prix)}</div></button>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // Options de base (ex. riz / nouilles)
+  if (p.options_base && p.options_base.length > 0) {
+    p.options_base.forEach(opt => {
+      const lblEsc = String(opt.label).replace(/'/g, "\\'");
+      html += `<div class="mpp-bloc"><div class="mpp-lbl">${escapeHtmlPos(opt.label)}</div><div class="mpp-options">`;
+      opt.choix.forEach(c => {
+        const act = (l.options_base && l.options_base[opt.label] === c) ? ' active' : '';
+        const cEsc = String(c).replace(/'/g, "\\'");
+        html += `<button class="mpp-option${act}" onclick="edSetOption('${lblEsc}','${cEsc}')">${escapeHtmlPos(c)}</button>`;
+      });
+      html += `</div></div>`;
+    });
+  }
+
+  // Retirables
+  if (p.ingredients_retirable && p.ingredients_retirable.length > 0) {
+    html += `<div class="mpp-bloc"><div class="mpp-lbl">Retirer un ingrédient</div><div class="mpp-options">`;
+    p.ingredients_retirable.forEach(ing => {
+      const retire = (l.retirables || []).includes(ing);
+      const ingEsc = String(ing).replace(/'/g, "\\'");
+      html += `<button class="mpp-option${retire ? '' : ' active'}" onclick="edToggleRetirable('${ingEsc}')">${retire ? '✗' : '✓'} ${escapeHtmlPos(ing)}</button>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // Suppléments
+  if (p.supplements_ids && p.supplements_ids.length > 0) {
+    const supps = produits.filter(pp => p.supplements_ids.includes(pp.id));
+    html += `<div class="mpp-bloc"><div class="mpp-lbl">Suppléments</div><div class="mpp-options">`;
+    supps.forEach(s => {
+      const act = (l.supplements_sel || []).includes(s.id) ? ' active' : '';
+      html += `<button class="mpp-option${act}" onclick="edToggleSupp('${s.id}')">${escapeHtmlPos(s.nom)} <span class="mpp-prix">+${fmt(s.prix)}</span></button>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // Sauces
+  if (p.sauces_ids && p.sauces_ids.length > 0) {
+    const max = p.sauces_max || 3;
+    const saucesList = produits.filter(pp => p.sauces_ids.includes(pp.id));
+    html += `<div class="mpp-bloc"><div class="mpp-lbl">Sauces (max ${max})${p.sauces_incluses ? ' — incluses' : ''}</div><div class="mpp-options">`;
+    saucesList.forEach(s => {
+      const act = (l.sauces_sel || []).includes(s.id) ? ' active' : '';
+      const prixTxt = (!p.sauces_incluses && parseFloat(s.prix) > 0) ? ` <span class="mpp-prix">+${fmt(s.prix)}</span>` : '';
+      html += `<button class="mpp-option${act}" onclick="edToggleSauce('${s.id}',${max})">${escapeHtmlPos(s.nom)}${prixTxt}</button>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // Formule : boisson + entrée
+  if (l.est_formule) {
+    const catBoissons = categories.find(c => /boisson/i.test(c.nom));
+    if (catBoissons) {
+      const boissons = produits.filter(pp => pp.categorie_id === catBoissons.id && pp.actif !== false &&
+        (pp.nom.includes('33cl') || pp.nom.toLowerCase().includes('cristalline')));
+      html += `<div class="mpp-bloc"><div class="mpp-lbl">Boisson (incluse)</div><div class="mpp-options">`;
+      boissons.forEach(b => {
+        const act = l.formule_boisson_id === b.id ? ' active' : '';
+        html += `<button class="mpp-option${act}" onclick="edSetBoisson('${b.id}')">${escapeHtmlPos(b.nom.replace(' 33cl', '').replace(' 50cl', ''))}</button>`;
+      });
+      html += `</div></div>`;
+    }
+    const catEntrees = categories.find(c => c.nom === 'Entrées');
+    if (catEntrees) {
+      const entrees = produits.filter(pp => pp.categorie_id === catEntrees.id && pp.actif !== false);
+      html += `<div class="mpp-bloc"><div class="mpp-lbl">Entrée (incluse)</div><div class="mpp-options">`;
+      entrees.forEach(e => {
+        let label = e.nom;
+        if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
+          const v2 = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces' };
+          label = e.nom + ' (' + v2.label + ')';
+        }
+        const act = l.formule_entree_id === e.id ? ' active' : '';
+        const labelEsc = String(label).replace(/'/g, "\\'");
+        html += `<button class="mpp-option${act}" onclick="edSetEntree('${e.id}','${labelEsc}')">${escapeHtmlPos(label)}</button>`;
+      });
+      html += `</div></div>`;
+    }
+  }
+
+  html += `<div class="mpp-actions">
+      <button class="btn-valider" onclick="fermerEditeurPlat()">Fermer</button>
+    </div></div>`;
+
+  modal.innerHTML = html;
+}
+
+// --- Appui long sur une ligne du ticket : long = éditer, court = remise ligne ---
+let _lpTimer = null, _lpFired = false;
+function lpDown(idx) {
+  _lpFired = false;
+  if (_lpTimer) clearTimeout(_lpTimer);
+  _lpTimer = setTimeout(() => {
+    _lpFired = true;
+    if (navigator.vibrate) navigator.vibrate(15);
+    ouvrirEditeurLigne(idx);
+  }, 500);
+}
+function lpUp() {
+  if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+}
+function ligneClick(idx) {
+  if (_lpFired) { _lpFired = false; return; } // c'était un appui long → on n'ouvre pas la remise
+  ouvrirRemiseLigne(idx);
 }
 
 // ============================================
@@ -6680,7 +6994,7 @@ function afficherTicket() {
     
     return `
     <div class="ligne ${remiseLigne ? 'ligne-avec-remise' : ''}">
-      <div class="ligne-info" onclick="ouvrirRemiseLigne(${idx})" style="cursor:pointer;">
+      <div class="ligne-info" onpointerdown="lpDown(${idx})" onpointerup="lpUp()" onpointerleave="lpUp()" onpointercancel="lpUp()" oncontextmenu="return false" onclick="ligneClick(${idx})" style="cursor:pointer; -webkit-user-select:none; user-select:none; touch-action:manipulation;">
         <div class="ligne-nom">${l.nom}</div>
         <div class="ligne-pu">${fmt(l.prix)} / unité ${remiseLigne ? '· <span style="color:var(--danger);font-weight:700;">Remise appliquée</span>' : ''}</div>
       </div>
