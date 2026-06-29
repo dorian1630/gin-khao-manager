@@ -3513,6 +3513,129 @@ console.log('Style forcé injecté !');
   margin-top: 8px;
   font-style: italic;
 }
+  /* 🔀 PAIEMENT MIXTE */
+.mixte-zone {
+  background: var(--bg-soft);
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 16px;
+  border: 2px dashed var(--gold);
+}
+.mixte-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.mixte-stat {
+  background: var(--surface);
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+.mixte-stat-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-mute);
+  margin-bottom: 4px;
+}
+.mixte-stat-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  font-family: var(--mono);
+}
+.mixte-stat.mixte-reste .mixte-stat-val {
+  color: var(--danger);
+}
+.mixte-liste {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 14px;
+  min-height: 50px;
+}
+.mixte-vide {
+  text-align: center;
+  color: var(--text-mute);
+  font-style: italic;
+  padding: 12px;
+  font-size: 13px;
+}
+.mixte-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-soft);
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+.mixte-ligne:last-child { margin-bottom: 0; }
+.mixte-ligne-mode {
+  flex: 1;
+  font-weight: 700;
+  font-size: 13px;
+}
+.mixte-ligne-montant {
+  font-weight: 800;
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 15px;
+}
+.mixte-ligne-retirer {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: 700;
+}
+.mixte-ajout { border-top: 1px solid var(--border); padding-top: 12px; }
+.mixte-modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.mixte-mode-btn {
+  padding: 10px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.mixte-mode-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+.mixte-saisie {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mixte-saisie input { flex: 1; margin: 0; }
+.btn-add-mixte {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #2ECC71, #27AE60);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 24px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn-add-mixte:hover { transform: translateY(-1px); }
 </style>
 </head>
 <body>
@@ -3807,6 +3930,10 @@ console.log('Style forcé injecté !');
         <div class="ic">🍽️</div>
         <div class="nm">Ticket Resto</div>
       </div>
+      <div class="pay-mode" data-mode="mixte" onclick="choisirMode('mixte')">
+        <div class="ic">🔀</div>
+        <div class="nm">Mixte</div>
+      </div>
     </div>
 
     <!-- ✨ Zone Ticket Restaurant (papier OU carte) -->
@@ -3880,7 +4007,45 @@ console.log('Style forcé injecté !');
         <div class="ua-row net"><span>Net encaissé</span><span id="ua-net">—</span></div>
       </div>
     </div>
+<!-- ✨ ZONE PAIEMENT MIXTE -->
+    <div class="mixte-zone" id="mixte-zone" style="display:none;">
+      <div class="mixte-stats">
+        <div class="mixte-stat">
+          <div class="mixte-stat-lbl">Total</div>
+          <div class="mixte-stat-val" id="mixte-total-aff">0,00 €</div>
+        </div>
+        <div class="mixte-stat">
+          <div class="mixte-stat-lbl">Payé</div>
+          <div class="mixte-stat-val" id="mixte-paye-aff">0,00 €</div>
+        </div>
+        <div class="mixte-stat mixte-reste">
+          <div class="mixte-stat-lbl">Reste</div>
+          <div class="mixte-stat-val" id="mixte-reste-aff">0,00 €</div>
+        </div>
+      </div>
+      
+      <div class="mixte-liste" id="mixte-liste">
+        <div class="mixte-vide" id="mixte-vide">Aucun mode saisi</div>
+      </div>
+      
+      <div class="mixte-ajout">
+        <div class="cash-label">+ Ajouter un mode de paiement</div>
+        <div class="mixte-modes">
+          <button type="button" class="mixte-mode-btn active" data-mode="especes" onclick="choisirModeMixte('especes')">💵 Espèces</button>
+          <button type="button" class="mixte-mode-btn" data-mode="carte" onclick="choisirModeMixte('carte')">💳 Carte</button>
+          <button type="button" class="mixte-mode-btn" data-mode="tr_papier" onclick="choisirModeMixte('tr_papier')">🍽️ TR Papier</button>
+          <button type="button" class="mixte-mode-btn" data-mode="tr_carte" onclick="choisirModeMixte('tr_carte')">🍽️ TR Carte</button>
+        </div>
+        <div class="mixte-saisie">
+          <input type="number" class="cash-input" id="mixte-input" placeholder="Montant" inputmode="decimal" step="0.01" />
+          <span style="font-weight:800;color:var(--gold);font-size:18px;">€</span>
+          <button class="btn-add-mixte" onclick="ajouterPaiementMixte()">+</button>
+        </div>
+        <div class="quick-cash" id="mixte-quick"></div>
+      </div>
+    </div>
 
+    <div class="cash-zone" id="cash-zone">
     <div class="cash-zone show" id="cash-zone">
       <div class="cash-label">Montant reçu</div>
       <input type="number" class="cash-input" id="cash-input" placeholder="0,00" inputmode="decimal" oninput="calculerRendu()">
@@ -5762,7 +5927,118 @@ function majUberApercu() {
 let trType = 'papier';     // 'papier' ou 'carte'
 let trNbTickets = 1;
 const TR_PLAFOND_TICKET = 25; // 25€ max par ticket papier
+// ============================================
+//  🔀 PAIEMENT MIXTE
+// ============================================
+let paiementsMixtes = [];  // [{mode, montant}]
+let modeMixteActuel = 'especes';
 
+const LBL_MIXTE = {
+  especes: '💵 Espèces',
+  carte: '💳 Carte',
+  tr_papier: '🍽️ TR Papier',
+  tr_carte: '🍽️ TR Carte'
+};
+
+function choisirModeMixte(mode) {
+  modeMixteActuel = mode;
+  document.querySelectorAll('.mixte-mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  // Rapides selon le reste
+  genererQuickMixte();
+}
+
+function genererQuickMixte() {
+  const reste = restePaiementMixte();
+  const zone = document.getElementById('mixte-quick');
+  if (!zone) return;
+  const billets = [5, 10, 20];
+  const suggestions = new Set();
+  if (reste > 0) suggestions.add(Number(reste.toFixed(2)));
+  billets.forEach(b => { if (b <= reste) suggestions.add(b); });
+  const tri = [...suggestions].sort((a,b) => a-b).slice(0, 4);
+  zone.innerHTML = tri.map(m => `<button type="button" onclick="setMixteInput(${m})">${m % 1 === 0 ? m : m.toFixed(2)} €</button>`).join('');
+}
+
+function setMixteInput(v) {
+  document.getElementById('mixte-input').value = v;
+}
+
+function ajouterPaiementMixte() {
+  const input = document.getElementById('mixte-input');
+  const val = parseFloat(input.value) || 0;
+  if (val <= 0) { alert('Montant invalide'); return; }
+  
+  const reste = restePaiementMixte();
+  if (val > reste + 0.01 && modeMixteActuel !== 'especes') {
+    alert('Le montant dépasse le reste à payer ('+ fmt(reste) +')\n(seules les espèces autorisent un dépassement avec rendu de monnaie)');
+    return;
+  }
+  
+  paiementsMixtes.push({
+    mode: modeMixteActuel,
+    montant: val
+  });
+  input.value = '';
+  afficherPaiementsMixtes();
+}
+
+function retirerPaiementMixte(idx) {
+  paiementsMixtes.splice(idx, 1);
+  afficherPaiementsMixtes();
+}
+
+function totalPayeMixte() {
+  return paiementsMixtes.reduce((s, p) => s + p.montant, 0);
+}
+
+function restePaiementMixte() {
+  return Math.max(0, totalTicket() - totalPayeMixte());
+}
+
+function afficherPaiementsMixtes() {
+  const liste = document.getElementById('mixte-liste');
+  const vide = document.getElementById('mixte-vide');
+  const totalT = totalTicket();
+  const paye = totalPayeMixte();
+  const reste = Math.max(0, totalT - paye);
+  
+  // Stats
+  document.getElementById('mixte-total-aff').textContent = fmt(totalT);
+  document.getElementById('mixte-paye-aff').textContent = fmt(paye);
+  document.getElementById('mixte-reste-aff').textContent = fmt(reste);
+  
+  // Liste
+  if (paiementsMixtes.length === 0) {
+    liste.innerHTML = '<div class="mixte-vide">Aucun mode saisi</div>';
+  } else {
+    liste.innerHTML = paiementsMixtes.map((p, idx) => `
+      <div class="mixte-ligne">
+        <span class="mixte-ligne-mode">${LBL_MIXTE[p.mode] || p.mode}</span>
+        <span class="mixte-ligne-montant">${fmt(p.montant)}</span>
+        <button class="mixte-ligne-retirer" onclick="retirerPaiementMixte(${idx})">✕</button>
+      </div>
+    `).join('');
+  }
+  
+  // Bouton Valider : actif uniquement si le total est couvert (à 1 centime près)
+  const btn = document.getElementById('btn-valider');
+  if (modePaiement === 'mixte') {
+    btn.disabled = reste > 0.01;
+  }
+  
+  genererQuickMixte();
+}
+
+function resetMixte() {
+  paiementsMixtes = [];
+  modeMixteActuel = 'especes';
+  document.querySelectorAll('.mixte-mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === 'especes');
+  });
+  afficherPaiementsMixtes();
+}
 function choisirTypeTR(type) {
   trType = type;
   document.getElementById('tr-type-papier').classList.toggle('active', type === 'papier');
@@ -5841,11 +6117,12 @@ function choisirMode(mode) {
   });
   const cashZone = document.getElementById('cash-zone');
   const trZone = document.getElementById('tr-zone');
+  const mixteZone = document.getElementById('mixte-zone');
   const btnValider = document.getElementById('btn-valider');
   
-  // Cache toutes les zones d'abord
   cashZone.classList.remove('show');
   trZone.style.display = 'none';
+  mixteZone.style.display = 'none';
   
   if (mode === 'especes') {
     cashZone.classList.add('show');
@@ -5855,8 +6132,10 @@ function choisirMode(mode) {
     trZone.style.display = 'block';
     calculTR();
     btnValider.disabled = false;
+  } else if (mode === 'mixte') {
+    mixteZone.style.display = 'block';
+    resetMixte();
   } else {
-    // carte : pas de contrainte
     btnValider.disabled = false;
   }
 }
@@ -5907,7 +6186,20 @@ function calculerRendu() {
 let enCours = false;
 async function validerVente() {
   if (enCours || ticket.length === 0) return;
-  
+  // ✨ Vérif Paiement Mixte
+  if (modePaiement === 'mixte') {
+    const reste = restePaiementMixte();
+    if (reste > 0.01) {
+      alert('Il reste ' + fmt(reste) + ' à régler.');
+      return;
+    }
+    if (paiementsMixtes.length === 0) {
+      alert('Ajoutez au moins un mode de paiement.');
+      return;
+    }
+    // On stocke en libellé combiné pour mode_paiement
+    modePaiement = paiementsMixtes.map(p => p.mode).join('+');
+  }
   // ✨ Vérif Ticket Restaurant
   if (modePaiement === 'ticket_resto') {
     if (!trEstValide()) {
@@ -5987,6 +6279,17 @@ async function validerVente() {
       });
     }
   });
+  // ✨ Si paiement mixte : ajouter les lignes de détail
+  if (paiementsMixtes.length > 0) {
+    paiementsMixtes.forEach(p => {
+      lignes.push({
+        produit_id: null,
+        nom: `🔀 ${LBL_MIXTE[p.mode] || p.mode} : ${fmt(p.montant)}`,
+        prix: 0,
+        quantite: 1
+      });
+    });
+  }
   // Si plat offert appliqué : on ajoute une ligne de remise négative
   // pour que le total enregistré reflète le montant réellement payé.
   if (platOffertApplique) {
@@ -6100,6 +6403,7 @@ async function validerVente() {
     ticket = [];
     trNbTickets = 1;  // reset compteur TR
   modeTicketPro = false;
+    paiementsMixtes = [];
     clientFid = null;
     platOffertApplique = false;
     remise = null;
