@@ -3270,17 +3270,6 @@ html, body {
   display: flex !important;
   flex-direction: column !important;
 }
-  // Forcer la taille avec une règle CSS injectée
-const style = document.createElement('style');
-style.id = 'fix-cards-height';
-style.textContent = `
-  .produit-card.has-image {
-    min-height: 320px !important;
-    height: 320px !important;
-  }
-`;
-document.head.appendChild(style);
-console.log('Style forcé injecté !');
   /* 💰 Modale remise sur ligne */
 .modal-remise-ligne { max-width: 480px; }
 .rl-article-info {
@@ -5943,16 +5932,16 @@ function afficherCartesFormules(parentId) {
   grid.innerHTML = sousCats.map(sc => {
     const nb = produits.filter(p => p.categorie_id === sc.id).length;
     const premierPlat = produits.find(p => p.categorie_id === sc.id);
-    const img = premierPlat && premierPlat.image_url ? premierPlat.image_url : '';
-    const hasImage = img && img.trim() !== '';
+    const img = premierPlat && premierPlat.image_url ? premierPlat.image_url.trim() : '';
+    const visuel = img
+      ? `<div style="width:100%;height:120px;background-image:url('${img}');background-size:cover;background-position:center;border-bottom:1px solid var(--border);"></div>`
+      : `<div style="width:100%;height:120px;display:flex;align-items:center;justify-content:center;font-size:46px;background:linear-gradient(135deg,var(--gold-soft),var(--gold));">🎁</div>`;
     return `
-      <div class="produit-card ${hasImage?'has-image':''}" onclick="filtrerCat('${sc.id}')">
-        ${hasImage ? `<div class="pc-img" style="background-image:url('${img}')"></div>` : ''}
-        <div class="produit-bandeau">
-          <div class="produit-nom">${sc.nom}</div>
-          <div class="produit-bas">
-            <div class="produit-prix" style="font-size:13px;color:var(--gold);">${nb} plat${nb > 1 ? 's' : ''} au choix</div>
-          </div>
+      <div class="produit-card carte-formule" onclick="filtrerCat('${sc.id}')" style="padding:0;overflow:hidden;min-height:0;justify-content:flex-start;">
+        ${visuel}
+        <div style="background:var(--surface);padding:10px 12px;">
+          <div class="produit-nom" style="font-size:14px;">${sc.nom}</div>
+          <div class="produit-prix" style="font-size:13px;color:var(--gold);margin-top:2px;">${nb} plat${nb > 1 ? 's' : ''} au choix</div>
         </div>
       </div>
     `;
