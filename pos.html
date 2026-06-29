@@ -7088,7 +7088,7 @@ function afficherTicket() {
         </div>
         <div class="ligne-st">+${fmt(fraisLivraison)}</div>
       </div>`;
-  } else if (infoLivraison && infoLivraison.erreur && canalVente === 'livraison') {
+  } else if (infoLivraison && infoLivraison.erreur && clientActif) {
     zone.innerHTML += `
       <div class="ligne ligne-livraison">
         <div class="ligne-info">
@@ -10325,7 +10325,7 @@ function afficherBandeauClient() {
   const fidHtml = (c.points > 0 || c.nb_visites > 0) ? 
     `<span class="bandeau-client-fid">⭐ ${c.points || 0} pts · ${c.nb_visites || 0} visites</span>` : '';
 
-  const livraisonHtml = (canalVente === 'livraison' && infoLivraison)
+  const livraisonHtml = (clientActif && infoLivraison)
     ? (infoLivraison.erreur
         ? `<div class="bandeau-client-info" style="color:var(--danger);">🚗 ${escapeHtmlPos(infoLivraison.erreur)}</div>`
         : `<div class="bandeau-client-info">🚗 <b>${infoLivraison.km.toFixed(1).replace('.', ',')} km</b> → Livraison +${fmt(infoLivraison.frais)}</div>`)
@@ -10377,8 +10377,8 @@ function distanceKm(a, b) {
 
 // Recalcule les frais de livraison selon canal + client + adresse
 async function majFraisLivraison() {
-  // Hors livraison ou sans client → aucun frais
-  if (canalVente !== 'livraison' || !clientActif) {
+  // Sans client → aucun frais (un client tél rattaché = commande livraison)
+  if (!clientActif) {
     if (fraisLivraison !== 0 || infoLivraison) {
       fraisLivraison = 0; infoLivraison = null;
       majTotal(); afficherBandeauClient(); afficherTicket();
