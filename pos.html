@@ -1192,6 +1192,21 @@ html, body {
   text-transform: uppercase; letter-spacing: 0.1em; font-size: 12px;
 }
 
+/* 🚗 Pavé de saisie manuelle des frais de livraison */
+.overlay-frais-livr { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 9000; align-items: center; justify-content: center; }
+.overlay-frais-livr.show { display: flex; }
+.overlay-frais-livr .fl-box { background: var(--surface); border-radius: 16px; padding: 22px; width: 320px; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+.overlay-frais-livr h3 { margin: 0 0 2px; font-size: 18px; color: var(--text); }
+.overlay-frais-livr p { margin: 0 0 14px; font-size: 12px; color: var(--text-mute); }
+.overlay-frais-livr .fl-quick { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
+.overlay-frais-livr .fl-quick button { padding: 12px 0; border: 1px solid var(--border); background: var(--surface-2); border-radius: 10px; font-weight: 600; cursor: pointer; color: var(--text); }
+.overlay-frais-livr #fl-input { width: 100%; padding: 12px; font-size: 22px; text-align: center; border: 2px solid var(--border); border-radius: 10px; box-sizing: border-box; }
+.overlay-frais-livr .fl-actions { display: flex; gap: 8px; margin-top: 14px; }
+.overlay-frais-livr .fl-actions button { flex: 1; padding: 13px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+.overlay-frais-livr .fl-annuler { background: var(--surface-2); color: var(--text); }
+.overlay-frais-livr .fl-ok { background: var(--gold); color: #fff; }
+.overlay-frais-livr .fl-auto { width: 100%; margin-top: 10px; padding: 8px; background: none; border: none; color: var(--text-mute); font-size: 12px; cursor: pointer; text-decoration: underline; }
+
 /* ===== BON CUISINE ===== */
 .bon-cuisine {
   background: #fff;
@@ -5685,6 +5700,7 @@ let canalVente = 'sur_place';
 // ====== 🚗 FRAIS DE LIVRAISON (calcul par distance, à vol d'oiseau) ======
 let fraisLivraison = 0;        // montant € ajouté au total en mode livraison
 let infoLivraison = null;      // { km, frais } ou { erreur } pour l'affichage
+let fraisLivraisonManuel = null; // si défini, force le montant (override du calcul auto)
 const RESTO_ADRESSE_LIVRAISON = '78 avenue de Saint-Just 13013 Marseille';
 let RESTO_COORDS = { lat: 43.31600, lng: 5.39560 }; // fallback, raffiné via géocodage au 1er calcul
 let restoGeocode = false;
@@ -7077,23 +7093,24 @@ function afficherTicket() {
     }
   }
 
-  // 🚗 Ligne frais de livraison (mode livraison)
+  // 🚗 Ligne frais de livraison — cliquable pour modifier le montant
   if (fraisLivraison > 0) {
     const kmTxt = (infoLivraison && infoLivraison.km != null) ? ' · ' + infoLivraison.km.toFixed(1).replace('.', ',') + ' km' : '';
+    const manuelTxt = (infoLivraison && infoLivraison.manuel) ? ' · modifié' : '';
     zone.innerHTML += `
-      <div class="ligne ligne-livraison">
+      <div class="ligne ligne-livraison" onclick="modifierFraisLivraison()" style="cursor:pointer;">
         <div class="ligne-info">
-          <div class="ligne-nom">🚗 Frais de livraison</div>
-          <div class="ligne-pu">Livraison${kmTxt}</div>
+          <div class="ligne-nom">🚗 Frais de livraison ✏️</div>
+          <div class="ligne-pu">Livraison${kmTxt}${manuelTxt}</div>
         </div>
         <div class="ligne-st">+${fmt(fraisLivraison)}</div>
       </div>`;
   } else if (infoLivraison && infoLivraison.erreur && clientActif) {
     zone.innerHTML += `
-      <div class="ligne ligne-livraison">
+      <div class="ligne ligne-livraison" onclick="modifierFraisLivraison()" style="cursor:pointer;">
         <div class="ligne-info">
-          <div class="ligne-nom" style="color:var(--danger);">🚗 Livraison : ${escapeHtmlPos(infoLivraison.erreur)}</div>
-          <div class="ligne-pu">Vérifie l'adresse du client</div>
+          <div class="ligne-nom" style="color:var(--danger);">🚗 Livraison : ${escapeHtmlPos(infoLivraison.erreur)} ✏️</div>
+          <div class="ligne-pu">Clique pour saisir le montant</div>
         </div>
       </div>`;
   }
@@ -8027,7 +8044,7 @@ async function validerVente() {
     platOffertApplique = false;
     remise = null;
     clientActif = null;  // ✨ Reset client téléphone
-    fraisLivraison = 0; infoLivraison = null;  // 🚗 Reset frais livraison
+    fraisLivraison = 0; infoLivraison = null; fraisLivraisonManuel = null;  // 🚗 Reset frais livraison
     afficherBandeauClient();
     
     // Reset visuel ticket-num
@@ -10303,6 +10320,7 @@ async function selectionnerClient(id) {
 
 function chargerClientCommande(client) {
   clientActif = client;
+  fraisLivraisonManuel = null;
   afficherBandeauClient();
   majFraisLivraison();
   toast('✅ ' + (client.nom || 'Client') + ' chargé');
@@ -10344,7 +10362,7 @@ function afficherBandeauClient() {
 
 function retirerClientCommande() {
   clientActif = null;
-  fraisLivraison = 0; infoLivraison = null;
+  fraisLivraison = 0; infoLivraison = null; fraisLivraisonManuel = null;
   afficherBandeauClient();
   afficherTicket();
   toast('Client retiré de la commande');
@@ -10379,12 +10397,22 @@ function distanceKm(a, b) {
 async function majFraisLivraison() {
   // Sans client → aucun frais (un client tél rattaché = commande livraison)
   if (!clientActif) {
+    fraisLivraisonManuel = null;
     if (fraisLivraison !== 0 || infoLivraison) {
       fraisLivraison = 0; infoLivraison = null;
       majTotal(); afficherBandeauClient(); afficherTicket();
     }
     return;
   }
+
+  // Montant forcé manuellement → on l'utilise tel quel (pas de recalcul auto)
+  if (fraisLivraisonManuel != null) {
+    fraisLivraison = fraisLivraisonManuel;
+    infoLivraison = Object.assign({}, infoLivraison, { manuel: true, frais: fraisLivraisonManuel });
+    majTotal(); afficherBandeauClient(); afficherTicket();
+    return;
+  }
+
   const c = clientActif;
   const adresse = [c.adresse, c.code_postal, c.ville].filter(Boolean).join(' ').trim();
   if (!adresse) {
@@ -10416,6 +10444,57 @@ async function majFraisLivraison() {
   fraisLivraison = fraisPourDistance(km);
   infoLivraison = { km, frais: fraisLivraison };
   majTotal(); afficherBandeauClient(); afficherTicket();
+}
+
+// --- Modification manuelle du montant des frais de livraison ---
+function modifierFraisLivraison() {
+  if (!clientActif) return;
+  let ov = document.getElementById('overlay-frais-livr');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'overlay-frais-livr';
+    ov.className = 'overlay-frais-livr';
+    ov.addEventListener('click', e => { if (e.target === ov) fermerFraisLivr(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `
+    <div class="fl-box">
+      <h3>🚗 Frais de livraison</h3>
+      <p>Modifie le montant à la main</p>
+      <div class="fl-quick">
+        <button onclick="setFraisLivr(2)">2 €</button>
+        <button onclick="setFraisLivr(4)">4 €</button>
+        <button onclick="setFraisLivr(6)">6 €</button>
+        <button onclick="setFraisLivr(0)">Gratuit</button>
+      </div>
+      <input type="number" id="fl-input" inputmode="decimal" step="0.5" min="0" value="${Number(fraisLivraison).toFixed(2)}" />
+      <div class="fl-actions">
+        <button class="fl-annuler" onclick="fermerFraisLivr()">Annuler</button>
+        <button class="fl-ok" onclick="validerFraisLivr()">Valider</button>
+      </div>
+      <button class="fl-auto" onclick="fraisLivraisonAuto()">↺ Revenir au calcul automatique</button>
+    </div>`;
+  ov.classList.add('show');
+  setTimeout(() => { const i = document.getElementById('fl-input'); if (i) { i.focus(); i.select(); } }, 50);
+}
+function setFraisLivr(v) { const i = document.getElementById('fl-input'); if (i) i.value = v; }
+function validerFraisLivr() {
+  const v = parseFloat(document.getElementById('fl-input').value);
+  if (isNaN(v) || v < 0) { alert('Montant invalide'); return; }
+  fraisLivraisonManuel = Math.round(v * 100) / 100;
+  fraisLivraison = fraisLivraisonManuel;
+  infoLivraison = Object.assign({}, infoLivraison, { manuel: true, frais: fraisLivraison });
+  fermerFraisLivr();
+  majTotal(); afficherBandeauClient(); afficherTicket();
+}
+function fraisLivraisonAuto() {
+  fraisLivraisonManuel = null;
+  fermerFraisLivr();
+  majFraisLivraison();
+}
+function fermerFraisLivr() {
+  const ov = document.getElementById('overlay-frais-livr');
+  if (ov) ov.classList.remove('show');
 }
 
 // ============================================
