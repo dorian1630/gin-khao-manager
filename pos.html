@@ -5682,6 +5682,19 @@ let ticket = [];          // [{produit_id, nom, prix, quantite, stock_actif, sto
 let modePaiement = 'especes';
 let canalVente = 'sur_place';
 
+// ====== 🚗 FRAIS DE LIVRAISON (calcul par distance, à vol d'oiseau) ======
+let fraisLivraison = 0;        // montant € ajouté au total en mode livraison
+let infoLivraison = null;      // { km, frais } ou { erreur } pour l'affichage
+const RESTO_ADRESSE_LIVRAISON = '78 avenue de Saint-Just 13013 Marseille';
+let RESTO_COORDS = { lat: 43.31600, lng: 5.39560 }; // fallback, raffiné via géocodage au 1er calcul
+let restoGeocode = false;
+// Paliers : 0–2 km → 2€, 2–4 km → 4€, au-delà → 6€
+function fraisPourDistance(km) {
+  if (km <= 2) return 2;
+  if (km <= 4) return 4;
+  return 6;
+}
+
 // --- Fidélité ---
 const OBJECTIF_FID = 10;        // 10 tampons = plat offert (même règle que le scanner)
 const MIN_TAMPON = 12.90;       // minimum de commande pour gagner un tampon
@@ -7064,6 +7077,27 @@ function afficherTicket() {
     }
   }
 
+  // 🚗 Ligne frais de livraison (mode livraison)
+  if (fraisLivraison > 0) {
+    const kmTxt = (infoLivraison && infoLivraison.km != null) ? ' · ' + infoLivraison.km.toFixed(1).replace('.', ',') + ' km' : '';
+    zone.innerHTML += `
+      <div class="ligne ligne-livraison">
+        <div class="ligne-info">
+          <div class="ligne-nom">🚗 Frais de livraison</div>
+          <div class="ligne-pu">Livraison${kmTxt}</div>
+        </div>
+        <div class="ligne-st">+${fmt(fraisLivraison)}</div>
+      </div>`;
+  } else if (infoLivraison && infoLivraison.erreur && canalVente === 'livraison') {
+    zone.innerHTML += `
+      <div class="ligne ligne-livraison">
+        <div class="ligne-info">
+          <div class="ligne-nom" style="color:var(--danger);">🚗 Livraison : ${escapeHtmlPos(infoLivraison.erreur)}</div>
+          <div class="ligne-pu">Vérifie l'adresse du client</div>
+        </div>
+      </div>`;
+  }
+
   btn.disabled = false;
   majTotal();
 
@@ -7121,9 +7155,9 @@ function montantRemise() {
   return Math.min(Math.max(0, m), base);
 }
 
-// Total du ticket = articles − plat offert − remise manuelle.
+// Total du ticket = articles − plat offert − remise manuelle + frais de livraison.
 function totalTicket() {
-  return Math.max(0, sousTotalApresPlatOffert() - montantRemise());
+  return Math.max(0, sousTotalApresPlatOffert() - montantRemise()) + fraisLivraison;
 }
 
 function majTotal() {
@@ -7487,6 +7521,9 @@ function choisirCanal(canal) {
     payZone.style.display = 'block';
     choisirMode('carte');  // défaut carte (le plus utilisé)
   }
+
+  // 🚗 Recalcule les frais de livraison selon le canal choisi
+  majFraisLivraison();
 }
 
 // Taux de commission choisi pour la vente plateforme en cours (18 ou 38)
@@ -7889,6 +7926,16 @@ async function validerVente() {
     });
   }
 
+  // 🚗 Frais de livraison (mode livraison) — ligne ajoutée au total enregistré
+  if (fraisLivraison > 0) {
+    lignes.push({
+      produit_id: null,
+      nom: '🚗 Frais de livraison' + (infoLivraison && infoLivraison.km != null ? ' (' + infoLivraison.km.toFixed(1).replace('.', ',') + ' km)' : ''),
+      prix: fraisLivraison,
+      quantite: 1
+    });
+  }
+
   // Copie des lignes du ticket courant (avec catégorie) pour le bon cuisine
   const lignesPourCuisine = ticket.map(l => ({
     produit_id: l.produit_id,
@@ -7980,6 +8027,7 @@ async function validerVente() {
     platOffertApplique = false;
     remise = null;
     clientActif = null;  // ✨ Reset client téléphone
+    fraisLivraison = 0; infoLivraison = null;  // 🚗 Reset frais livraison
     afficherBandeauClient();
     
     // Reset visuel ticket-num
@@ -10256,6 +10304,7 @@ async function selectionnerClient(id) {
 function chargerClientCommande(client) {
   clientActif = client;
   afficherBandeauClient();
+  majFraisLivraison();
   toast('✅ ' + (client.nom || 'Client') + ' chargé');
 }
 
@@ -10275,21 +10324,98 @@ function afficherBandeauClient() {
   const notesHtml = c.notes ? `<div class="bandeau-client-notes">📝 ${escapeHtmlPos(c.notes)}</div>` : '';
   const fidHtml = (c.points > 0 || c.nb_visites > 0) ? 
     `<span class="bandeau-client-fid">⭐ ${c.points || 0} pts · ${c.nb_visites || 0} visites</span>` : '';
-  
+
+  const livraisonHtml = (canalVente === 'livraison' && infoLivraison)
+    ? (infoLivraison.erreur
+        ? `<div class="bandeau-client-info" style="color:var(--danger);">🚗 ${escapeHtmlPos(infoLivraison.erreur)}</div>`
+        : `<div class="bandeau-client-info">🚗 <b>${infoLivraison.km.toFixed(1).replace('.', ',')} km</b> → Livraison +${fmt(infoLivraison.frais)}</div>`)
+    : '';
+
   body.innerHTML = `
     <div class="bandeau-client-nom">${escapeHtmlPos(c.nom || 'Sans nom')}</div>
     <div class="bandeau-client-info">📞 <b>${escapeHtmlPos(c.telephone || '')}</b></div>
     ${adresseHtml}
     ${notesHtml}
     ${fidHtml}
+    ${livraisonHtml}
     <button class="bandeau-client-edit" onclick="ouvrirEditionClient()">✏️ Modifier les infos du client</button>
   `;
 }
 
 function retirerClientCommande() {
   clientActif = null;
+  fraisLivraison = 0; infoLivraison = null;
   afficherBandeauClient();
+  afficherTicket();
   toast('Client retiré de la commande');
+}
+
+// ============================================
+//  🚗 CALCUL DES FRAIS DE LIVRAISON
+// ============================================
+// Géocodage via l'API Adresse du gouvernement français (gratuit, sans clé)
+async function geocoderAdresse(adresse) {
+  try {
+    const url = 'https://api-adresse.data.gouv.fr/search/?limit=1&q=' + encodeURIComponent(adresse);
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const j = await r.json();
+    const f = j.features && j.features[0];
+    if (!f || !f.geometry || !f.geometry.coordinates) return null;
+    const [lng, lat] = f.geometry.coordinates;
+    return { lat, lng };
+  } catch (e) { console.error('Géocodage échoué :', e); return null; }
+}
+
+// Distance à vol d'oiseau (Haversine) en km
+function distanceKm(a, b) {
+  const R = 6371, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+// Recalcule les frais de livraison selon canal + client + adresse
+async function majFraisLivraison() {
+  // Hors livraison ou sans client → aucun frais
+  if (canalVente !== 'livraison' || !clientActif) {
+    if (fraisLivraison !== 0 || infoLivraison) {
+      fraisLivraison = 0; infoLivraison = null;
+      majTotal(); afficherBandeauClient(); afficherTicket();
+    }
+    return;
+  }
+  const c = clientActif;
+  const adresse = [c.adresse, c.code_postal, c.ville].filter(Boolean).join(' ').trim();
+  if (!adresse) {
+    fraisLivraison = 0; infoLivraison = { erreur: "Pas d'adresse renseignée" };
+    majTotal(); afficherBandeauClient(); afficherTicket();
+    return;
+  }
+  // Raffine les coordonnées du resto une seule fois
+  if (!restoGeocode) {
+    const g = await geocoderAdresse(RESTO_ADRESSE_LIVRAISON);
+    if (g) RESTO_COORDS = g;
+    restoGeocode = true;
+  }
+  // Coordonnées client : cache (lat/lng) sinon géocodage + mémorisation
+  let coords = (c.lat && c.lng) ? { lat: c.lat, lng: c.lng } : null;
+  if (!coords) {
+    coords = await geocoderAdresse(adresse);
+    if (coords) {
+      c.lat = coords.lat; c.lng = coords.lng;
+      sb.from('clients').update({ lat: coords.lat, lng: coords.lng }).eq('id', c.id).then(() => {}, () => {});
+    }
+  }
+  if (!coords) {
+    fraisLivraison = 0; infoLivraison = { erreur: 'Adresse introuvable' };
+    majTotal(); afficherBandeauClient(); afficherTicket();
+    return;
+  }
+  const km = distanceKm(RESTO_COORDS, coords);
+  fraisLivraison = fraisPourDistance(km);
+  infoLivraison = { km, frais: fraisLivraison };
+  majTotal(); afficherBandeauClient(); afficherTicket();
 }
 
 // ============================================
@@ -10354,6 +10480,7 @@ async function sauverClient() {
       code_postal: cp || null,
       ville: ville || null,
       notes: notes || null,
+      lat: null, lng: null,   // 🚗 invalide le cache GPS → re-géocodage à la prochaine livraison
       restaurant_id: RESTO_ID,
       maj_le: new Date().toISOString()
     };
