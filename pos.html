@@ -3636,6 +3636,100 @@ console.log('Style forcé injecté !');
   cursor: pointer;
 }
 .btn-add-mixte:hover { transform: translateY(-1px); }
+  /* 💳 MODALE PAIEMENT PLEIN ÉCRAN */
+.modal-paiement-fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.paiement-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.paiement-head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-family: var(--display);
+  font-weight: 700;
+  color: var(--text);
+}
+.btn-fermer-paiement {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--text);
+}
+.btn-fermer-paiement:hover { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+.paiement-contenu {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  background: var(--bg-soft);
+}
+
+.paiement-actions-bas {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 2px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.paiement-actions-bas .btn-annuler {
+  flex: 1;
+  padding: 18px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  color: var(--text-soft);
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  font-size: 14px;
+}
+.paiement-actions-bas .btn-valider {
+  flex: 3;
+  padding: 18px;
+  background: linear-gradient(135deg, #2ECC71, #27AE60);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--body);
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
+}
+.paiement-actions-bas .btn-valider:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(46, 204, 113, 0.5);
+}
+.paiement-actions-bas .btn-valider:disabled {
+  background: var(--border);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 </style>
 </head>
 <body>
@@ -3892,16 +3986,22 @@ console.log('Style forcé injecté !');
       Nouveau prix : <b id="rl-apercu">—</b>
     </div>
     
-    <div class="modal-actions">
-      <button class="btn-annuler" id="btn-retirer-rl" onclick="retirerRemiseLigneCourante()" style="display:none;">Retirer la remise</button>
-      <button class="btn-valider" onclick="validerRemiseLigne()">Appliquer</button>
+    </div>
+    <div class="paiement-actions-bas">
+      <button class="btn-annuler" onclick="fermerPaiement()">Annuler</button>
+      <button class="btn-valider" id="btn-valider" onclick="validerVente()">✅ Valider la vente</button>
     </div>
   </div>
 </div>
-<!-- ===== MODALE PAIEMENT ===== -->
+<!-- ===== MODALE PAIEMENT (PLEIN ÉCRAN) ===== -->
 <div class="overlay" id="overlay-paiement">
-  <div class="modal">
-    <h3>Encaissement</h3>
+  <div class="modal modal-paiement-fullscreen">
+    <div class="paiement-head">
+      <button class="btn-fermer-paiement" onclick="fermerPaiement()">← Retour</button>
+      <h3>💳 Encaissement</h3>
+      <div></div>
+    </div>
+    <div class="paiement-contenu">
     <div class="modal-total">Total à payer : <b id="modal-total">0,00 €</b></div>
 
     <!-- ÉTAPE A : canal (d'où vient la commande) -->
