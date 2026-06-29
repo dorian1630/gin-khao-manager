@@ -6008,6 +6008,12 @@ function afficherProduits() {
 // ============================================
 let parcoursPlat = null;
 
+// Composants fixes d'une box (depuis formule_etapes) : [{produit_id,label,qte,type:'fixe'}]
+function composantsFixes(p) {
+  if (!p || !Array.isArray(p.formule_etapes)) return [];
+  return p.formule_etapes.filter(c => c && c.produit_id && (c.type === 'fixe' || c.fixe === true));
+}
+
 function ajouterAvecParcours(produitId) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
@@ -6095,6 +6101,7 @@ function passerEtapeParcours() {
     }
     finaliserParcours();
   } else if (e === 'formule_entree') {
+    if (composantsFixes(p).length > 0) { parcoursPlat.etape = 'fini'; passerEtapeParcours(); return; }
     afficherModaleFormuleEntree();
   } else if (e === 'fini') {
     finaliserParcours();
@@ -6133,7 +6140,8 @@ function ajouterDirect() {
       const premiereBoisson = produits.find(pp => pp.categorie_id === catBoissons.id);
       if (premiereBoisson) parcoursPlat.formule_boisson_id = premiereBoisson.id;
     }
-    const catEntrees = categories.find(c => /entr[eé]e/i.test(c.nom));
+    const estBox = composantsFixes(p).length > 0;
+    const catEntrees = estBox ? null : categories.find(c => /entr[eé]e/i.test(c.nom));
     if (catEntrees && !parcoursPlat.formule_entree_id) {
       const premiereEntree = produits.find(pp => pp.categorie_id === catEntrees.id);
       if (premiereEntree) {
@@ -6251,6 +6259,21 @@ function finaliserParcours() {
       }
     }
   }
+
+  // Composants fixes de la box (riz, dynamite, nems...) ajoutés à 0€
+  composantsFixes(p).forEach(comp => {
+    const prod = produits.find(pp => pp.id === comp.produit_id);
+    ticket.push({
+      produit_id: comp.produit_id,
+      nom: '  ↳ ' + (comp.label || (prod ? prod.nom : 'Composant')) + ' (box)',
+      prix: 0,
+      quantite: comp.qte || 1,
+      stock_actif: false,
+      stock: 0,
+      categorie_id: prod ? prod.categorie_id : null,
+      lien_plat: uid
+    });
+  });
 
   // Fermer la modale et reset
   fermerModaleParcours();
@@ -6381,6 +6404,14 @@ function reconstruireSousLignes(uid) {
       if (e) subs.push(sousLignePlat(e, '  ↳ ' + (main.formule_entree_label || e.nom) + ' (formule)', 0, uid));
     }
   }
+
+  // Composants fixes de la box
+  composantsFixes(p).forEach(comp => {
+    const prod = produits.find(pp => pp.id === comp.produit_id);
+    const sl = sousLignePlat(prod || { id: comp.produit_id, categorie_id: null }, '  ↳ ' + (comp.label || (prod ? prod.nom : 'Composant')) + ' (box)', 0, uid);
+    sl.quantite = comp.qte || 1;
+    subs.push(sl);
+  });
 
   // Réinsère juste après le plat principal
   const j = ticket.findIndex(l => l.ligne_uid === uid);
@@ -6528,21 +6559,32 @@ function rendreEditeur() {
       });
       html += `</div></div>`;
     }
-    const catEntrees = categories.find(c => c.nom === 'Entrées');
-    if (catEntrees) {
-      const entrees = produits.filter(pp => pp.categorie_id === catEntrees.id && pp.actif !== false);
-      html += `<div class="mpp-bloc"><div class="mpp-lbl">Entrée (incluse)</div><div class="mpp-options">`;
-      entrees.forEach(e => {
-        let label = e.nom;
-        if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
-          const v2 = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces' };
-          label = e.nom + ' (' + v2.label + ')';
-        }
-        const act = l.formule_entree_id === e.id ? ' active' : '';
-        const labelEsc = String(label).replace(/'/g, "\\'");
-        html += `<button class="mpp-option${act}" onclick="edSetEntree('${e.id}','${labelEsc}')">${escapeHtmlPos(label)}</button>`;
+    const compFixes = composantsFixes(p);
+    if (compFixes.length > 0) {
+      html += `<div class="mpp-bloc"><div class="mpp-lbl">Inclus dans la box</div><div class="mpp-options">`;
+      compFixes.forEach(comp => {
+        const prod = produits.find(pp => pp.id === comp.produit_id);
+        const q = comp.qte || 1;
+        html += `<button class="mpp-option active" disabled style="opacity:.85;cursor:default;">${q > 1 ? q + '× ' : ''}${escapeHtmlPos(comp.label || (prod ? prod.nom : 'Composant'))}</button>`;
       });
       html += `</div></div>`;
+    } else {
+      const catEntrees = categories.find(c => c.nom === 'Entrées');
+      if (catEntrees) {
+        const entrees = produits.filter(pp => pp.categorie_id === catEntrees.id && pp.actif !== false);
+        html += `<div class="mpp-bloc"><div class="mpp-lbl">Entrée (incluse)</div><div class="mpp-options">`;
+        entrees.forEach(e => {
+          let label = e.nom;
+          if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
+            const v2 = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces' };
+            label = e.nom + ' (' + v2.label + ')';
+          }
+          const act = l.formule_entree_id === e.id ? ' active' : '';
+          const labelEsc = String(label).replace(/'/g, "\\'");
+          html += `<button class="mpp-option${act}" onclick="edSetEntree('${e.id}','${labelEsc}')">${escapeHtmlPos(label)}</button>`;
+        });
+        html += `</div></div>`;
+      }
     }
   }
 
