@@ -3636,10 +3636,17 @@ console.log('Style forcé injecté !');
   cursor: pointer;
 }
 .btn-add-mixte:hover { transform: translateY(-1px); }
-  /* 💳 MODALE PAIEMENT PLEIN ÉCRAN */
-.modal-paiement-fullscreen {
+ /* 💳 MODALE PAIEMENT PLEIN ÉCRAN — override TOTAL */
+#overlay-paiement.show {
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+#overlay-paiement .modal.modal-paiement-fullscreen {
   width: 100vw !important;
   height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
   max-width: 100vw !important;
   max-height: 100vh !important;
   border-radius: 0 !important;
@@ -3648,6 +3655,8 @@ console.log('Style forcé injecté !');
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+  border: none !important;
+  animation: none !important;
 }
 
 .paiement-head {
@@ -3986,10 +3995,10 @@ console.log('Style forcé injecté !');
       Nouveau prix : <b id="rl-apercu">—</b>
     </div>
     
-    </div>
-    <div class="paiement-actions-bas">
-      <button class="btn-annuler" onclick="fermerPaiement()">Annuler</button>
-      <button class="btn-valider" id="btn-valider" onclick="validerVente()">✅ Valider la vente</button>
+    <div class="modal-actions" style="margin-top:18px;">
+      <button class="btn-annuler" onclick="fermerRemiseLigne()">Annuler</button>
+      <button class="btn-annuler" id="btn-retirer-rl" onclick="retirerRemiseLigneCourante()" style="display:none;">Retirer</button>
+      <button class="btn-valider" onclick="validerRemiseLigne()">Appliquer</button>
     </div>
   </div>
 </div>
