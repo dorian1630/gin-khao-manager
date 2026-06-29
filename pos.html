@@ -6123,10 +6123,8 @@ function ajouterDirect() {
   parcoursPlat.retirables = [];
   parcoursPlat.supplements = [];
   
-  // 1ère sauce si plat à sauces
-  if (p.sauces_ids && p.sauces_ids.length > 0 && parcoursPlat.sauces.length === 0) {
-    parcoursPlat.sauces = [p.sauces_ids[0]];
-  }
+  // Pas de sauce par défaut sur l'ajout direct (laisser vide)
+  parcoursPlat.sauces = [];
   
   // Si formule : 1ère boisson + 1ère entrée
   if (parcoursPlat.est_formule) {
