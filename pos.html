@@ -3636,100 +3636,988 @@ console.log('Style forcé injecté !');
   cursor: pointer;
 }
 .btn-add-mixte:hover { transform: translateY(-1px); }
-  /* 💳 MODALE PAIEMENT PLEIN ÉCRAN */
-.modal-paiement-fullscreen {
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
-  border-radius: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
+
+/* ═══════════════════════════════════════════════════════════════
+   💳 ÉCRAN PAIEMENT PLEIN ÉCRAN (refonte complète)
+   ═══════════════════════════════════════════════════════════════ */
+.ecran-paiement {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-deep);
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+}
+.ecran-paiement.show { display: flex; animation: fadeIn 0.2s ease; }
+
+/* HEADER */
+.ep-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--gold);
+  box-shadow: 0 4px 16px rgba(28,24,20,0.08);
+  flex-shrink: 0;
+}
+.ep-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-soft);
+  border: 2px solid var(--border);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  justify-self: start;
+  transition: all 0.18s;
+}
+.ep-retour:hover { background: var(--border); transform: translateX(-3px); }
+.ep-head-titre { text-align: center; }
+.ep-titre {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ep-sous {
+  font-size: 14px;
+  color: var(--text-mute);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.ep-sous b {
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 800;
+  margin-left: 4px;
 }
 
-.paiement-head {
+/* BODY 2 colonnes */
+.ep-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 20px;
+  padding: 20px 24px;
+  overflow: hidden;
+  min-height: 0;
+}
+.ep-col-gauche, .ep-col-droite {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+/* SECTIONS */
+.ep-section { margin-bottom: 20px; }
+.ep-section:last-child { margin-bottom: 0; }
+.ep-section-titre {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.ep-section-sous {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* CANAUX */
+.ep-canaux {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.ep-canal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background: var(--bg-soft);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--body);
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: left;
+}
+.ep-canal:hover { border-color: var(--gold-soft); background: rgba(228,184,96,0.04); }
+.ep-canal.active {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(228,184,96,0.15), rgba(228,184,96,0.05));
+  color: var(--gold-soft);
+}
+.ep-canal-ic { font-size: 20px; }
+
+/* MODES PAIEMENT */
+.ep-modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.ep-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 12px;
+  background: var(--bg-soft);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: var(--body);
+}
+.ep-mode:hover { border-color: var(--gold-soft); transform: translateY(-2px); }
+.ep-mode.active {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(228,184,96,0.15), rgba(228,184,96,0.05));
+  box-shadow: 0 6px 18px rgba(228,184,96,0.2);
+}
+.ep-mode-ic { font-size: 32px; line-height: 1; }
+.ep-mode-nm { font-size: 14px; font-weight: 800; color: var(--text); }
+.ep-mode.active .ep-mode-nm { color: var(--gold-soft); }
+
+/* BANDEAU PLATEFORME */
+.ep-bandeau-plateforme {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(91, 168, 0, 0.1), rgba(91, 168, 0, 0.03));
+  border: 2px solid var(--lime);
+  border-radius: 14px;
+  margin-top: 16px;
+}
+.ep-bandeau-plateforme.show { display: flex; }
+.ep-bp-ic {
+  width: 44px; height: 44px;
+  background: var(--lime); color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700;
+  flex-shrink: 0;
+}
+.ep-bp-txt b { display: block; font-size: 15px; color: var(--lime-soft); font-weight: 800; }
+.ep-bp-txt span { font-size: 12px; color: var(--text-soft); }
+
+/* ZONES */
+.ep-zone { display: none; }
+.ep-zone.show { display: block; }
+
+/* INPUT AFFICHAGE GROS */
+.ep-display {
+  position: relative;
+  background: linear-gradient(135deg, #1a1612, #0f0d0a);
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  padding: 18px 24px;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15), inset 0 2px 8px rgba(0,0,0,0.4);
+}
+.ep-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 36px;
+  font-weight: 800;
+  text-align: right;
+  letter-spacing: 0.02em;
+  padding-right: 32px;
+  outline: none;
+}
+.ep-input::placeholder { color: rgba(228,184,96,0.3); }
+.ep-input-unite {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+  font-size: 24px;
+  font-weight: 800;
+  font-family: var(--mono);
+}
+
+/* QUICK BUTTONS */
+.ep-quick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ep-quick button {
+  padding: 12px;
+  background: var(--bg-soft);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--mono);
+}
+.ep-quick button:hover {
+  border-color: var(--gold);
+  background: rgba(228,184,96,0.08);
+  color: var(--gold-soft);
+}
+
+/* ⌨️ KEYPAD NUMÉRIQUE */
+.ep-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ep-keypad.ep-keypad-compact .ep-key {
+  padding: 14px 0;
+  font-size: 22px;
+}
+.ep-key {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 0;
+  font-size: 26px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.1s;
+  user-select: none;
+}
+.ep-key:hover {
+  border-color: var(--gold);
+  background: var(--bg-soft);
+}
+.ep-key:active {
+  transform: scale(0.94);
+  background: var(--gold);
+  color: #fff;
+  border-color: var(--gold);
+}
+.ep-key-action {
+  color: var(--gold-soft);
+  font-weight: 800;
+}
+.ep-key-back {
+  color: var(--danger);
+  background: rgba(230,57,70,0.04);
+}
+.ep-key-back:hover { background: rgba(230,57,70,0.1); border-color: var(--danger); }
+
+/* RENDU MONNAIE */
+.ep-rendu {
+  text-align: center;
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(91,168,0,0.08), rgba(91,168,0,0.02));
+  border: 2px solid rgba(91,168,0,0.3);
+  border-radius: 14px;
+}
+.ep-rendu-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.ep-rendu-val {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--lime);
+}
+.ep-rendu-val.insuffisant {
+  color: var(--danger);
+  font-size: 22px;
+}
+
+/* CARTE GRANDE INFO */
+.ep-carte-info {
+  text-align: center;
+  padding: 30px 20px;
+  background: linear-gradient(135deg, var(--bg-soft), var(--surface));
+  border: 2px solid var(--gold);
+  border-radius: 18px;
+  margin-top: 12px;
+}
+.ep-carte-grande-ic {
+  font-size: 64px;
+  margin-bottom: 12px;
+}
+.ep-carte-titre {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.ep-carte-montant {
+  font-family: var(--mono);
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--gold);
+  margin: 16px 0;
+}
+.ep-carte-sous {
+  font-size: 13px;
+  color: var(--text-mute);
+  font-style: italic;
+}
+
+/* TR ZONE */
+.ep-tr-type {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.ep-tr-type-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-soft);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--body);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.ep-tr-type-btn.active {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(228,184,96,0.15), rgba(228,184,96,0.05));
+  color: var(--gold-soft);
+}
+.ep-tr-ic { font-size: 22px; }
+.ep-tr-nb-bloc {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+}
+.ep-tr-nb-zone {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ep-tr-nb-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
   background: var(--surface);
-  flex-shrink: 0;
+  color: var(--gold);
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
 }
-.paiement-head h3 {
-  margin: 0;
-  font-size: 18px;
+.ep-tr-nb-btn:hover { background: var(--gold); color: #fff; }
+.ep-tr-nb-val {
   font-family: var(--display);
+  font-size: 32px;
   font-weight: 700;
-  color: var(--text);
+  color: var(--gold);
+  min-width: 40px;
+  text-align: center;
 }
-.btn-fermer-paiement {
+.ep-tr-recap {
   background: var(--bg-soft);
   border: 1px solid var(--border);
-  padding: 8px 16px;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+.ep-tr-recap-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.ep-tr-recap-row b {
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 800;
+}
+.ep-tr-warning {
+  background: rgba(230,57,70,0.08);
+  border: 1.5px solid rgba(230,57,70,0.4);
   border-radius: 10px;
-  cursor: pointer;
+  padding: 12px 14px;
+  margin-top: 12px;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* MIXTE */
+.ep-mixte-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.ep-mixte-stat {
+  background: var(--bg-soft);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+.ep-mixte-stat-lbl {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.ep-mixte-stat-val {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+.ep-mixte-stat.ep-mixte-paye { border-color: var(--lime); background: rgba(91,168,0,0.06); }
+.ep-mixte-stat.ep-mixte-paye .ep-mixte-stat-val { color: var(--lime); }
+.ep-mixte-stat.ep-mixte-reste { border-color: var(--danger); background: rgba(230,57,70,0.06); }
+.ep-mixte-stat.ep-mixte-reste .ep-mixte-stat-val { color: var(--danger); }
+.ep-mixte-liste {
+  background: var(--bg-soft);
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 14px;
+  min-height: 60px;
+}
+.ep-mixte-vide {
+  text-align: center;
+  color: var(--text-mute);
+  font-size: 13px;
+  font-style: italic;
+  padding: 14px 8px;
+}
+.ep-mixte-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+.ep-mixte-ligne:last-child { margin-bottom: 0; }
+.ep-mixte-ligne-mode {
+  flex: 1;
   font-weight: 700;
-  font-family: var(--body);
   font-size: 13px;
   color: var(--text);
 }
-.btn-fermer-paiement:hover { background: var(--gold); color: #fff; border-color: var(--gold); }
-
-.paiement-contenu {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px 32px;
-  background: var(--bg-soft);
+.ep-mixte-ligne-montant {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--gold);
 }
-
-.paiement-actions-bas {
-  display: flex;
-  gap: 12px;
-  padding: 16px 24px;
-  border-top: 2px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-}
-.paiement-actions-bas .btn-annuler {
-  flex: 1;
-  padding: 18px;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  color: var(--text-soft);
-  border-radius: 12px;
+.ep-mixte-ligne-retirer {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: var(--body);
-  font-size: 14px;
 }
-.paiement-actions-bas .btn-valider {
-  flex: 3;
-  padding: 18px;
-  background: linear-gradient(135deg, #2ECC71, #27AE60);
+.ep-mixte-modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ep-mixte-mode-btn {
+  padding: 12px;
+  background: var(--bg-soft);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--body);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ep-mixte-mode-btn.active {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: #fff;
+}
+.ep-mixte-ajouter {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--lime), var(--lime-soft));
   color: #fff;
   border: none;
   border-radius: 12px;
+  font-size: 15px;
   font-weight: 800;
   cursor: pointer;
   font-family: var(--body);
-  font-size: 18px;
+  box-shadow: 0 4px 14px rgba(91,168,0,0.3);
+  transition: all 0.18s;
+  margin-top: 8px;
+}
+.ep-mixte-ajouter:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(91,168,0,0.4); }
+
+/* UBER COMMISSION */
+.ep-comm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ep-comm-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px;
+  background: var(--bg-soft);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.18s;
+}
+.ep-comm-btn.active {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(228,184,96,0.15), rgba(228,184,96,0.05));
+}
+.ep-comm-pct {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ep-comm-btn.active .ep-comm-pct { color: var(--gold); }
+.ep-comm-sous {
+  font-size: 10px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+/* FOOTER */
+.ep-footer {
+  display: grid;
+  grid-template-columns: 1fr 2.5fr;
+  gap: 14px;
+  padding: 16px 24px;
+  background: var(--surface);
+  border-top: 2px solid var(--border);
+  flex-shrink: 0;
+  box-shadow: 0 -4px 16px rgba(28,24,20,0.08);
+}
+.ep-btn-annuler, .ep-btn-valider {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--body);
   letter-spacing: 0.02em;
-  box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
+  transition: all 0.18s;
+  border: none;
 }
-.paiement-actions-bas .btn-valider:hover {
+.ep-btn-annuler {
+  background: var(--bg-soft);
+  color: var(--text-soft);
+  border: 2px solid var(--border);
+}
+.ep-btn-annuler:hover { background: var(--border); color: var(--text); }
+.ep-btn-valider {
+  background: linear-gradient(135deg, #2ECC71, #27AE60);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(46,204,113,0.3);
+}
+.ep-btn-valider:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(46, 204, 113, 0.5);
+  box-shadow: 0 12px 28px rgba(46,204,113,0.45);
 }
-.paiement-actions-bas .btn-valider:disabled {
-  background: var(--border);
+.ep-btn-valider:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  background: var(--border);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   💰 ÉCRAN REMISE PAR LIGNE (PLEIN ÉCRAN)
+   ═══════════════════════════════════════════════════════════════ */
+.ecran-remise-ligne {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-deep);
+  z-index: 1100;
+  display: none;
+  flex-direction: column;
+}
+.ecran-remise-ligne.show { display: flex; animation: fadeIn 0.2s ease; }
+
+.erl-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--gold);
+  flex-shrink: 0;
+}
+.erl-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-soft);
+  border: 2px solid var(--border);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+  justify-self: start;
+}
+.erl-retour:hover { background: var(--border); }
+.erl-head-titre { text-align: center; }
+.erl-titre {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 600;
+}
+.erl-sous {
+  font-size: 13px;
+  color: var(--text-mute);
+  margin-top: 2px;
+}
+.erl-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px 24px;
+  overflow: hidden;
+  min-height: 0;
+}
+.erl-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  overflow-y: auto;
+}
+.erl-article {
+  background: linear-gradient(135deg, var(--bg-soft), var(--surface));
+  border: 2px solid var(--gold);
+  padding: 18px 20px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.erl-article-nom {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.erl-article-prix {
+  font-size: 14px;
+  color: var(--text-mute);
+}
+.erl-article-prix b {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--gold);
+}
+.erl-section-titre {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.erl-types {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.erl-type-btn {
+  padding: 16px;
+  background: var(--bg-soft);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--body);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.erl-type-btn.active {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(228,184,96,0.15), rgba(228,184,96,0.05));
+  color: var(--gold-soft);
+}
+.erl-raisons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.erl-raison-btn {
+  padding: 12px;
+  background: var(--bg-soft);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--body);
+  color: var(--text-soft);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.erl-raison-btn:hover { border-color: var(--gold-soft); }
+.erl-raison-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+.erl-apercu {
+  background: linear-gradient(135deg, rgba(91,168,0,0.08), rgba(91,168,0,0.02));
+  border: 2px solid var(--lime);
+  padding: 18px;
+  border-radius: 14px;
+  text-align: center;
+  margin-top: 18px;
+}
+.erl-apercu-lbl {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.erl-apercu-val {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--lime);
+}
+.erl-display {
+  position: relative;
+  background: linear-gradient(135deg, #1a1612, #0f0d0a);
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  padding: 18px 24px;
+  margin-bottom: 14px;
+}
+.erl-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 36px;
+  font-weight: 800;
+  text-align: right;
+  letter-spacing: 0.02em;
+  padding-right: 32px;
+  outline: none;
+}
+.erl-input::placeholder { color: rgba(228,184,96,0.3); }
+.erl-input-unite {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+  font-size: 24px;
+  font-weight: 800;
+  font-family: var(--mono);
+}
+.erl-quick {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.erl-quick button {
+  padding: 12px;
+  background: var(--bg-soft);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--mono);
+}
+.erl-quick button:hover { border-color: var(--gold); color: var(--gold-soft); }
+.erl-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.erl-key {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 0;
+  font-size: 26px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.1s;
+  user-select: none;
+}
+.erl-key:hover { border-color: var(--gold); background: var(--bg-soft); }
+.erl-key:active { transform: scale(0.94); background: var(--gold); color: #fff; }
+.erl-key-action { color: var(--gold-soft); font-weight: 800; }
+.erl-key-back { color: var(--danger); background: rgba(230,57,70,0.04); }
+.erl-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--surface);
+  border-top: 2px solid var(--border);
+  flex-shrink: 0;
+}
+.erl-btn-annuler, .erl-btn-retirer, .erl-btn-valider {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--body);
+  border: none;
+  transition: all 0.18s;
+}
+.erl-btn-annuler {
+  background: var(--bg-soft);
+  color: var(--text-soft);
+  border: 2px solid var(--border);
+}
+.erl-btn-retirer {
+  background: rgba(230,57,70,0.08);
+  color: var(--danger);
+  border: 2px solid var(--danger);
+}
+.erl-btn-valider {
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(228,184,96,0.3);
+}
+.erl-btn-valider:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(228,184,96,0.4); }
+
+/* ═══════════════════════════════════════════════════════════════
+   📱 RESPONSIVE TABLETTE PAYSAGE (1024-1366px)
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1366px) and (orientation: landscape) {
+  .ep-head, .erl-head { padding: 12px 20px; }
+  .ep-titre, .erl-titre { font-size: 22px; }
+  .ep-sous, .erl-sous { font-size: 13px; }
+  .ep-sous b { font-size: 16px; }
+  .ep-body, .erl-body { padding: 14px 20px; gap: 14px; }
+  .ep-col-gauche, .ep-col-droite, .erl-col { padding: 16px; }
+  .ep-section { margin-bottom: 14px; }
+  .ep-section-titre, .erl-section-titre { font-size: 12px; margin-bottom: 10px; padding-bottom: 6px; }
+  .ep-canal { padding: 12px; font-size: 12px; }
+  .ep-canal-ic { font-size: 18px; }
+  .ep-mode { padding: 14px 10px; }
+  .ep-mode-ic { font-size: 28px; }
+  .ep-mode-nm { font-size: 13px; }
+  .ep-display, .erl-display { padding: 14px 20px; margin-bottom: 12px; }
+  .ep-input, .erl-input { font-size: 32px; }
+  .ep-input-unite, .erl-input-unite { font-size: 20px; right: 20px; }
+  .ep-key, .erl-key { padding: 14px 0; font-size: 22px; border-radius: 12px; }
+  .ep-keypad, .erl-keypad { gap: 6px; margin-bottom: 12px; }
+  .ep-rendu-val { font-size: 30px; }
+  .ep-carte-grande-ic { font-size: 50px; }
+  .ep-carte-titre { font-size: 18px; }
+  .ep-carte-montant { font-size: 38px; margin: 12px 0; }
+  .ep-footer, .erl-footer { padding: 12px 20px; }
+  .ep-btn-annuler, .ep-btn-valider,
+  .erl-btn-annuler, .erl-btn-retirer, .erl-btn-valider { padding: 16px; font-size: 15px; }
+}
+
+@media (max-width: 1100px) {
+  .ep-body { grid-template-columns: 1fr 1fr; }
+  .ep-canaux { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .ep-body, .erl-body { grid-template-columns: 1fr; overflow-y: auto; }
+  .ep-col-gauche, .ep-col-droite, .erl-col { overflow-y: visible; }
+}
+
 </style>
 </head>
 <body>
@@ -3947,212 +4835,393 @@ console.log('Style forcé injecté !');
     </div>
   </div>
 </div>
-<!-- ===== MODALE REMISE LIGNE ===== -->
-<div class="overlay" id="overlay-remise-ligne">
-  <div class="modal modal-remise-ligne">
-    <div class="histo-head">
-      <h3>💰 Remise sur cet article</h3>
-      <button class="link-btn" onclick="fermerRemiseLigne()">Fermer</button>
+<!-- ===== ÉCRAN REMISE LIGNE (PLEIN ÉCRAN) ===== -->
+<div class="ecran-remise-ligne" id="overlay-remise-ligne">
+  <div class="erl-head">
+    <button class="erl-retour" onclick="fermerRemiseLigne()">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Retour
+    </button>
+    <div class="erl-head-titre">
+      <div class="erl-titre">💰 Remise sur article</div>
+      <div class="erl-sous">Appliquer une remise sur une ligne du ticket</div>
+    </div>
+    <div></div>
+  </div>
+  
+  <div class="erl-body">
+    <!-- COLONNE GAUCHE : Info + Type + Raisons -->
+    <div class="erl-col">
+      <div class="erl-article">
+        <div class="erl-article-nom" id="rl-article">—</div>
+        <div class="erl-article-prix">Prix initial : <b id="rl-prix-base">0,00 €</b></div>
+      </div>
+      
+      <div class="erl-section-titre">Type de remise</div>
+      <div class="erl-types">
+        <button type="button" class="erl-type-btn active" id="rl-type-pct" onclick="choisirTypeRL('pct')">% Pourcentage</button>
+        <button type="button" class="erl-type-btn" id="rl-type-montant" onclick="choisirTypeRL('montant')">€ Montant</button>
+      </div>
+      
+      <div class="erl-section-titre" style="margin-top:18px;">Raison de la remise</div>
+      <div class="erl-raisons" id="rl-raisons"></div>
+      <input type="hidden" id="rl-raison-actuelle" value="" />
+      
+      <div class="erl-apercu">
+        <div class="erl-apercu-lbl">Nouveau prix</div>
+        <div class="erl-apercu-val" id="rl-apercu">—</div>
+      </div>
     </div>
     
-    <div class="rl-article-info">
-      <div class="rl-article-nom" id="rl-article">—</div>
-      <div class="rl-article-prix">Prix : <b id="rl-prix-base">0,00 €</b></div>
-    </div>
-    
-    <div class="rl-type-zone">
-      <button class="rl-type-btn active" id="rl-type-pct" onclick="choisirTypeRL('pct')">% Pourcentage</button>
-      <button class="rl-type-btn" id="rl-type-montant" onclick="choisirTypeRL('montant')">€ Montant</button>
-    </div>
-    
-    <div class="rl-input-zone">
-      <input type="number" id="rl-input" placeholder="0" oninput="apercuRL()" min="0" step="0.01" />
-      <span class="rl-unite" id="rl-unite">%</span>
-    </div>
-    
-    <div class="quick-remise" id="rl-quick">
-      <button onclick="setRL(5)">5</button>
-      <button onclick="setRL(10)">10</button>
-      <button onclick="setRL(20)">20</button>
-      <button onclick="setRL(50)">50</button>
-      <button onclick="setRL(100)">100</button>
-    </div>
-    
-    <div class="rl-raison-titre">Raison de la remise :</div>
-    <div class="rl-raisons" id="rl-raisons"></div>
-    <input type="hidden" id="rl-raison-actuelle" value="" />
-    
-    <div class="rl-apercu">
-      Nouveau prix : <b id="rl-apercu">—</b>
-    </div>
-    
-    </div>
-    <div class="paiement-actions-bas">
-      <button class="btn-annuler" onclick="fermerPaiement()">Annuler</button>
-      <button class="btn-valider" id="btn-valider" onclick="validerVente()">✅ Valider la vente</button>
+    <!-- COLONNE DROITE : Clavier + montant -->
+    <div class="erl-col">
+      <div class="erl-section-titre">Montant de la remise</div>
+      
+      <div class="erl-display">
+        <input type="text" class="erl-input" id="rl-input" placeholder="0" readonly />
+        <span class="erl-input-unite" id="rl-unite">%</span>
+      </div>
+      
+      <div class="erl-quick">
+        <button type="button" onclick="setRL(5)">5</button>
+        <button type="button" onclick="setRL(10)">10</button>
+        <button type="button" onclick="setRL(20)">20</button>
+        <button type="button" onclick="setRL(50)">50</button>
+        <button type="button" onclick="setRL(100)">100</button>
+      </div>
+      
+      <div class="erl-keypad">
+        <button type="button" class="erl-key" onclick="tapKeypad('1','rl-input',apercuRL)">1</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('2','rl-input',apercuRL)">2</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('3','rl-input',apercuRL)">3</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('4','rl-input',apercuRL)">4</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('5','rl-input',apercuRL)">5</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('6','rl-input',apercuRL)">6</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('7','rl-input',apercuRL)">7</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('8','rl-input',apercuRL)">8</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('9','rl-input',apercuRL)">9</button>
+        <button type="button" class="erl-key erl-key-action" onclick="tapKeypad('.','rl-input',apercuRL)">,</button>
+        <button type="button" class="erl-key" onclick="tapKeypad('0','rl-input',apercuRL)">0</button>
+        <button type="button" class="erl-key erl-key-back" onclick="effacerKeypad('rl-input',apercuRL)">⌫</button>
+      </div>
     </div>
   </div>
+  
+  <div class="erl-footer">
+    <button class="erl-btn-annuler" onclick="fermerRemiseLigne()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Annuler
+    </button>
+    <button class="erl-btn-retirer" id="btn-retirer-rl" onclick="retirerRemiseLigneCourante()" style="display:none;">
+      🗑️ Retirer la remise
+    </button>
+    <button class="erl-btn-valider" onclick="validerRemiseLigne()">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Appliquer la remise
+    </button>
+  </div>
 </div>
-<!-- ===== MODALE PAIEMENT (PLEIN ÉCRAN) ===== -->
-<div class="overlay" id="overlay-paiement">
-  <div class="modal modal-paiement-fullscreen">
-    <div class="paiement-head">
-      <button class="btn-fermer-paiement" onclick="fermerPaiement()">← Retour</button>
-      <h3>💳 Encaissement</h3>
-      <div></div>
+<!-- ===== ÉCRAN PAIEMENT (PLEIN ÉCRAN) ===== -->
+<div class="ecran-paiement" id="overlay-paiement">
+  <!-- HEADER -->
+  <div class="ep-head">
+    <button class="ep-retour" onclick="fermerPaiement()">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Retour
+    </button>
+    <div class="ep-head-titre">
+      <div class="ep-titre">💳 Encaissement</div>
+      <div class="ep-sous">Total à payer : <b id="modal-total">0,00 €</b></div>
     </div>
-    <div class="paiement-contenu">
-      <div class="modal-total">Total à payer : <b id="modal-total">0,00 €</b></div>
+    <div></div>
+  </div>
+
+  <!-- CORPS : 2 colonnes -->
+  <div class="ep-body">
+
+    <!-- COLONNE GAUCHE : Canal + Mode -->
+    <div class="ep-col-gauche">
       
-      <!-- ÉTAPE A : canal -->
-      <div class="canal-label">Canal de vente</div>
-      <div class="canaux">
-        <div class="canal-chip active" data-canal="sur_place" onclick="choisirCanal('sur_place')">🍽️ Sur place</div>
-        <div class="canal-chip" data-canal="uber_eats" onclick="choisirCanal('uber_eats')">🛵 Uber Eats</div>
-        <div class="canal-chip" data-canal="deliveroo" onclick="choisirCanal('deliveroo')">🛵 Deliveroo</div>
-        <div class="canal-chip" data-canal="just_eat" onclick="choisirCanal('just_eat')">🛵 Just Eat</div>
-        <div class="canal-chip" data-canal="cc_enligne" onclick="choisirCanal('cc_enligne')">📦 C&C payé en ligne</div>
-        <div class="canal-chip" data-canal="cc_comptoir" onclick="choisirCanal('cc_comptoir')">📦 C&C à encaisser</div>
-        <div class="canal-chip" data-canal="livraison" onclick="choisirCanal('livraison')">🚗 Livraison</div>
+      <!-- Canal de vente -->
+      <div class="ep-section">
+        <div class="ep-section-titre">📍 Canal de vente</div>
+        <div class="ep-canaux">
+          <button type="button" class="ep-canal active" data-canal="sur_place" onclick="choisirCanal('sur_place')">
+            <span class="ep-canal-ic">🍽️</span><span>Sur place</span>
+          </button>
+          <button type="button" class="ep-canal" data-canal="cc_comptoir" onclick="choisirCanal('cc_comptoir')">
+            <span class="ep-canal-ic">📦</span><span>C&C à encaisser</span>
+          </button>
+          <button type="button" class="ep-canal" data-canal="livraison" onclick="choisirCanal('livraison')">
+            <span class="ep-canal-ic">🚗</span><span>Livraison</span>
+          </button>
+          <button type="button" class="ep-canal" data-canal="uber_eats" onclick="choisirCanal('uber_eats')">
+            <span class="ep-canal-ic">🛵</span><span>Uber Eats</span>
+          </button>
+          <button type="button" class="ep-canal" data-canal="deliveroo" onclick="choisirCanal('deliveroo')">
+            <span class="ep-canal-ic">🛵</span><span>Deliveroo</span>
+          </button>
+          <button type="button" class="ep-canal" data-canal="just_eat" onclick="choisirCanal('just_eat')">
+            <span class="ep-canal-ic">🛵</span><span>Just Eat</span>
+          </button>
+          <button type="button" class="ep-canal" data-canal="cc_enligne" onclick="choisirCanal('cc_enligne')">
+            <span class="ep-canal-ic">📦</span><span>C&C en ligne</span>
+          </button>
+        </div>
       </div>
-      
-      <!-- ÉTAPE B : mode de paiement -->
-      <div class="pay-modes" id="pay-modes-zone" style="display: flex;">
-        <div class="pay-mode" data-mode="especes" onclick="choisirMode('especes')">
-          <div class="ic">💵</div>
-          <div class="nm">Espèces</div>
-        </div>
-        <div class="pay-mode active" data-mode="carte" onclick="choisirMode('carte')">
-          <div class="ic">💳</div>
-          <div class="nm">Carte</div>
-        </div>
-        <div class="pay-mode" data-mode="ticket_resto" onclick="choisirMode('ticket_resto')">
-          <div class="ic">🍽️</div>
-          <div class="nm">Ticket Resto</div>
-        </div>
-        <div class="pay-mode" data-mode="mixte" onclick="choisirMode('mixte')">
-          <div class="ic">🔀</div>
-          <div class="nm">Mixte</div>
+
+      <!-- Mode de paiement -->
+      <div class="ep-section" id="pay-modes-zone">
+        <div class="ep-section-titre">💳 Mode de paiement</div>
+        <div class="ep-modes">
+          <button type="button" class="ep-mode" data-mode="especes" onclick="choisirMode('especes')">
+            <div class="ep-mode-ic">💵</div>
+            <div class="ep-mode-nm">Espèces</div>
+          </button>
+          <button type="button" class="ep-mode active" data-mode="carte" onclick="choisirMode('carte')">
+            <div class="ep-mode-ic">💳</div>
+            <div class="ep-mode-nm">Carte</div>
+          </button>
+          <button type="button" class="ep-mode" data-mode="ticket_resto" onclick="choisirMode('ticket_resto')">
+            <div class="ep-mode-ic">🍽️</div>
+            <div class="ep-mode-nm">Ticket Resto</div>
+          </button>
+          <button type="button" class="ep-mode" data-mode="mixte" onclick="choisirMode('mixte')">
+            <div class="ep-mode-ic">🔀</div>
+            <div class="ep-mode-nm">Mixte</div>
+          </button>
         </div>
       </div>
-      
+
       <!-- Bandeau plateforme -->
-      <div class="plateforme-info" id="plateforme-info">
-        <div class="pf-ic">✓</div>
-        <div class="pf-txt">
+      <div class="ep-bandeau-plateforme" id="plateforme-info">
+        <div class="ep-bp-ic">✓</div>
+        <div class="ep-bp-txt">
           <b id="pf-titre">Déjà payé en ligne</b>
           <span id="pf-sous">Commande encaissée par la plateforme</span>
         </div>
       </div>
-      
-      <!-- Zone Uber -->
-      <div class="uber-zone" id="uber-zone">
-        <div class="cash-label">Montant total du ticket (avec promos)</div>
-        <input type="number" class="cash-input" id="uber-montant" placeholder="0,00" inputmode="decimal" oninput="majUberApercu()">
-        <div class="cash-label" style="margin-top:16px;">Commission prélevée</div>
-        <div class="commission-choix">
-          <button type="button" class="comm-btn active" id="comm-18" onclick="choisirCommission(18)">18 %<span>ma livraison</span></button>
-          <button type="button" class="comm-btn" id="comm-38" onclick="choisirCommission(38)">38 %<span>livraison plateforme</span></button>
+
+    </div>
+
+    <!-- COLONNE DROITE : Zone de saisie active -->
+    <div class="ep-col-droite">
+
+      <!-- ZONE ESPÈCES -->
+      <div class="ep-zone" id="cash-zone">
+        <div class="ep-section-titre">💵 Montant reçu</div>
+        <div class="ep-display">
+          <input type="text" class="ep-input" id="cash-input" placeholder="0,00" readonly />
+          <span class="ep-input-unite">€</span>
         </div>
-        <div class="uber-apercu" id="uber-apercu">
-          <div class="ua-row"><span>Commission</span><span id="ua-comm">—</span></div>
-          <div class="ua-row net"><span>Net encaissé</span><span id="ua-net">—</span></div>
+        <div class="ep-quick" id="quick-cash"></div>
+        <div class="ep-keypad">
+          <button type="button" class="ep-key" onclick="tapKeypad('1','cash-input',calculerRendu)">1</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('2','cash-input',calculerRendu)">2</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('3','cash-input',calculerRendu)">3</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('4','cash-input',calculerRendu)">4</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('5','cash-input',calculerRendu)">5</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('6','cash-input',calculerRendu)">6</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('7','cash-input',calculerRendu)">7</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('8','cash-input',calculerRendu)">8</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('9','cash-input',calculerRendu)">9</button>
+          <button type="button" class="ep-key ep-key-action" onclick="tapKeypad('.','cash-input',calculerRendu)">,</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('0','cash-input',calculerRendu)">0</button>
+          <button type="button" class="ep-key ep-key-back" onclick="effacerKeypad('cash-input',calculerRendu)">⌫</button>
+        </div>
+        <div class="ep-rendu">
+          <div class="ep-rendu-lbl">À rendre</div>
+          <div class="ep-rendu-val" id="rendu-val">—</div>
         </div>
       </div>
-      
-      <!-- Zone Ticket Restaurant -->
-      <div class="tr-zone" id="tr-zone" style="display:none;">
-        <div class="tr-subtitle">Type de ticket restaurant</div>
-        <div class="tr-type-choix">
-          <button type="button" class="tr-type-btn active" id="tr-type-papier" onclick="choisirTypeTR('papier')">📄 Papier</button>
-          <button type="button" class="tr-type-btn" id="tr-type-carte" onclick="choisirTypeTR('carte')">💳 Carte TR</button>
+
+      <!-- ZONE CARTE -->
+      <div class="ep-zone" id="carte-zone">
+        <div class="ep-section-titre">💳 Paiement par carte</div>
+        <div class="ep-carte-info">
+          <div class="ep-carte-grande-ic">💳</div>
+          <div class="ep-carte-titre">Carte bancaire</div>
+          <div class="ep-carte-montant"><span id="carte-montant-aff">0,00 €</span></div>
+          <div class="ep-carte-sous">Présentez la carte sur le terminal SumUp</div>
         </div>
-        <div class="tr-papier-zone" id="tr-papier-zone">
-          <div class="cash-label">Nombre de tickets</div>
-          <div class="tr-nb-zone">
-            <button class="tr-nb-btn" onclick="modifierNbTickets(-1)">−</button>
-            <span class="tr-nb-val" id="tr-nb-val">1</span>
-            <button class="tr-nb-btn" onclick="modifierNbTickets(1)">+</button>
+      </div>
+
+      <!-- ZONE TICKET RESTAURANT -->
+      <div class="ep-zone" id="tr-zone">
+        <div class="ep-section-titre">🍽️ Ticket Restaurant</div>
+        <div class="ep-tr-type">
+          <button type="button" class="ep-tr-type-btn active" id="tr-type-papier" onclick="choisirTypeTR('papier')">
+            <span class="ep-tr-ic">📄</span>
+            <span>Papier</span>
+          </button>
+          <button type="button" class="ep-tr-type-btn" id="tr-type-carte" onclick="choisirTypeTR('carte')">
+            <span class="ep-tr-ic">💳</span>
+            <span>Carte TR</span>
+          </button>
+        </div>
+
+        <!-- TR Papier -->
+        <div class="ep-tr-papier" id="tr-papier-zone">
+          <div class="ep-tr-nb-bloc">
+            <span class="ep-section-sous">Nombre de tickets</span>
+            <div class="ep-tr-nb-zone">
+              <button type="button" class="ep-tr-nb-btn" onclick="modifierNbTickets(-1)">−</button>
+              <span class="ep-tr-nb-val" id="tr-nb-val">1</span>
+              <button type="button" class="ep-tr-nb-btn" onclick="modifierNbTickets(1)">+</button>
+            </div>
           </div>
-          <div class="cash-label" style="margin-top:14px;">Valeur unitaire d'un ticket</div>
-          <input type="number" class="cash-input" id="tr-valeur" placeholder="9,00" inputmode="decimal" oninput="calculTR()" value="9.25">
-          <div class="quick-cash">
+          
+          <div class="ep-section-sous" style="margin-top:18px;">Valeur unitaire d'un ticket</div>
+          <div class="ep-display">
+            <input type="text" class="ep-input" id="tr-valeur" placeholder="9,25" readonly value="9.25" />
+            <span class="ep-input-unite">€</span>
+          </div>
+          <div class="ep-quick">
             <button type="button" onclick="setValeurTR(8)">8 €</button>
             <button type="button" onclick="setValeurTR(9)">9 €</button>
             <button type="button" onclick="setValeurTR(9.25)">9,25 €</button>
             <button type="button" onclick="setValeurTR(10)">10 €</button>
             <button type="button" onclick="setValeurTR(11)">11 €</button>
           </div>
-          <div class="tr-apercu" id="tr-apercu">
-            <div class="ua-row"><span>Total TR</span><span id="tr-total">0,00 €</span></div>
-            <div class="ua-row" id="tr-comp-row"><span>Complément</span><span id="tr-comp">0,00 €</span></div>
+          <div class="ep-keypad ep-keypad-compact">
+            <button type="button" class="ep-key" onclick="tapKeypad('1','tr-valeur',calculTR)">1</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('2','tr-valeur',calculTR)">2</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('3','tr-valeur',calculTR)">3</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('4','tr-valeur',calculTR)">4</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('5','tr-valeur',calculTR)">5</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('6','tr-valeur',calculTR)">6</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('7','tr-valeur',calculTR)">7</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('8','tr-valeur',calculTR)">8</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('9','tr-valeur',calculTR)">9</button>
+            <button type="button" class="ep-key ep-key-action" onclick="tapKeypad('.','tr-valeur',calculTR)">,</button>
+            <button type="button" class="ep-key" onclick="tapKeypad('0','tr-valeur',calculTR)">0</button>
+            <button type="button" class="ep-key ep-key-back" onclick="effacerKeypad('tr-valeur',calculTR)">⌫</button>
           </div>
-          <div class="tr-warning" id="tr-warning" style="display:none;"></div>
+          <div class="ep-tr-recap">
+            <div class="ep-tr-recap-row"><span>Total TR</span><b id="tr-total">0,00 €</b></div>
+            <div class="ep-tr-recap-row"><span>Complément à payer</span><b id="tr-comp">0,00 €</b></div>
+          </div>
+          <div class="ep-tr-warning" id="tr-warning" style="display:none;"></div>
         </div>
-        <div class="tr-carte-zone" id="tr-carte-zone" style="display:none;">
-          <div class="tr-carte-info">
-            💳 La carte TR sera traitée par le terminal SumUp Solo.
+
+        <!-- TR Carte -->
+        <div class="ep-tr-carte" id="tr-carte-zone" style="display:none;">
+          <div class="ep-carte-info">
+            <div class="ep-carte-grande-ic">💳</div>
+            <div class="ep-carte-titre">Carte Ticket Restaurant</div>
+            <div class="ep-carte-montant"><span id="trc-montant-aff">0,00 €</span></div>
+            <div class="ep-carte-sous">À traiter par le terminal SumUp Solo</div>
           </div>
-        </div>
-      </div>
-      
-      <!-- Zone Mixte -->
-      <div class="mixte-zone" id="mixte-zone" style="display:none;">
-        <div class="mixte-stats">
-          <div class="mixte-stat">
-            <div class="mixte-stat-lbl">Total</div>
-            <div class="mixte-stat-val" id="mixte-total-aff">0,00 €</div>
-          </div>
-          <div class="mixte-stat">
-            <div class="mixte-stat-lbl">Payé</div>
-            <div class="mixte-stat-val" id="mixte-paye-aff">0,00 €</div>
-          </div>
-          <div class="mixte-stat mixte-reste">
-            <div class="mixte-stat-lbl">Reste</div>
-            <div class="mixte-stat-val" id="mixte-reste-aff">0,00 €</div>
-          </div>
-        </div>
-        <div class="mixte-liste" id="mixte-liste">
-          <div class="mixte-vide" id="mixte-vide">Aucun mode saisi</div>
-        </div>
-        <div class="mixte-ajout">
-          <div class="cash-label">+ Ajouter un mode de paiement</div>
-          <div class="mixte-modes">
-            <button type="button" class="mixte-mode-btn active" data-mode="especes" onclick="choisirModeMixte('especes')">💵 Espèces</button>
-            <button type="button" class="mixte-mode-btn" data-mode="carte" onclick="choisirModeMixte('carte')">💳 Carte</button>
-            <button type="button" class="mixte-mode-btn" data-mode="tr_papier" onclick="choisirModeMixte('tr_papier')">🍽️ TR Papier</button>
-            <button type="button" class="mixte-mode-btn" data-mode="tr_carte" onclick="choisirModeMixte('tr_carte')">🍽️ TR Carte</button>
-          </div>
-          <div class="mixte-saisie">
-            <input type="number" class="cash-input" id="mixte-input" placeholder="Montant" inputmode="decimal" step="0.01" />
-            <span style="font-weight:800;color:var(--gold);font-size:18px;">€</span>
-            <button class="btn-add-mixte" onclick="ajouterPaiementMixte()">+</button>
-          </div>
-          <div class="quick-cash" id="mixte-quick"></div>
         </div>
       </div>
-      
-      <!-- Zone Espèces -->
-      <div class="cash-zone" id="cash-zone">
-        <div class="cash-label">Montant reçu</div>
-        <input type="number" class="cash-input" id="cash-input" placeholder="0,00" inputmode="decimal" oninput="calculerRendu()">
-        <div class="quick-cash" id="quick-cash">
-          <button onclick="setCash(15)">15 €</button>
-          <button onclick="setCash(20)">20 €</button>
-          <button onclick="setCash(50)">50 €</button>
+
+      <!-- ZONE MIXTE -->
+      <div class="ep-zone" id="mixte-zone">
+        <div class="ep-section-titre">🔀 Paiement mixte</div>
+        
+        <div class="ep-mixte-stats">
+          <div class="ep-mixte-stat">
+            <div class="ep-mixte-stat-lbl">Total</div>
+            <div class="ep-mixte-stat-val" id="mixte-total-aff">0,00 €</div>
+          </div>
+          <div class="ep-mixte-stat ep-mixte-paye">
+            <div class="ep-mixte-stat-lbl">Payé</div>
+            <div class="ep-mixte-stat-val" id="mixte-paye-aff">0,00 €</div>
+          </div>
+          <div class="ep-mixte-stat ep-mixte-reste">
+            <div class="ep-mixte-stat-lbl">Reste</div>
+            <div class="ep-mixte-stat-val" id="mixte-reste-aff">0,00 €</div>
+          </div>
         </div>
-        <div class="rendu">
-          <div class="lbl">À rendre</div>
-          <div class="val" id="rendu-val">—</div>
+
+        <div class="ep-mixte-liste" id="mixte-liste">
+          <div class="ep-mixte-vide" id="mixte-vide">Aucun paiement saisi pour l'instant</div>
+        </div>
+
+        <div class="ep-mixte-modes">
+          <button type="button" class="ep-mixte-mode-btn active" data-mode="especes" onclick="choisirModeMixte('especes')">💵 Espèces</button>
+          <button type="button" class="ep-mixte-mode-btn" data-mode="carte" onclick="choisirModeMixte('carte')">💳 Carte</button>
+          <button type="button" class="ep-mixte-mode-btn" data-mode="tr_papier" onclick="choisirModeMixte('tr_papier')">🍽️ TR Papier</button>
+          <button type="button" class="ep-mixte-mode-btn" data-mode="tr_carte" onclick="choisirModeMixte('tr_carte')">🍽️ TR Carte</button>
+        </div>
+
+        <div class="ep-display">
+          <input type="text" class="ep-input" id="mixte-input" placeholder="0,00" readonly />
+          <span class="ep-input-unite">€</span>
+        </div>
+        
+        <div class="ep-keypad ep-keypad-compact">
+          <button type="button" class="ep-key" onclick="tapKeypad('1','mixte-input')">1</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('2','mixte-input')">2</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('3','mixte-input')">3</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('4','mixte-input')">4</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('5','mixte-input')">5</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('6','mixte-input')">6</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('7','mixte-input')">7</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('8','mixte-input')">8</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('9','mixte-input')">9</button>
+          <button type="button" class="ep-key ep-key-action" onclick="tapKeypad('.','mixte-input')">,</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('0','mixte-input')">0</button>
+          <button type="button" class="ep-key ep-key-back" onclick="effacerKeypad('mixte-input')">⌫</button>
+        </div>
+
+        <button type="button" class="ep-mixte-ajouter" onclick="ajouterPaiementMixte()">
+          ➕ Ajouter ce paiement
+        </button>
+      </div>
+
+      <!-- ZONE UBER/DELIVEROO -->
+      <div class="ep-zone" id="uber-zone">
+        <div class="ep-section-titre">🛵 Montant et commission</div>
+        <div class="ep-section-sous">Montant total du ticket (avec promos)</div>
+        <div class="ep-display">
+          <input type="text" class="ep-input" id="uber-montant" placeholder="0,00" readonly />
+          <span class="ep-input-unite">€</span>
+        </div>
+        <div class="ep-keypad ep-keypad-compact">
+          <button type="button" class="ep-key" onclick="tapKeypad('1','uber-montant',majUberApercu)">1</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('2','uber-montant',majUberApercu)">2</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('3','uber-montant',majUberApercu)">3</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('4','uber-montant',majUberApercu)">4</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('5','uber-montant',majUberApercu)">5</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('6','uber-montant',majUberApercu)">6</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('7','uber-montant',majUberApercu)">7</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('8','uber-montant',majUberApercu)">8</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('9','uber-montant',majUberApercu)">9</button>
+          <button type="button" class="ep-key ep-key-action" onclick="tapKeypad('.','uber-montant',majUberApercu)">,</button>
+          <button type="button" class="ep-key" onclick="tapKeypad('0','uber-montant',majUberApercu)">0</button>
+          <button type="button" class="ep-key ep-key-back" onclick="effacerKeypad('uber-montant',majUberApercu)">⌫</button>
+        </div>
+        <div class="ep-section-sous" style="margin-top:16px;">Commission prélevée</div>
+        <div class="ep-comm">
+          <button type="button" class="ep-comm-btn active" id="comm-18" onclick="choisirCommission(18)">
+            <span class="ep-comm-pct">18 %</span>
+            <span class="ep-comm-sous">ma livraison</span>
+          </button>
+          <button type="button" class="ep-comm-btn" id="comm-38" onclick="choisirCommission(38)">
+            <span class="ep-comm-pct">38 %</span>
+            <span class="ep-comm-sous">livraison plateforme</span>
+          </button>
+        </div>
+        <div class="ep-tr-recap">
+          <div class="ep-tr-recap-row"><span>Commission</span><b id="ua-comm">—</b></div>
+          <div class="ep-tr-recap-row"><span>Net encaissé</span><b id="ua-net">—</b></div>
         </div>
       </div>
+
     </div>
-    
-    <!-- Boutons en bas FIXES -->
-    <div class="paiement-actions-bas">
-      <button class="btn-annuler" onclick="fermerPaiement()">Annuler</button>
-      <button class="btn-valider" id="btn-valider" onclick="validerVente()">✅ Valider la vente</button>
-    </div>
+  </div>
+
+  <!-- FOOTER : Boutons d'action -->
+  <div class="ep-footer">
+    <button class="ep-btn-annuler" onclick="fermerPaiement()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Annuler
+    </button>
+    <button class="ep-btn-valider" id="btn-valider" onclick="validerVente()">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Valider la vente
+    </button>
   </div>
 </div>
 <!-- ===== MODALE SCANNER FIDÉLITÉ ===== -->
@@ -5782,15 +6851,14 @@ function ouvrirRemiseLigne(idx) {
   const raisonZone = document.getElementById('rl-raisons');
   const raisonActuelle = r ? r.raison : '';
   raisonZone.innerHTML = RAISONS_REMISE.map(raison => 
-    `<button class="rl-raison-btn ${raison === raisonActuelle ? 'active' : ''}" onclick="choisirRaisonRL('${raison}', this)">${raison}</button>`
+    `<button type="button" class="erl-raison-btn ${raison === raisonActuelle ? 'active' : ''}" onclick="choisirRaisonRL('${raison}', this)">${raison}</button>`
   ).join('');
   
-  document.getElementById('rl-raison-actuelle').textContent = raisonActuelle || '';
-  document.getElementById('btn-retirer-rl').style.display = r ? 'block' : 'none';
+  document.getElementById('rl-raison-actuelle').value = raisonActuelle || '';
+  document.getElementById('btn-retirer-rl').style.display = r ? 'inline-flex' : 'none';
   
   choisirTypeRL(remiseLigneType);
   document.getElementById('overlay-remise-ligne').classList.add('show');
-  setTimeout(() => document.getElementById('rl-input').focus(), 100);
 }
 
 function fermerRemiseLigne() {
@@ -5817,17 +6885,17 @@ function apercuRL() {
 }
 
 function choisirRaisonRL(raison, btn) {
-  document.querySelectorAll('.rl-raison-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.erl-raison-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('rl-raison-actuelle').textContent = raison;
+  document.getElementById('rl-raison-actuelle').value = raison;
 }
 
 function validerRemiseLigne() {
   if (remiseLigneIdx === null) return;
   const val = parseFloat(document.getElementById('rl-input').value) || 0;
-  if (val <= 0) { retirerRemiseLigneCourante(); return; }
+  if (val <= 0) { alert('Saisissez un montant de remise'); return; }
   
-  const raison = document.getElementById('rl-raison-actuelle').textContent;
+  const raison = document.getElementById('rl-raison-actuelle').value;
   if (!raison) { alert('Choisissez une raison'); return; }
   
   ticket[remiseLigneIdx].remise_ligne = {
@@ -5920,19 +6988,73 @@ function ouvrirPaiement() {
     ouvrirModaleCaissier();
     return;
   }
-  modePaiement = 'especes';
+  modePaiement = 'carte';   // par défaut : carte (plus rapide)
   canalVente = 'sur_place';
+  trType = 'papier';
+  trNbTickets = 1;
+  paiementsMixtes = [];
+  
   document.getElementById('modal-total').textContent = fmt(totalTicket());
   document.getElementById('cash-input').value = '';
+  const mixteInput = document.getElementById('mixte-input');
+  if (mixteInput) mixteInput.value = '';
+  document.getElementById('tr-nb-val').textContent = '1';
+  document.getElementById('tr-valeur').value = '9.25';
   document.getElementById('rendu-val').textContent = '—';
-  document.getElementById('rendu-val').className = 'val';
+  document.getElementById('rendu-val').className = 'ep-rendu-val';
+  const carteAff = document.getElementById('carte-montant-aff');
+  if (carteAff) carteAff.textContent = fmt(totalTicket());
+  const trcAff = document.getElementById('trc-montant-aff');
+  if (trcAff) trcAff.textContent = fmt(totalTicket());
+  
   choisirCanal('sur_place');
   genererQuickCash();
+  
   document.getElementById('overlay-paiement').classList.add('show');
 }
 
 function fermerPaiement() {
   document.getElementById('overlay-paiement').classList.remove('show');
+}
+
+// ============================================
+//  ⌨️ CLAVIER NUMÉRIQUE (custom)
+// ============================================
+function tapKeypad(touche, inputId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  let v = input.value || '';
+  
+  if (touche === '.') {
+    if (v.includes('.')) return;
+    if (v === '') v = '0';
+    v += '.';
+  } else {
+    if (v.includes('.')) {
+      const decimales = v.split('.')[1] || '';
+      if (decimales.length >= 2) return;
+    }
+    if (v === '0') v = '';
+    v += touche;
+  }
+  
+  input.value = v;
+  if (typeof callback === 'function') callback();
+}
+
+function effacerKeypad(inputId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.value = input.value.slice(0, -1);
+  if (typeof callback === 'function') callback();
+}
+
+// Helper : cache toutes les zones du paiement
+function cacherToutesZones() {
+  ['cash-zone', 'carte-zone', 'tr-zone', 'mixte-zone', 'uber-zone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
 }
 
 // Canaux "plateforme" = déjà payés en ligne (pas d'encaissement physique)
@@ -5950,19 +7072,17 @@ const CANAL_LABELS = {
 
 function choisirCanal(canal) {
   canalVente = canal;
-  document.querySelectorAll('.canal-chip').forEach(el => {
+  document.querySelectorAll('.ep-canal').forEach(el => {
     el.classList.toggle('active', el.dataset.canal === canal);
   });
 
   const payZone = document.getElementById('pay-modes-zone');
-  const cashZone = document.getElementById('cash-zone');
   const pfInfo = document.getElementById('plateforme-info');
   const uberZone = document.getElementById('uber-zone');
   const btnValider = document.getElementById('btn-valider');
 
   // Reset zones
-  cashZone.classList.remove('show');
-  uberZone.classList.remove('show');
+  cacherToutesZones();
   pfInfo.classList.remove('show');
 
   if (CANAUX_COMMISSION.includes(canal)) {
@@ -5974,12 +7094,11 @@ function choisirCanal(canal) {
     document.getElementById('pf-sous').textContent = lbl.sous;
     uberZone.classList.add('show');
     modePaiement = 'plateforme';
-    // pré-remplit le montant avec le total boutique comme base de départ
     document.getElementById('uber-montant').value = totalTicket().toFixed(2);
-    choisirCommission(18);   // défaut : 18%
+    choisirCommission(18);
     majUberApercu();
   } else if (CANAUX_PLATEFORME.includes(canal)) {
-    // Autres plateformes déjà payées (Just Eat, C&C en ligne) : validation directe
+    // Just Eat, C&C en ligne : déjà payés
     payZone.style.display = 'none';
     pfInfo.classList.add('show');
     const lbl = CANAL_LABELS[canal] || { titre: 'Déjà payé', sous: 'Encaissé par la plateforme' };
@@ -5988,9 +7107,9 @@ function choisirCanal(canal) {
     modePaiement = 'plateforme';
     btnValider.disabled = false;
   } else {
-    // Canal à encaisser (sur place, C&C comptoir, livraison) : choix espèces/carte
-    payZone.style.display = 'flex';
-    choisirMode('especes');
+    // Canal à encaisser : afficher modes paiement
+    payZone.style.display = 'block';
+    choisirMode('carte');  // défaut carte (le plus utilisé)
   }
 }
 
@@ -6034,37 +7153,19 @@ const LBL_MIXTE = {
 
 function choisirModeMixte(mode) {
   modeMixteActuel = mode;
-  document.querySelectorAll('.mixte-mode-btn').forEach(b => {
+  document.querySelectorAll('.ep-mixte-mode-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
   });
-  // Rapides selon le reste
-  genererQuickMixte();
-}
-
-function genererQuickMixte() {
-  const reste = restePaiementMixte();
-  const zone = document.getElementById('mixte-quick');
-  if (!zone) return;
-  const billets = [5, 10, 20];
-  const suggestions = new Set();
-  if (reste > 0) suggestions.add(Number(reste.toFixed(2)));
-  billets.forEach(b => { if (b <= reste) suggestions.add(b); });
-  const tri = [...suggestions].sort((a,b) => a-b).slice(0, 4);
-  zone.innerHTML = tri.map(m => `<button type="button" onclick="setMixteInput(${m})">${m % 1 === 0 ? m : m.toFixed(2)} €</button>`).join('');
-}
-
-function setMixteInput(v) {
-  document.getElementById('mixte-input').value = v;
 }
 
 function ajouterPaiementMixte() {
   const input = document.getElementById('mixte-input');
   const val = parseFloat(input.value) || 0;
-  if (val <= 0) { alert('Montant invalide'); return; }
+  if (val <= 0) { alert('Saisissez un montant valide'); return; }
   
   const reste = restePaiementMixte();
   if (val > reste + 0.01 && modeMixteActuel !== 'especes') {
-    alert('Le montant dépasse le reste à payer ('+ fmt(reste) +')\n(seules les espèces autorisent un dépassement avec rendu de monnaie)');
+    alert('Le montant dépasse le reste à payer (' + fmt(reste) + ').\nSeules les espèces autorisent un dépassement (rendu monnaie).');
     return;
   }
   
@@ -6091,42 +7192,36 @@ function restePaiementMixte() {
 
 function afficherPaiementsMixtes() {
   const liste = document.getElementById('mixte-liste');
-  const vide = document.getElementById('mixte-vide');
   const totalT = totalTicket();
   const paye = totalPayeMixte();
   const reste = Math.max(0, totalT - paye);
   
-  // Stats
   document.getElementById('mixte-total-aff').textContent = fmt(totalT);
   document.getElementById('mixte-paye-aff').textContent = fmt(paye);
   document.getElementById('mixte-reste-aff').textContent = fmt(reste);
   
-  // Liste
   if (paiementsMixtes.length === 0) {
-    liste.innerHTML = '<div class="mixte-vide">Aucun mode saisi</div>';
+    liste.innerHTML = '<div class="ep-mixte-vide">Aucun paiement saisi pour l\'instant</div>';
   } else {
     liste.innerHTML = paiementsMixtes.map((p, idx) => `
-      <div class="mixte-ligne">
-        <span class="mixte-ligne-mode">${LBL_MIXTE[p.mode] || p.mode}</span>
-        <span class="mixte-ligne-montant">${fmt(p.montant)}</span>
-        <button class="mixte-ligne-retirer" onclick="retirerPaiementMixte(${idx})">✕</button>
+      <div class="ep-mixte-ligne">
+        <span class="ep-mixte-ligne-mode">${LBL_MIXTE[p.mode] || p.mode}</span>
+        <span class="ep-mixte-ligne-montant">${fmt(p.montant)}</span>
+        <button type="button" class="ep-mixte-ligne-retirer" onclick="retirerPaiementMixte(${idx})">✕</button>
       </div>
     `).join('');
   }
   
-  // Bouton Valider : actif uniquement si le total est couvert (à 1 centime près)
   const btn = document.getElementById('btn-valider');
   if (modePaiement === 'mixte') {
     btn.disabled = reste > 0.01;
   }
-  
-  genererQuickMixte();
 }
 
 function resetMixte() {
   paiementsMixtes = [];
   modeMixteActuel = 'especes';
-  document.querySelectorAll('.mixte-mode-btn').forEach(b => {
+  document.querySelectorAll('.ep-mixte-mode-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === 'especes');
   });
   afficherPaiementsMixtes();
@@ -6137,7 +7232,14 @@ function choisirTypeTR(type) {
   document.getElementById('tr-type-carte').classList.toggle('active', type === 'carte');
   document.getElementById('tr-papier-zone').style.display = type === 'papier' ? 'block' : 'none';
   document.getElementById('tr-carte-zone').style.display = type === 'carte' ? 'block' : 'none';
-  calculTR();
+  
+  if (type === 'carte') {
+    const trcAff = document.getElementById('trc-montant-aff');
+    if (trcAff) trcAff.textContent = fmt(totalTicket());
+    document.getElementById('btn-valider').disabled = false;
+  } else {
+    calculTR();
+  }
 }
 
 function modifierNbTickets(delta) {
@@ -6204,44 +7306,45 @@ function trEstValide() {
 }
 function choisirMode(mode) {
   modePaiement = mode;
-  document.querySelectorAll('.pay-mode').forEach(el => {
+  document.querySelectorAll('.ep-mode').forEach(el => {
     el.classList.toggle('active', el.dataset.mode === mode);
   });
-  const cashZone = document.getElementById('cash-zone');
-  const trZone = document.getElementById('tr-zone');
-  const mixteZone = document.getElementById('mixte-zone');
+  
+  cacherToutesZones();
   const btnValider = document.getElementById('btn-valider');
   
-  cashZone.classList.remove('show');
-  trZone.style.display = 'none';
-  mixteZone.style.display = 'none';
-  
   if (mode === 'especes') {
-    cashZone.classList.add('show');
+    document.getElementById('cash-zone').classList.add('show');
+    document.getElementById('cash-input').value = '';
+    genererQuickCash();
     calculerRendu();
-    setTimeout(() => document.getElementById('cash-input').focus(), 50);
+  } else if (mode === 'carte') {
+    document.getElementById('carte-zone').classList.add('show');
+    const carteAff = document.getElementById('carte-montant-aff');
+    if (carteAff) carteAff.textContent = fmt(totalTicket());
+    btnValider.disabled = false;
   } else if (mode === 'ticket_resto') {
-    trZone.style.display = 'block';
-    calculTR();
-    btnValider.disabled = false;
+    document.getElementById('tr-zone').classList.add('show');
+    const trcAff = document.getElementById('trc-montant-aff');
+    if (trcAff) trcAff.textContent = fmt(totalTicket());
+    choisirTypeTR(trType || 'papier');
   } else if (mode === 'mixte') {
-    mixteZone.style.display = 'block';
+    document.getElementById('mixte-zone').classList.add('show');
     resetMixte();
-  } else {
-    btnValider.disabled = false;
   }
 }
 function genererQuickCash() {
   const total = totalTicket();
   const zone = document.getElementById('quick-cash');
+  if (!zone) return;
   // Billets utiles : montant exact + billets ronds au-dessus
   const billets = [5, 10, 20, 50];
   const suggestions = new Set();
-  suggestions.add(Math.ceil(total)); // arrondi sup à l'euro
+  suggestions.add(Math.ceil(total));
   billets.forEach(b => { if (b >= total) suggestions.add(b); });
   const tri = [...suggestions].sort((a,b) => a-b).slice(0, 4);
   zone.innerHTML = tri.map(m =>
-    `<button onclick="setCash(${m})">${m} €</button>`
+    `<button type="button" onclick="setCash(${m})">${m} €</button>`
   ).join('');
 }
 
@@ -6259,15 +7362,15 @@ function calculerRendu() {
 
   if (recu === 0) {
     el.textContent = '—';
-    el.className = 'val';
+    el.className = 'ep-rendu-val';
     btnValider.disabled = true;
   } else if (rendu < 0) {
     el.textContent = 'Manque ' + fmt(Math.abs(rendu));
-    el.className = 'val insuffisant';
+    el.className = 'ep-rendu-val insuffisant';
     btnValider.disabled = true;
   } else {
     el.textContent = fmt(rendu);
-    el.className = 'val';
+    el.className = 'ep-rendu-val';
     btnValider.disabled = false;
   }
 }
@@ -9279,10 +10382,7 @@ function flashStock() {
   // (placeholder discret ; on pourra ajouter un vrai feedback plus tard)
 }
 
-// Fermer la modale en cliquant à l'extérieur
-document.getElementById('overlay-paiement').addEventListener('click', e => {
-  if (e.target.id === 'overlay-paiement') fermerPaiement();
-});
+// Fermer la modale en cliquant à l'extérieur (sauf paiement et remise ligne = plein écran)
 document.getElementById('overlay-scan').addEventListener('click', e => {
   if (e.target.id === 'overlay-scan') fermerScanFid();
 });
