@@ -1185,6 +1185,11 @@ html, body {
 .tr-pu { font-size: 10px; color: #888; margin: 0 0 2px 16px; }
 .tr-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; margin-top: 8px; padding-top: 8px; border-top: 2px solid #111; }
 .tr-legal { font-size: 9.5px; color: #999; text-align: center; line-height: 1.45; }
+.tr-tva { font-size: 10px; margin: 4px 0 6px; }
+.tr-tva-head, .tr-tva-row { display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr; gap: 4px; }
+.tr-tva-head { color: #999; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 3px; }
+.tr-tva-head span:not(:first-child), .tr-tva-row span:not(:first-child) { text-align: right; }
+.tr-tva-row { font-weight: 600; color: #1a1a1a; }
 .tr-foot { text-align: center; font-size: 11px; color: #555; margin-top: 14px; }
 .tr-annulee {
   text-align: center; color: #c0392b; font-weight: 700;
@@ -8535,11 +8540,26 @@ const RESTO_INFOS = {
   nom: 'Gin Khao',
   sousTitre: 'Street Food Thaï',
   adresse: 'Saint Just · Marseille',
-  tel: '',          // ☎ tel resto (laisser vide tant que pas confirmé)
-  siret: '',        // n° SIRET
-  tva: '',          // n° TVA intracom
-  mentionTva: ''    // ex: 'TVA incluse'
+  tel: '',                 // ☎ tel resto (laisser vide tant que pas confirmé)
+  siret: '',               // n° SIRET
+  tva: 'FR76922266960',    // n° TVA intracom
+  naf: '5610C',            // code NAF / APE
+  tauxTVA: 5.5,            // % TVA (5,5 % sur tout)
+  mentionTva: ''
 };
+
+// Ventilation TVA à partir d'un total TTC (taux unique)
+function calculerTVA(ttc, taux) {
+  const t = Number(ttc) || 0;
+  const tx = Number(taux) || 0;
+  const ht = t / (1 + tx / 100);
+  return {
+    taux: tx,
+    ht: Math.round(ht * 100) / 100,
+    montant: Math.round((t - ht) * 100) / 100,
+    ttc: Math.round(t * 100) / 100
+  };
+}
 
 // Libellés lisibles du mode de règlement
 const MODE_PAIEMENT_LBL = {
@@ -8597,16 +8617,20 @@ function genererTicketHTML(v) {
       </div>${sousLigne}`;
   }).join('');
 
-  // Bloc mentions légales (affiché seulement si renseigné dans RESTO_INFOS)
-  const legalParts = [];
-  if (RESTO_INFOS.siret) legalParts.push('SIRET ' + escapeHtmlPos(RESTO_INFOS.siret));
-  if (RESTO_INFOS.tva)   legalParts.push('TVA ' + escapeHtmlPos(RESTO_INFOS.tva));
-  const legalHTML = (RESTO_INFOS.mentionTva || legalParts.length)
-    ? `<hr class="tr-sep">
-      <div class="tr-legal">
-        ${RESTO_INFOS.mentionTva ? escapeHtmlPos(RESTO_INFOS.mentionTva) + '<br>' : ''}${legalParts.join(' · ')}
-      </div>`
-    : '';
+  // Bloc ventilation TVA + mentions légales
+  const tva = calculerTVA(v.total, RESTO_INFOS.tauxTVA);
+  const legalLignes = [];
+  if (RESTO_INFOS.tva)   legalLignes.push('TVA : ' + escapeHtmlPos(RESTO_INFOS.tva));
+  if (RESTO_INFOS.naf)   legalLignes.push('NAF : ' + escapeHtmlPos(RESTO_INFOS.naf));
+  if (RESTO_INFOS.siret) legalLignes.push('SIRET : ' + escapeHtmlPos(RESTO_INFOS.siret));
+  const tauxTxt = String(tva.taux).replace('.', ',') + ' %';
+  const tvaHTML = `
+      <hr class="tr-sep">
+      <div class="tr-tva">
+        <div class="tr-tva-head"><span>Taux</span><span>HT</span><span>TVA</span><span>TTC</span></div>
+        <div class="tr-tva-row"><span>${tauxTxt}</span><span>${fmt(tva.ht)}</span><span>${fmt(tva.montant)}</span><span>${fmt(tva.ttc)}</span></div>
+      </div>
+      ${legalLignes.length ? `<div class="tr-legal">${legalLignes.join('<br>')}</div>` : ''}`;
 
   const telHTML     = RESTO_INFOS.tel ? `<div class="tr-sub">☎ ${escapeHtmlPos(RESTO_INFOS.tel)}</div>` : '';
   const canalHTML   = canalLbl ? `<div class="tr-canal">${canalLbl}</div>` : '';
@@ -8632,12 +8656,14 @@ function genererTicketHTML(v) {
       ${sousTotHTML}
       <div class="tr-total"><span>TOTAL</span><span>${fmt(v.total)}</span></div>
       <div class="tr-row mute" style="margin-top:6px;"><span>Règlement</span><span>${modeLbl}</span></div>
-      ${legalHTML}
+      ${tvaHTML}
       <div class="tr-foot">
         Merci de votre visite !<br>À très bientôt chez ${escapeHtmlPos(RESTO_INFOS.nom)} 🍜
       </div>
     </div>`;
 }
+// Le « ticket pro » réutilise désormais le ticket normal (qui contient déjà la TVA)
+function genererTicketProHTML(v) { return genererTicketHTML(v); }
 // 💼 Bascule entre ticket normal et ticket pro dans la modale
 let modeTicketPro = false;
 let derniereVenteLocale = null;  // pour réutiliser dans basculerTicketPro
@@ -8932,6 +8958,9 @@ function preparerImpression(lignesTicket, venteLocale) {
       restoNom: RESTO_INFOS.nom,
       restoSousTitre: RESTO_INFOS.sousTitre,
       restoAdresse: RESTO_INFOS.adresse,
+      tva: calculerTVA(venteLocale.total, RESTO_INFOS.tauxTVA),
+      tvaNum: RESTO_INFOS.tva,
+      naf: RESTO_INFOS.naf,
       annulee: venteLocale.statut === 'annulee'
     }
   };
