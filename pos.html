@@ -2500,6 +2500,7 @@ html, body {
 .bloque-caisse.actif { display: flex; }
 /* ✨ FIX GLOBAL : le pavé PIN passe TOUJOURS au-dessus du cadenas (toutes largeurs, pas seulement en responsive) */
 #overlay-caissier-pin { z-index: 8000 !important; }
+#overlay-code-admin { z-index: 8000 !important; }
 .bloque-caisse h2 {
   font-family: var(--display);
   font-size: 32px;
@@ -4725,7 +4726,6 @@ html, body {
         </button>
         <button class="link-btn" onclick="ouvrirHistorique()">🧾 Historique</button>
         <button class="link-btn" onclick="ouvrirCloture()">🔒 Clôture Z</button>
-        <a href="index.html" class="link-btn" id="btn-gestion">← Gestion</a>
         <button class="link-btn btn-hamburger" id="btn-hamburger" onclick="ouvrirMenuHamburger()" title="Menu">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
@@ -5521,6 +5521,35 @@ html, body {
   </div>
 </div>
 
+<!-- ===== MODALE CODE D'ACCÈS MENU (9799) ===== -->
+<div class="overlay" id="overlay-code-admin">
+  <div class="modal modal-pin">
+    <h3>Code d'accès</h3>
+    <div class="modal-total">Entrez le code pour ouvrir le menu</div>
+    <div class="pin-display" id="code-admin-display">
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="tapCodeAdmin('1')">1</button>
+      <button class="pin-key" onclick="tapCodeAdmin('2')">2</button>
+      <button class="pin-key" onclick="tapCodeAdmin('3')">3</button>
+      <button class="pin-key" onclick="tapCodeAdmin('4')">4</button>
+      <button class="pin-key" onclick="tapCodeAdmin('5')">5</button>
+      <button class="pin-key" onclick="tapCodeAdmin('6')">6</button>
+      <button class="pin-key" onclick="tapCodeAdmin('7')">7</button>
+      <button class="pin-key" onclick="tapCodeAdmin('8')">8</button>
+      <button class="pin-key" onclick="tapCodeAdmin('9')">9</button>
+      <button class="pin-key pin-key-action" onclick="effacerCodeAdmin()">⌫</button>
+      <button class="pin-key" onclick="tapCodeAdmin('0')">0</button>
+      <button class="pin-key pin-key-action" onclick="fermerCodeAdmin()">✕</button>
+    </div>
+    <div class="pin-message" id="code-admin-msg"></div>
+  </div>
+</div>
+
 <!-- ===== MODALE CAISSIER CONNECTÉ (info + déconnexion) ===== -->
 <div class="overlay" id="overlay-caissier-info">
   <div class="modal">
@@ -5591,6 +5620,14 @@ html, body {
     <button class="drawer-close" onclick="fermerMenuHamburger()">✕</button>
   </div>
   <div class="drawer-content">
+    <button class="drawer-item" onclick="location.href='index.html'">
+      <span class="drawer-icon">⚙️</span>
+      <span class="drawer-label">
+        <b>Gestion</b>
+        <span>Application de gestion</span>
+      </span>
+      <span class="drawer-arrow">›</span>
+    </button>
     <button class="drawer-item" onclick="ouvrirCalendrier()">
       <span class="drawer-icon">📅</span>
       <span class="drawer-label">
@@ -9134,9 +9171,61 @@ async function confirmerCloture() {
 //  ☰ MENU HAMBURGER + CALENDRIER + STATS
 // ============================================
 function ouvrirMenuHamburger() {
-  if (!estAdmin()) return;   // 🔒 réservé au code 1313
+  // 🔒 Demande le code d'accès (9799) avant d'ouvrir le menu
+  codeAdminSaisi = '';
+  majAffichageCodeAdmin();
+  const msg = document.getElementById('code-admin-msg');
+  if (msg) { msg.textContent = ''; msg.className = 'pin-message'; }
+  document.getElementById('overlay-code-admin').classList.add('show');
+}
+// Ouvre réellement le menu (après bon code)
+function ouvrirDrawer() {
   document.getElementById('drawer').classList.add('actif');
   document.getElementById('drawer-overlay').classList.add('actif');
+}
+
+// === Pavé code d'accès admin (9799) ===
+let codeAdminSaisi = '';
+const CODE_ADMIN = '9799';
+
+function tapCodeAdmin(chiffre) {
+  if (codeAdminSaisi.length >= 4) return;
+  codeAdminSaisi += chiffre;
+  majAffichageCodeAdmin();
+  if (codeAdminSaisi.length === 4) {
+    setTimeout(validerCodeAdmin, 150);
+  }
+}
+function effacerCodeAdmin() {
+  codeAdminSaisi = codeAdminSaisi.slice(0, -1);
+  majAffichageCodeAdmin();
+}
+function fermerCodeAdmin() {
+  document.getElementById('overlay-code-admin').classList.remove('show');
+  codeAdminSaisi = '';
+}
+function majAffichageCodeAdmin() {
+  const dots = document.querySelectorAll('#code-admin-display .pin-dot');
+  dots.forEach((d, i) => {
+    d.classList.remove('erreur');
+    d.classList.toggle('filled', i < codeAdminSaisi.length);
+  });
+}
+function validerCodeAdmin() {
+  const msg = document.getElementById('code-admin-msg');
+  if (codeAdminSaisi === CODE_ADMIN) {
+    fermerCodeAdmin();
+    ouvrirDrawer();
+  } else {
+    const dots = document.querySelectorAll('#code-admin-display .pin-dot');
+    dots.forEach(d => d.classList.add('erreur'));
+    if (msg) { msg.textContent = '❌ Code incorrect'; msg.className = 'pin-message err'; }
+    setTimeout(() => {
+      codeAdminSaisi = '';
+      majAffichageCodeAdmin();
+      if (msg) msg.textContent = '';
+    }, 1000);
+  }
 }
 function fermerMenuHamburger() {
   document.getElementById('drawer').classList.remove('actif');
@@ -9538,11 +9627,6 @@ function restaurerCaissier() {
   return false;
 }
 
-// 🔒 Accès admin réservé au code 9799 (Omar / Dorian)
-function estAdmin() {
-  return !!(caissierActif && String(caissierActif.code_pin) === '9799');
-}
-
 // Met à jour le bouton + le blocage
 function majAffichageCaissier() {
   const btn = document.getElementById('btn-caissier');
@@ -9560,13 +9644,6 @@ function majAffichageCaissier() {
     nom.textContent = 'Caissier déconnecté';
     bloque.classList.add('actif');
   }
-
-  // 🔒 Gestion + hamburger visibles uniquement pour le code admin 9799
-  const admin = estAdmin();
-  const btnGestion = document.getElementById('btn-gestion');
-  const btnHamburger = document.getElementById('btn-hamburger');
-  if (btnGestion) btnGestion.style.display = admin ? '' : 'none';
-  if (btnHamburger) btnHamburger.style.display = admin ? '' : 'none';
 }
 
 // === Modale connexion (clic sur le bouton Caissier) ===
