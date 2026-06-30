@@ -3812,6 +3812,20 @@ html, body {
 }
 .ep-canal-ic { font-size: 20px; }
 
+/* Indicateur du canal choisi (remplace l'ancien bandeau) */
+.ep-canal-actuel { font-size: 16px; font-weight: 700; color: var(--gold-soft); padding: 10px 0; }
+
+/* Pop-up choix du canal */
+.modal-canal { background: var(--surface); border-radius: 18px; padding: 26px; width: 440px; max-width: 92%; box-shadow: var(--shadow-lg); text-align: center; }
+.modal-canal h3 { margin: 0 0 4px; font-size: 22px; color: var(--text); }
+.modal-canal p { margin: 0 0 20px; color: var(--text-mute); font-size: 13px; }
+.canal-choix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.canal-choix button { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 8px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface-2); font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer; transition: all .15s; }
+.canal-choix button span { font-size: 34px; line-height: 1; }
+.canal-choix button:hover { border-color: var(--gold); background: var(--bg-soft); }
+.canal-choix button:active { transform: scale(0.96); background: var(--gold); color: #fff; }
+.canal-annuler { background: none; border: none; color: var(--text-mute); font-size: 13px; cursor: pointer; text-decoration: underline; padding: 8px; }
+
 /* MODES PAIEMENT */
 .ep-modes {
   display: grid;
@@ -4777,7 +4791,7 @@ html, body {
         <span class="val" id="total-aff">0<span>,00 €</span></span>
       </div>
       <div class="actions">
-        <button class="btn-pay btn-encaisser" id="btn-encaisser" disabled onclick="ouvrirPaiement()">Encaisser</button>
+        <button class="btn-pay btn-encaisser" id="btn-encaisser" disabled onclick="lancerEncaissement()">Encaisser</button>
         <div class="actions-sec">
           <button class="btn-sec" onclick="ouvrirRemise()">% Remise</button>
           <button class="btn-sec" onclick="viderTicket()">Vider</button>
@@ -4963,6 +4977,20 @@ html, body {
   </div>
 </div>
 <!-- ===== ÉCRAN PAIEMENT (PLEIN ÉCRAN) ===== -->
+<!-- Pop-up choix du canal (Sur place / À emporter / Click & Collect) -->
+<div class="overlay" id="overlay-canal">
+  <div class="modal-canal">
+    <h3>Type de commande</h3>
+    <p>Comment le client prend sa commande ?</p>
+    <div class="canal-choix">
+      <button onclick="choisirCanalEtPayer('sur_place')"><span>🍽️</span>Sur place</button>
+      <button onclick="choisirCanalEtPayer('emporter')"><span>🥡</span>À emporter</button>
+      <button onclick="choisirCanalEtPayer('cc_comptoir')"><span>📦</span>Click &amp; Collect</button>
+    </div>
+    <button class="canal-annuler" onclick="fermerPopupCanal()">Annuler</button>
+  </div>
+</div>
+
 <div class="ecran-paiement" id="overlay-paiement">
   <!-- HEADER -->
   <div class="ep-head">
@@ -4983,32 +5011,10 @@ html, body {
     <!-- COLONNE GAUCHE : Canal + Mode -->
     <div class="ep-col-gauche">
       
-      <!-- Canal de vente -->
+      <!-- Canal choisi (via le pop-up à l'encaissement) -->
       <div class="ep-section">
         <div class="ep-section-titre">📍 Canal de vente</div>
-        <div class="ep-canaux">
-          <button type="button" class="ep-canal active" data-canal="sur_place" onclick="choisirCanal('sur_place')">
-            <span class="ep-canal-ic">🍽️</span><span>Sur place</span>
-          </button>
-          <button type="button" class="ep-canal" data-canal="cc_comptoir" onclick="choisirCanal('cc_comptoir')">
-            <span class="ep-canal-ic">📦</span><span>C&C à encaisser</span>
-          </button>
-          <button type="button" class="ep-canal" data-canal="livraison" onclick="choisirCanal('livraison')">
-            <span class="ep-canal-ic">🚗</span><span>Livraison</span>
-          </button>
-          <button type="button" class="ep-canal" data-canal="uber_eats" onclick="choisirCanal('uber_eats')">
-            <span class="ep-canal-ic">🛵</span><span>Uber Eats</span>
-          </button>
-          <button type="button" class="ep-canal" data-canal="deliveroo" onclick="choisirCanal('deliveroo')">
-            <span class="ep-canal-ic">🛵</span><span>Deliveroo</span>
-          </button>
-          <button type="button" class="ep-canal" data-canal="just_eat" onclick="choisirCanal('just_eat')">
-            <span class="ep-canal-ic">🛵</span><span>Just Eat</span>
-          </button>
-          <button type="button" class="ep-canal" data-canal="cc_enligne" onclick="choisirCanal('cc_enligne')">
-            <span class="ep-canal-ic">📦</span><span>C&C en ligne</span>
-          </button>
-        </div>
+        <div class="ep-canal-actuel" id="ep-canal-actuel">—</div>
       </div>
 
       <!-- Mode de paiement -->
@@ -7427,7 +7433,7 @@ async function viderTicket() {
 // ============================================
 //  PAIEMENT
 // ============================================
-function ouvrirPaiement() {
+function ouvrirPaiement(canalEncaissement) {
   if (ticket.length === 0) return;
   // ✨ Vérifier qu'un caissier est connecté
   if (!caissierActif) {
@@ -7454,7 +7460,7 @@ function ouvrirPaiement() {
   const trcAff = document.getElementById('trc-montant-aff');
   if (trcAff) trcAff.textContent = fmt(totalTicket());
   
-  choisirCanal('sur_place');
+  choisirCanal(canalEncaissement || 'sur_place');
   genererQuickCash();
   
   document.getElementById('overlay-paiement').classList.add('show');
@@ -7462,6 +7468,23 @@ function ouvrirPaiement() {
 
 function fermerPaiement() {
   document.getElementById('overlay-paiement').classList.remove('show');
+}
+
+// 👉 Clic sur "Encaisser" : commande livraison (client rattaché) → direct ;
+//    sinon on demande le canal via le pop-up.
+function lancerEncaissement() {
+  if (clientActif) {            // client tél rattaché = commande livraison
+    ouvrirPaiement('livraison');
+    return;
+  }
+  document.getElementById('overlay-canal').classList.add('show');
+}
+function choisirCanalEtPayer(canal) {
+  document.getElementById('overlay-canal').classList.remove('show');
+  ouvrirPaiement(canal);
+}
+function fermerPopupCanal() {
+  document.getElementById('overlay-canal').classList.remove('show');
 }
 
 // ============================================
@@ -7519,6 +7542,8 @@ const CANAL_LABELS = {
 
 function choisirCanal(canal) {
   canalVente = canal;
+  const indic = document.getElementById('ep-canal-actuel');
+  if (indic) indic.textContent = (typeof CANAL_TICKET !== 'undefined' && CANAL_TICKET[canal]) ? CANAL_TICKET[canal] : canal;
   document.querySelectorAll('.ep-canal').forEach(el => {
     el.classList.toggle('active', el.dataset.canal === canal);
   });
