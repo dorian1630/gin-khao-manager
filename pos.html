@@ -2498,6 +2498,8 @@ html, body {
   padding: 24px;
 }
 .bloque-caisse.actif { display: flex; }
+/* ✨ FIX GLOBAL : le pavé PIN passe TOUJOURS au-dessus du cadenas (toutes largeurs, pas seulement en responsive) */
+#overlay-caissier-pin { z-index: 8000 !important; }
 .bloque-caisse h2 {
   font-family: var(--display);
   font-size: 32px;
