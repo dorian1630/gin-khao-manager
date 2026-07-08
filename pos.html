@@ -1477,6 +1477,7 @@ html, body {
 .gate .logo span { color: var(--sriracha); }
 .gate p { color: var(--text-mute); font-size: 14px; text-align: center; max-width: 320px; line-height: 1.6; }
 .gate a { color: var(--gold); font-weight: 700; }
+.gate .gate-btn { display: inline-block; margin-top: 14px; padding: 14px 28px; background: var(--gold); color: #fff; border-radius: 12px; text-decoration: none; font-size: 16px; }
 .gate.hidden { display: none; }
 .spinner {
   width: 32px; height: 32px;
@@ -4691,6 +4692,33 @@ html, body {
   </button>
 </div>
 
+<!-- 🔎 PANNEAU DEBUG TEMPORAIRE (visible tant que le gate est affiché) -->
+<div id="debug-panel" style="position:fixed;left:0;right:0;bottom:0;max-height:45vh;overflow:auto;background:#111;color:#0f0;font:11px/1.5 monospace;padding:8px 10px;z-index:99999;white-space:pre-wrap;word-break:break-all;">[debug] démarrage…</div>
+<script>
+(function(){
+  var panel=document.getElementById('debug-panel');
+  var t0=Date.now();
+  window.dbg=function(m){
+    try{ panel.textContent += '\n['+((Date.now()-t0)/1000).toFixed(1)+'s] '+m; panel.scrollTop=panel.scrollHeight; }catch(e){}
+  };
+  // Capture les erreurs JS
+  window.addEventListener('error',function(ev){ dbg('❌ ERREUR: '+ev.message+' @ '+(ev.filename||'').split('/').pop()+':'+ev.lineno); });
+  window.addEventListener('unhandledrejection',function(ev){ dbg('❌ PROMESSE REJETÉE: '+(ev.reason && (ev.reason.message||ev.reason))); });
+  // Copie console.log/warn/error dans le panneau
+  ['log','warn','error'].forEach(function(k){
+    var o=console[k]; console[k]=function(){ try{dbg('['+k+'] '+Array.prototype.slice.call(arguments).join(' '));}catch(e){} o.apply(console,arguments); };
+  });
+  // Infos environnement
+  dbg('UA: '+navigator.userAgent);
+  dbg('localStorage: '+(function(){try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return 'OK';}catch(e){return 'KO '+e.message}})());
+  dbg('navigator.locks: '+(navigator.locks?'présent':'ABSENT'));
+  var tok=null; try{ for(var i=0;i<localStorage.length;i++){ var key=localStorage.key(i); if(key.indexOf('auth-token')!==-1) tok=key; } }catch(e){}
+  dbg('jeton session en storage: '+(tok?('OUI ('+tok+')'):'NON'));
+  // Masquer le panneau quand la caisse s'ouvre (gate caché)
+  setInterval(function(){ var g=document.getElementById('gate'); if(g && g.classList.contains('hidden')) panel.style.display='none'; },1000);
+})();
+</script>
+
 <!-- Porte d'entrée : vérifie la connexion -->
 <div class="gate" id="gate">
   <div class="logo">Gin <span>Khao</span></div>
@@ -5750,7 +5778,13 @@ html, body {
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
 const RESTO_ID = 'gin-khao';
-const sb = supabase.createClient(SB_URL, SB_KEY);
+// Client Supabase — avec un "lock" neutre : navigator.locks bloque à l'infini
+// dans certaines WebView Android (bug connu), ce qui gèle getSession().
+const sb = supabase.createClient(SB_URL, SB_KEY, {
+  auth: {
+    lock: function (name, acquireTimeout, fn) { return fn(); }
+  }
+});
 
 // ============================================
 //  ÉTAT
@@ -5808,10 +5842,41 @@ setInterval(majHorloge, 1000);
 async function init() {
   const gate = document.getElementById('gate');
   const gateMsg = document.getElementById('gate-msg');
+  // Navigation vers la page de connexion (fonction globale, fiable en WebView)
+  window.allerConnexion = function() {
+    window.location.assign('index.html?retour=pos');
+  };
+  // Filet de sécurité : le gate capte les taps sur le bouton (compatible vieilles WebView)
+  ['click','touchend'].forEach(function(evt){
+    gate.addEventListener(evt, function(e){
+      var t = e.target;
+      while (t && t !== gate) {
+        if (t.className && String(t.className).indexOf('gate-btn') !== -1) {
+          e.preventDefault(); window.allerConnexion(); return;
+        }
+        t = t.parentNode;
+      }
+    });
+  });
+  // 🔎 Affiche à l'écran toute erreur JS au démarrage (diagnostic WebView)
+  window.addEventListener('error', function(ev){
+    if (gate && !gate.classList.contains('hidden')) {
+      gateMsg.innerHTML = '⚠️ Erreur au démarrage :<br><small>' + (ev.message || 'inconnue') + '</small><br><button type="button" class="gate-btn" onclick="allerConnexion()">🔑 Se connecter</button>';
+      var sp = gate.querySelector('.spinner'); if (sp) sp.style.display = 'none';
+    }
+  });
+  // ⏱️ Anti-blocage : si la vérification traîne (>12s), on affiche le bouton connexion
+  const gateTimeout = setTimeout(() => {
+    gateMsg.innerHTML = 'La vérification prend trop de temps.<br><button type="button" class="gate-btn" onclick="allerConnexion()">🔑 Se connecter</button>';
+    const sp = gate.querySelector('.spinner'); if (sp) sp.style.display = 'none';
+  }, 12000);
   try {
+    if (window.dbg) dbg('→ appel sb.auth.getSession()…');
     const { data: { session } } = await sb.auth.getSession();
+    if (window.dbg) dbg('← getSession répondu. session: ' + (session ? 'OUI (' + (session.user && session.user.email) + ')' : 'NON'));
+    clearTimeout(gateTimeout);
     if (!session) {
-      gateMsg.innerHTML = 'Vous devez être connecté.<br>Ouvrez d\'abord <a href="index.html">l\'application de gestion</a> pour vous connecter, puis revenez ici.';
+      gateMsg.innerHTML = 'Vous devez être connecté pour ouvrir la caisse.<br><button type="button" class="gate-btn" onclick="allerConnexion()">🔑 Se connecter</button>';
       gate.querySelector('.spinner').style.display = 'none';
       return;
     }
@@ -5828,7 +5893,8 @@ async function init() {
       demarrerKDSRealtime();
     }
   } catch (e) {
-    gateMsg.textContent = 'Erreur de connexion : ' + e.message;
+    clearTimeout(gateTimeout);
+    gateMsg.innerHTML = 'Erreur de connexion : ' + e.message + '<br><button type="button" class="gate-btn" onclick="allerConnexion()">🔑 Se connecter</button>';
     gate.querySelector('.spinner').style.display = 'none';
   }
 }
