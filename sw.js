@@ -1,57 +1,42 @@
-// ============================================================
-// SERVICE WORKER — Gin Khao Caisse PWA
-// ============================================================
-// Permet à pos.html d'être installé comme une app sur la tablette
-// et de fonctionner même hors-ligne (basique)
-// ============================================================
+// Service worker minimal pour rendre la caisse Gin Khao installable en PWA (Chrome),
+// SANS casser l'ouverture en plein écran.
+//
+// Règle clé : on NE TOUCHE PAS aux navigations (chargement des pages). Elles vont
+// directement au réseau — ça évite le bug "PWA qui refuse de s'ouvrir" quand Netlify
+// réécrit /pos vers /pos.html. On met seulement en cache les fichiers statiques
+// (CSS/JS/icônes) du même domaine, en réseau d'abord.
 
-const CACHE_NAME = 'gin-khao-caisse-v1';
-const ASSETS = [
-  '/pos.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
-];
+const CACHE = 'gin-khao-caisse-v2';
 
-// Install : pré-cache les fichiers essentiels
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS).catch(err => {
-        console.warn('Pré-cache partiel:', err);
-      }))
-  );
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-// Activate : nettoyer les vieux caches
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-    ))
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch : Network-first pour rester à jour, fallback cache si offline
-self.addEventListener('fetch', event => {
-  // Skip non-GET et les requêtes vers d'autres domaines (Supabase, fonts, etc.)
-  if (event.request.method !== 'GET') return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
-  // Skip aussi les requêtes vers le serveur d'impression localhost
-  if (event.request.url.includes('localhost:9100')) return;
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // 1) Jamais les navigations (ouverture/rechargement de page) → réseau direct.
+  if (req.mode === 'navigate') return;
+  // 2) Uniquement les GET du même domaine (pas Supabase, pas les fonts, pas les POST).
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Mettre à jour le cache avec la dernière version
-        if (response.ok && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
+    fetch(req)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        return res;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(req))
   );
 });
