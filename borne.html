@@ -4521,30 +4521,28 @@ function annulerPaiementSumUp() {
 // des commandes ESC/POS en base64 via intent et les imprime
 // sur l'imprimante USB connectée.
 // ============================================================
+// Nettoie les caractères que l'imprimante ne connaît pas (accents, ↳, emojis)
+function versAscii(str) {
+  return str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // é → e
+    .replace(/↳/g, '>')
+    .replace(/[^\x00-\x7F]/g, '');
+}
+
 async function imprimerTicketBorneRawBT(numero, methode, lignes) {
   try {
-    // Construire le contenu ESC/POS du ticket
-    const escpos = genererTicketBorneEscPos(numero, methode, lignes);
-    // Encoder en base64
+    const escpos = versAscii(genererTicketBorneEscPos(numero, methode, lignes));
     const base64 = btoa(escpos);
 
-    // ✨ Méthode RawBT — Utiliser le format intent:// standard Android
-    // Documentation : https://rawbt.ru/docs
-    // Format officiel : "rawbt:" SUIVI par le contenu base64
-    // OU avec intent: si rawbt: ne marche pas (Kiosk Browser bloque les schemes inconnus)
-
-    // Méthode 1 : Lien classique rawbt: avec window.open
-    // Si ça ne marche pas, on essaie l'intent
-    try {
-      window.open('rawbt:' + base64, '_self');
+    // ✨ Impression native directe via l'APK
+    if (window.AndroidPrinter) {
+      AndroidPrinter.print(base64);
       return;
-    } catch (e) {}
-
-    // Méthode 2 : Fallback avec intent://
-    const intentUrl = 'intent:#Intent;scheme=rawbt;action=android.intent.action.VIEW;package=ru.a402d.rawbtprinter;S.android.intent.extra.TEXT=' + encodeURIComponent(base64) + ';end';
-    window.location.href = intentUrl;
+    }
+    // Fallback si la page est ouverte hors APK (test dans Chrome)
+    window.location.href = 'rawbt:base64,' + base64;
   } catch (e) {
-    console.error('Erreur impression RawBT:', e);
+    console.error('Erreur impression:', e);
   }
 }
 
