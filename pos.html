@@ -8131,9 +8131,9 @@ async function validerVente() {
     if (error) throw error;
 
     // Succès — la vente est enregistrée
-    const numero = data?.numero ?? '?';
-    const totalVente = data?.total ?? totalTicket();
-    const venteId = data?.vente_id ?? data?.id;
+    const numero = (data && data.numero != null) ? data.numero : '?';
+    const totalVente = (data && data.total != null) ? data.total : totalTicket();
+    const venteId = data ? (data.vente_id != null ? data.vente_id : data.id) : undefined;
     
     // ✨ Enregistrer le caissier sur la vente
     
@@ -8993,7 +8993,7 @@ async function imprimerTicket() {
 
     if (data.ok) {
       fermerTicket();
-      const num = derniereImpression.bonCuisine?.numero || derniereImpression.ticketClient?.numero || '—';
+      const num = (derniereImpression.bonCuisine && derniereImpression.bonCuisine.numero) || (derniereImpression.ticketClient && derniereImpression.ticketClient.numero) || '—';
       afficherToast(num, 'Tickets imprimés ✓', 'Cuisine + Comptoir');
     } else {
       // Impression partielle ou totalement ratée : on affiche le détail
@@ -9149,7 +9149,7 @@ async function calculerApercuCloture() {
     // Ventes PLATEFORME = encaissées par Uber/Deliveroo/etc. (hors caisse physique)
     const ventesPlateforme = valides.filter(v => v.mode_paiement === 'plateforme');
     const totalPlateforme = ventesPlateforme.reduce((s, v) => s + Number(v.total || 0), 0);
-    const netPlateforme = ventesPlateforme.reduce((s, v) => s + Number(v.montant_net ?? v.total ?? 0), 0);
+    const netPlateforme = ventesPlateforme.reduce((s, v) => s + Number(v.montant_net != null ? v.montant_net : (v.total != null ? v.total : 0)), 0);
 
     const heureDebut = debut.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('cloture-sous').innerHTML =
