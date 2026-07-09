@@ -4719,6 +4719,32 @@ html, body {
 })();
 </script>
 
+<!-- ⛶ Bouton plein écran (Chrome/Android) -->
+<button id="btn-fullscreen" title="Plein écran" onclick="basculerPleinEcran()" style="position:fixed;right:14px;bottom:14px;z-index:9500;width:52px;height:52px;border-radius:50%;border:none;background:rgba(26,22,18,.75);color:#fff;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;cursor:pointer;">⛶</button>
+<script>
+(function(){
+  var btn=document.getElementById('btn-fullscreen');
+  function enFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+  function majBtn(){
+    // Bouton visible uniquement hors plein écran, sur écran tactile Android
+    var android=/Android/i.test(navigator.userAgent);
+    btn.style.display=(android && !enFS())?'flex':'none';
+  }
+  window.basculerPleinEcran=function(){
+    var el=document.documentElement;
+    try{
+      if(!enFS()){
+        (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);
+      } else {
+        (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+      }
+    }catch(e){}
+  };
+  ['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){ document.addEventListener(ev,majBtn); });
+  majBtn();
+})();
+</script>
+
 <!-- Porte d'entrée : vérifie la connexion -->
 <div class="gate" id="gate">
   <div class="logo">Gin <span>Khao</span></div>
