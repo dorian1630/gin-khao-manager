@@ -4617,7 +4617,7 @@ async function gererPaiementSumUpReussi() {
     envoiEnCours = false;  // ✨ débloquer payer() (verrouillé par lancerPaiementSumUp)
     await payer('carte');
   }, 800);
-
+}
 function gererPaiementSumUpEchoue() {
   if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
   if (sumupRealtimeChannel) { 
