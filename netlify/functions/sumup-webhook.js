@@ -1,8 +1,6 @@
 // ============================================================
 // 💳 SumUp — Webhook (réceptionne les notifications de paiement)
-// ============================================================
-// Quand un paiement est terminé sur le Solo (PAID ou FAILED),
-// SumUp appelle cette URL. On met à jour Supabase.
+// V2 : PATCH uniquement statut (colonnes sûres), ignore UNKNOWN
 // ============================================================
 
 const SUPABASE_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
@@ -19,7 +17,6 @@ exports.handler = async (event, context) => {
 
   try {
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-    
     if (!SUPABASE_SERVICE_KEY) {
       console.error('SUPABASE_SERVICE_KEY manquante');
       return { statusCode: 500, headers, body: JSON.stringify({ ok: false, erreur: 'Config DB' }) };
@@ -28,47 +25,50 @@ exports.handler = async (event, context) => {
     // SumUp peut envoyer en POST (webhook body) ou en GET (return_url avec query)
     let payload = {};
     if (event.httpMethod === 'POST' && event.body) {
-      payload = JSON.parse(event.body);
-    } else if (event.queryStringParameters) {
-      payload = event.queryStringParameters;
+      try { payload = JSON.parse(event.body); } catch (e) { payload = {}; }
     }
+    // Fusionner aussi la query string (notre ?ref=... y est toujours)
+    const query = event.queryStringParameters || {};
 
     // Log complet pour debug
-    console.log('Webhook SumUp reçu:', JSON.stringify({ 
-      method: event.httpMethod,
-      payload,
-      query: event.queryStringParameters 
-    }));
+    console.log('Webhook SumUp reçu:', JSON.stringify({ method: event.httpMethod, payload, query }));
 
-    // Extraire les infos clés
-    // SumUp peut envoyer différents formats selon le contexte
-    const clientTransactionId = 
-      payload.client_transaction_id || 
-      payload.transaction_id || 
-      payload.event?.client_transaction_id ||
-      payload.data?.client_transaction_id;
-    
-    const reference = 
-      payload.foreign_transaction_id || 
-      payload.ref || 
-      payload.checkout_reference;
-    
-    // Statut : peut être 'successful', 'failed', 'paid', etc
-    let statut = (
-      payload.status || 
-      payload.transaction_status || 
-      payload.event_type || 
-      payload.data?.status || 
+    // Extraire les infos clés (formats SumUp variables)
+    const clientTransactionId =
+      payload.client_transaction_id ||
+      payload.transaction_id ||
+      (payload.event && payload.event.client_transaction_id) ||
+      (payload.data && payload.data.client_transaction_id) ||
+      query.client_transaction_id;
+
+    const reference =
+      payload.foreign_transaction_id ||
+      payload.checkout_reference ||
+      query.ref;
+
+    // Statut brut
+    let statutBrut = (
+      payload.status ||
+      payload.transaction_status ||
+      payload.event_type ||
+      (payload.event && payload.event.status) ||
+      (payload.data && payload.data.status) ||
+      query.status ||
       ''
     ).toUpperCase();
 
-    // Normaliser le statut
-    if (statut.includes('SUCC') || statut.includes('PAID') || statut === 'PAYMENT_SUCCESS') {
+    // Normaliser
+    let statut = null;
+    if (statutBrut.includes('SUCC') || statutBrut.includes('PAID')) {
       statut = 'PAID';
-    } else if (statut.includes('FAIL') || statut.includes('CANCEL') || statut.includes('DECLIN')) {
+    } else if (statutBrut.includes('FAIL') || statutBrut.includes('CANCEL') || statutBrut.includes('DECLIN')) {
       statut = 'FAILED';
-    } else if (!statut) {
-      statut = 'UNKNOWN';
+    }
+
+    // ✨ Statut inconnu → on n'écrit RIEN (surtout pas UNKNOWN qui écraserait)
+    if (!statut) {
+      console.log('Statut non définitif, ignoré:', statutBrut);
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, ignore: true, statutBrut }) };
     }
 
     // Trouver le paiement par client_transaction_id OU par reference
@@ -82,7 +82,7 @@ exports.handler = async (event, context) => {
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, msg: 'Pas d\'identifiant' }) };
     }
 
-    // UPDATE le paiement dans Supabase
+    // ✨ UPDATE : UNIQUEMENT la colonne statut (les colonnes inexistantes font échouer tout le PATCH)
     const updateResp = await fetch(
       SUPABASE_URL + '/rest/v1/paiements_sumup?' + filterUrl,
       {
@@ -93,30 +93,17 @@ exports.handler = async (event, context) => {
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
-        body: JSON.stringify({
-          statut: statut,
-          raw_webhook: payload,
-          maj_le: new Date().toISOString()
-        })
+        body: JSON.stringify({ statut: statut })
       }
     );
 
     const updateData = await updateResp.json();
-    console.log('Update DB:', JSON.stringify(updateData));
+    console.log('Update DB (HTTP ' + updateResp.status + '):', JSON.stringify(updateData));
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ ok: true, statut, updated: updateData })
-    };
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, statut, updated: updateData }) };
 
   } catch (e) {
     console.error('Erreur webhook:', e);
-    // On renvoie 200 quand même pour éviter que SumUp réessaie en boucle
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ ok: false, erreur: e.message })
-    };
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: false, erreur: e.message }) };
   }
 };
