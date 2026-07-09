@@ -2489,6 +2489,25 @@ function emojiCat(nomCat) {
   return '🍽️';
 }
 
+// ✨ VARIANTES : helpers pour gérer les 2 formats en base
+//    Format A : {"prix": 3.9, "pieces": 2}        → label = "2 pièces"
+//    Format B : {"prix": 7.9, "label": "4 pièces"} → label = tel quel
+function labelVariante(v) {
+  if (!v) return '';
+  if (v.label) return v.label;
+  if (v.pieces !== undefined && v.pieces !== null) {
+    return v.pieces + ' pièce' + (v.pieces > 1 ? 's' : '');
+  }
+  return '';
+}
+function aDesVariantes(p) {
+  return p && Array.isArray(p.variantes) && p.variantes.length > 0;
+}
+function prixMinVariantes(p) {
+  if (!aDesVariantes(p)) return parseFloat(p.prix);
+  return Math.min(...p.variantes.map(v => parseFloat(v.prix)));
+}
+
 // ===== ÉTAT =====
 let produits = [];
 let categories = [];
@@ -2774,9 +2793,12 @@ function afficherMenu() {
     const emoji = emojiCat(cat ? cat.nom : '');
     const rupture = p.stock_actif && p.stock <= 0;
     const hasImage = p.image_url && p.image_url.trim() !== '';
+    // ✨ Prix affiché : "dès X €" si le produit a plusieurs variantes (nombres de pièces)
+    const multiVariantes = aDesVariantes(p) && p.variantes.length > 1;
+    const prixAffiche = multiVariantes ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(p.prix);
     return `
       <div class="plat-wrapper">
-        <div class="plat-prix-top">${fmt(p.prix)}</div>
+        <div class="plat-prix-top">${prixAffiche}</div>
         <div class="plat-card ${rupture?'rupture':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}')" ${hasImage?`style="background-image:url('${p.image_url}')"`:''}>
           ${rupture ? '<div class="plat-rupture-badge">Épuisé</div>' : ''}
           ${!hasImage ? `
@@ -2795,12 +2817,14 @@ function ajouter(produitId) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
 
-  // ✨ Si le plat a des options de personnalisation, lancer le parcours modal
+  // ✨ Si le plat a des options de personnalisation OU des variantes (nb de pièces),
+  //    lancer le parcours modal
+  const aVariantes = aDesVariantes(p);
   const aRetirables = Array.isArray(p.ingredients_retirable) && p.ingredients_retirable.length > 0;
   const aSupplements = Array.isArray(p.supplements_ids) && p.supplements_ids.length > 0;
   const aSauces = Array.isArray(p.sauces_ids) && p.sauces_ids.length > 0;
 
-  if (aRetirables || aSupplements || aSauces) {
+  if (aVariantes || aRetirables || aSupplements || aSauces) {
     // Lance le parcours plat (modales successives)
     demarrerParcoursPlat(p);
     return;
@@ -2820,6 +2844,13 @@ function ajouterDirect(p, options) {
     if (dejaTotal >= p.stock) return;
   }
 
+  // ✨ VARIANTE (nombre de pièces) : ajuste nom + prix de la ligne
+  const varLabel = options && options.variante_label ? options.variante_label : null;
+  const nomFinal = varLabel ? p.nom + ' (' + varLabel + ')' : p.nom;
+  const prixFinal = (options && options.variante_prix !== undefined && options.variante_prix !== null)
+    ? parseFloat(options.variante_prix)
+    : parseFloat(p.prix);
+
   // Si pas d'options personnalisées, regrouper avec ligne existante
   const aDesOptions = options && (
     options.retirable?.length > 0 ||
@@ -2829,20 +2860,22 @@ function ajouterDirect(p, options) {
     (options.options_base && Object.keys(options.options_base).length > 0)
   );
   if (!aDesOptions) {
-    const ligne = panier.find(l => l.produit_id === p.id && !l.options);
+    // Regroupe si même produit + même variante (ou aucune) + pas d'options
+    const ligne = panier.find(l => l.produit_id === p.id && !l.options && (l.variante || null) === varLabel);
     if (ligne) {
       ligne.quantite++;
     } else {
-      panier.push({ produit_id: p.id, nom: p.nom, prix: parseFloat(p.prix), quantite: 1, emoji });
+      panier.push({ produit_id: p.id, nom: nomFinal, prix: prixFinal, quantite: 1, emoji, variante: varLabel || undefined });
     }
   } else {
     // Avec options : toujours une nouvelle ligne (chaque combinaison unique)
     panier.push({
       produit_id: p.id,
-      nom: p.nom,
-      prix: parseFloat(p.prix),
+      nom: nomFinal,
+      prix: prixFinal,
       quantite: 1,
       emoji,
+      variante: varLabel || undefined,
       options: options
     });
   }
@@ -2957,6 +2990,7 @@ function afficherUpsellGrille(config) {
         ${config.items.map(p => {
           const hasImage = p.image_url && p.image_url.trim() !== '';
           const aVariantes = p.variantes && Array.isArray(p.variantes) && p.variantes.length > 1;
+          const prixAffiche = aVariantes ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(p.prix);
           return `
             <div class="upsell-card-v2 ${hasImage ? 'has-image' : ''}" 
                  onclick="${aVariantes ? `ouvrirVariantesUpsell('${p.id}', '${config.type}')` : `ajouterUpsell('${p.id}', '${config.type}')`}"
@@ -2964,7 +2998,7 @@ function afficherUpsellGrille(config) {
               ${!hasImage ? `<div class="upsell-emoji-v2">${emojiCat(p.nom)}</div>` : ''}
               <div class="upsell-bandeau-v2">
                 <div class="upsell-nom-v2">${p.nom}</div>
-                <div class="upsell-prix-v2">${aVariantes ? 'dès ' : ''}${fmt(p.prix)}</div>
+                <div class="upsell-prix-v2">${prixAffiche}</div>
               </div>
             </div>
           `;
@@ -3042,7 +3076,7 @@ function ouvrirVariantesUpsell(produitId, type) {
       <div class="upsell-variantes-v2">
         ${p.variantes.map((v, i) => `
           <div class="upsell-variante-v2" onclick="choisirVarianteUpsell('${p.id}', ${i})">
-            <span class="upsell-variante-label">${v.label}</span>
+            <span class="upsell-variante-label">${labelVariante(v)}</span>
             <span class="upsell-variante-prix">${fmt(v.prix)}</span>
           </div>
         `).join('')}
@@ -3060,16 +3094,22 @@ function choisirVarianteUpsell(produitId, indexVariante) {
   if (!p) return;
   const variante = p.variantes[indexVariante];
   if (!variante) return;
+  const vLabel = labelVariante(variante);
   
-  // Ajout au panier (toujours nouvelle ligne car variante différente)
-  panier.push({
-    produit_id: p.id,
-    nom: p.nom + ' (' + variante.label + ')',
-    prix: parseFloat(variante.prix),
-    quantite: 1,
-    emoji: emojiCat(p.nom),
-    variante: variante.label
-  });
+  // Ajout au panier (regroupe si même produit + même variante déjà présent sans options)
+  const ligne = panier.find(l => l.produit_id === p.id && !l.options && l.variante === vLabel);
+  if (ligne) {
+    ligne.quantite++;
+  } else {
+    panier.push({
+      produit_id: p.id,
+      nom: p.nom + ' (' + vLabel + ')',
+      prix: parseFloat(variante.prix),
+      quantite: 1,
+      emoji: emojiCat(p.nom),
+      variante: vLabel
+    });
+  }
   majBarrePanier();
   
   // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout
@@ -3105,6 +3145,9 @@ function demarrerParcoursPlat(produit) {
     supplements: [],
     sauces: [],
     options_base: {},
+    // ✨ VARIANTE (nombre de pièces)
+    variante_label: null,
+    variante_prix: null,
     // ✨ NOUVEAU pour les formules
     est_formule: produit.est_formule === true,
     formule_boisson_id: null,
@@ -3112,15 +3155,34 @@ function demarrerParcoursPlat(produit) {
     formule_entree_label: null,  // pour les variantes (2 pièces)
     formule_plat_id: null,       // ✨ NOUVEAU : plat choisi dans la formule
     formule_plat_obj: null,
-    etape: 'options_base'
+    etape: 'variantes'
   };
 
-  // Étape 0 : Options de base
-  if (produit.options_base && Array.isArray(produit.options_base) && produit.options_base.length > 0) {
-    afficherModaleOptionsBase();
+  // ✨ Étape -1 : Variantes (nombre de pièces) — PREMIÈRE modale
+  if (aDesVariantes(produit)) {
+    if (produit.variantes.length === 1) {
+      // Une seule variante : on la sélectionne automatiquement (pas de modale inutile)
+      const v = produit.variantes[0];
+      parcoursPlatEnCours.variante_label = labelVariante(v);
+      parcoursPlatEnCours.variante_prix = parseFloat(v.prix);
+      passerEtapeSuivante();
+    } else {
+      afficherModaleVariantes();
+    }
   } else {
     passerEtapeSuivante();
   }
+}
+
+// ✨ Une étape est "affichable" si le produit a réellement du contenu pour cette étape.
+//    → utilisé pour ne PAS empiler dans la pile ← Retour les étapes sautées
+function etapeAffichable(etape, p) {
+  if (etape === 'variantes') return aDesVariantes(p) && p.variantes.length > 1;
+  if (etape === 'options_base') return p.options_base && Array.isArray(p.options_base) && p.options_base.length > 0;
+  if (etape === 'retirables') return Array.isArray(p.ingredients_retirable) && p.ingredients_retirable.length > 0;
+  if (etape === 'supplements') return Array.isArray(p.supplements_ids) && p.supplements_ids.length > 0;
+  if (etape === 'sauces') return Array.isArray(p.sauces_ids) && p.sauces_ids.length > 0;
+  return false;
 }
 
 function passerEtapeSuivante() {
@@ -3128,8 +3190,16 @@ function passerEtapeSuivante() {
   const estFormule = parcoursPlatEnCours.est_formule;
   const etapeActuelle = parcoursPlatEnCours.etape;
 
-  if (etapeActuelle === 'options_base') {
-    pileEtapes.push('options_base');
+  if (etapeActuelle === 'variantes') {
+    if (etapeAffichable('variantes', p)) pileEtapes.push('variantes');
+    parcoursPlatEnCours.etape = 'options_base';
+    if (p.options_base && Array.isArray(p.options_base) && p.options_base.length > 0) {
+      afficherModaleOptionsBase();
+    } else {
+      passerEtapeSuivante();
+    }
+  } else if (etapeActuelle === 'options_base') {
+    if (etapeAffichable('options_base', p)) pileEtapes.push('options_base');
     parcoursPlatEnCours.etape = 'retirables';
     if (p.ingredients_retirable && p.ingredients_retirable.length > 0) {
       afficherModaleRetirables();
@@ -3137,7 +3207,7 @@ function passerEtapeSuivante() {
       passerEtapeSuivante();
     }
   } else if (etapeActuelle === 'retirables') {
-    pileEtapes.push('retirables');
+    if (etapeAffichable('retirables', p)) pileEtapes.push('retirables');
     parcoursPlatEnCours.etape = 'supplements';
     if (p.supplements_ids && p.supplements_ids.length > 0) {
       afficherModaleSupplements();
@@ -3145,7 +3215,7 @@ function passerEtapeSuivante() {
       passerEtapeSuivante();
     }
   } else if (etapeActuelle === 'supplements') {
-    pileEtapes.push('supplements');
+    if (etapeAffichable('supplements', p)) pileEtapes.push('supplements');
     parcoursPlatEnCours.etape = 'sauces';
     if (p.sauces_ids && p.sauces_ids.length > 0) {
       afficherModaleSauces();
@@ -3153,7 +3223,7 @@ function passerEtapeSuivante() {
       passerEtapeSuivante();
     }
   } else if (etapeActuelle === 'sauces') {
-    pileEtapes.push('sauces');
+    if (etapeAffichable('sauces', p)) pileEtapes.push('sauces');
     // ✨ Si formule : aller à l'écran boisson plein écran
     if (parcoursPlatEnCours.est_formule) {
       afficherEcranFormuleBoisson();
@@ -3163,13 +3233,64 @@ function passerEtapeSuivante() {
   }
 }
 
+// ============================================================
+//  ✨ MODALE VARIANTES (nombre de pièces) — 1ère étape du parcours
+// ============================================================
+function afficherModaleVariantes() {
+  const p = parcoursPlatEnCours.produit;
+  const modal = document.getElementById('modal-parcours');
+  modal.classList.add('actif');
+
+  const dejaChoisie = parcoursPlatEnCours.variante_label;
+
+  const html = `
+    <div class="parcours-content">
+      ${headerParcours('🍽️ ' + p.nom, 'Quantité', 'Combien de pièces ?')}
+      <div class="parcours-options">
+        ${p.variantes.map((v, i) => {
+          const vLabel = labelVariante(v);
+          const actif = dejaChoisie === vLabel;
+          return `
+            <div class="parcours-option-radio ${actif ? 'actif' : ''}" onclick="selectionnerVariante(${i}, this)">
+              <span class="parcours-option-label">${vLabel}</span>
+              <span class="parcours-option-prix">${fmt(v.prix)}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  modal.innerHTML = html;
+}
+
+function selectionnerVariante(index, element) {
+  const p = parcoursPlatEnCours.produit;
+  const v = p.variantes[index];
+  if (!v) return;
+
+  // Sélection visuelle
+  document.querySelectorAll('.parcours-option-radio').forEach(el => el.classList.remove('actif'));
+  element.classList.add('actif');
+
+  parcoursPlatEnCours.variante_label = labelVariante(v);
+  parcoursPlatEnCours.variante_prix = parseFloat(v.prix);
+
+  // Petite pause pour montrer la sélection puis étape suivante
+  setTimeout(() => {
+    passerEtapeSuivante();
+  }, 350);
+}
+
 function finaliserParcoursPlat() {
   const p = parcoursPlatEnCours.produit;
   const options = {
     retirable: parcoursPlatEnCours.retirables,
     supplements: parcoursPlatEnCours.supplements,
     sauces: parcoursPlatEnCours.sauces,         // ✨ Array maintenant
-    options_base: parcoursPlatEnCours.options_base
+    options_base: parcoursPlatEnCours.options_base,
+    // ✨ Variante (nombre de pièces)
+    variante_label: parcoursPlatEnCours.variante_label,
+    variante_prix: parcoursPlatEnCours.variante_prix
   };
 
   // Ajouter le plat au panier avec options
@@ -3346,8 +3467,9 @@ function afficherEcranFormuleEntree() {
   // Pour chaque entrée, prendre la variante 2 pièces ou label par défaut
   const items = entrees.map(e => {
     if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
-      const variante2p = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces', prix: 0 };
-      return { id: e.id, nom: e.nom, label: e.nom + ' (' + variante2p.label + ')', image_url: e.image_url };
+      const variante2p = e.variantes.find(v => labelVariante(v).includes('2 pi'));
+      const lbl2p = variante2p ? labelVariante(variante2p) : '2 pièces';
+      return { id: e.id, nom: e.nom, label: e.nom + ' (' + lbl2p + ')', image_url: e.image_url };
     }
     return { id: e.id, nom: e.nom, label: e.nom, image_url: e.image_url };
   });
@@ -3452,6 +3574,9 @@ function demarrerParcoursPlatFormule(produit) {
     supplements: [],
     sauces: [],
     options_base: {},
+    // ✨ VARIANTE (nombre de pièces) — pas utilisée pour les plats formule mais champs présents
+    variante_label: null,
+    variante_prix: null,
     est_formule: true,
     formule_boisson_id: null,
     formule_entree_id: formuleEnCours.entree_id,
@@ -3832,7 +3957,12 @@ function revenirEtapePrecedente() {
   parcoursPlatEnCours.etape = etapePrecedente;
   
   // Rejouer l'affichage de l'étape précédente
-  if (etapePrecedente === 'options_base') afficherModaleOptionsBase();
+  if (etapePrecedente === 'variantes') afficherModaleVariantes();
+  else if (etapePrecedente === 'options_base') {
+    // ✨ Réinitialiser les choix pour que la modale se réaffiche (sinon elle re-skip)
+    parcoursPlatEnCours.options_base = {};
+    afficherModaleOptionsBase();
+  }
   else if (etapePrecedente === 'retirables') afficherModaleRetirables();
   else if (etapePrecedente === 'supplements') afficherModaleSupplements();
   else if (etapePrecedente === 'sauces') afficherModaleSauces();
@@ -3918,15 +4048,21 @@ function fermerUpsell() {
   document.getElementById('modal-upsell').classList.remove('actif');
 }
 
-function modifierQte(produitId, delta) {
-  const ligne = panier.find(l => l.produit_id === produitId);
+// ✨ modifierQte travaille maintenant par INDEX de ligne (et non produit_id)
+//    → indispensable car un même produit peut avoir plusieurs lignes
+//      (variantes 2/4/6 pièces, options différentes, etc.)
+function modifierQte(index, delta) {
+  const ligne = panier[index];
   if (!ligne) return;
   if (delta > 0) {
-    const p = produits.find(x => x.id === produitId);
-    if (p && p.stock_actif && ligne.quantite >= p.stock) return;
+    const p = produits.find(x => x.id === ligne.produit_id);
+    if (p && p.stock_actif) {
+      const dejaTotal = panier.filter(l => l.produit_id === ligne.produit_id).reduce((s, l) => s + l.quantite, 0);
+      if (dejaTotal >= p.stock) return;
+    }
   }
   ligne.quantite += delta;
-  if (ligne.quantite <= 0) panier = panier.filter(l => l.produit_id !== produitId);
+  if (ligne.quantite <= 0) panier.splice(index, 1);
   afficherPanier();
   majBarrePanier();
   if (panier.length === 0) allerEcran('ecran-menu');
@@ -3965,7 +4101,7 @@ function majBarrePanier() {
 
 function afficherPanier() {
   const liste = document.getElementById('panier-liste');
-  liste.innerHTML = panier.map(l => {
+  liste.innerHTML = panier.map((l, idx) => {
     // Affichage des options
     let optionsHtml = '';
     if (l.options) {
@@ -4003,9 +4139,9 @@ function afficherPanier() {
         <div class="pl-prix">${fmt(l.prix)} / unité</div>
       </div>
       <div class="pl-qte">
-        <button class="pl-qbtn" onclick="modifierQte('${l.produit_id}', -1)">−</button>
+        <button class="pl-qbtn" onclick="modifierQte(${idx}, -1)">−</button>
         <span class="pl-qval">${l.quantite}</span>
-        <button class="pl-qbtn" onclick="modifierQte('${l.produit_id}', 1)">+</button>
+        <button class="pl-qbtn" onclick="modifierQte(${idx}, 1)">+</button>
       </div>
       <div class="pl-st">${fmt(l.prix * l.quantite)}</div>
     </div>`;
