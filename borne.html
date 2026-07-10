@@ -107,6 +107,20 @@ body {
   object-position: center;
   display: block;
 }
+  /* ===== 🎠 CARROUSEL ACCUEIL ===== */
+.accueil-image .carrousel-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+}
+.accueil-image .carrousel-slide.visible {
+  opacity: 1;
+}
 .accueil-bottom {
   position: absolute;
   bottom: 80px;
@@ -2266,10 +2280,9 @@ body {
 <!-- ===== ÉCRAN 1 : ACCUEIL ===== -->
 <div class="ecran actif" id="ecran-accueil">
   <div class="accueil-image" onclick="allerMode()">
-    <img src="https://res.cloudinary.com/dci5mreqo/image/upload/v1782303388/ChatGPT_Image_24_juin_2026_14_16_03_l5b0u5.png" 
-         alt="Gin Khao - Accueil" 
-         id="accueil-img" 
-         onclick="allerMode()" />
+    <img class="carrousel-slide visible" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698474/3_kicfgi.png" />
+    <img class="carrousel-slide" src="URL_IMAGE_2" alt="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/1_xkwuty.png" />
+    <img class="carrousel-slide" src="URL_IMAGE_3" alt="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/2_ggpz3e.png" />
   </div>
   <div class="accueil-bottom" onclick="allerMode()">
     <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander</div>
@@ -4865,7 +4878,17 @@ async function imprimerTicketCuisine(venteId, numero, lignes) {
     console.error('Envoi impression cuisine échoué (non bloquant) :', e);
   }
 }
-
+// ============================================================
+//  🎠 CARROUSEL ACCUEIL — rotation automatique des images
+// ============================================================
+let carrouselIndex = 0;
+setInterval(() => {
+  const slides = document.querySelectorAll('#ecran-accueil .carrousel-slide');
+  if (slides.length < 2) return;
+  slides[carrouselIndex].classList.remove('visible');
+  carrouselIndex = (carrouselIndex + 1) % slides.length;
+  slides[carrouselIndex].classList.add('visible');
+}, 5000);
 init();
 </script>
 </body>
