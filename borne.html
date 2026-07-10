@@ -2754,6 +2754,8 @@ function choisirMode(mode) {
   document.getElementById('ac-mode-badge').textContent = mode === 'sur_place' ? '🍽️ Sur place' : '🥡 À emporter';
   afficherAccueilCats();
   allerEcran('ecran-accueil-cats');
+  // 🎫 Proposer la fidélité dès le début du parcours (si pas déjà connecté)
+  if (!clientFid) ouvrirFideliteAccueil();
 }
 
 // ============================================================
@@ -4403,13 +4405,14 @@ function afficherFidelite() {
 }
 
 function ouvrirScanQR() {
+  scanRetourEcran = 'ecran-panier';
   allerEcran('ecran-scan-qr');
   demarrerScanner();
 }
 
 function fermerScanQR() {
   arreterScanner();
-  allerEcran('ecran-panier');
+  allerEcran(scanRetourEcran);
 }
 
 function demarrerScanner() {
@@ -4451,15 +4454,15 @@ async function traiterScanFidelite(code) {
       .single();
     if (error || !data) {
       alert('Carte non reconnue. Demandez au comptoir.');
-      allerEcran('ecran-panier');
+      allerEcran(scanRetourEcran);
       return;
     }
     clientFid = data;
     afficherFidelite();
-    allerEcran('ecran-panier');
+    allerEcran(scanRetourEcran);
   } catch (e) {
     alert('Erreur de lecture : ' + e.message);
-    allerEcran('ecran-panier');
+    allerEcran(scanRetourEcran);
   }
 }
 
@@ -4518,6 +4521,37 @@ function ouvrirFidelite() {
         <button class="fid-btn-annuler" onclick="fermerFidelite()">Fermer</button>
       </div>
     </div>`;
+}
+
+// --- 🎬 Grande modale fidélité au DÉBUT du parcours (après Sur place / À emporter) ---
+function ouvrirFideliteAccueil() {
+  fidModeApresVente = false;
+  const m = fidModal();
+  m.classList.add('actif');
+  m.innerHTML = `
+    <div class="fid-box" style="max-width:640px;">
+      <div style="font-size:64px;line-height:1;margin-bottom:10px;">🎫</div>
+      <h3 style="font-size:34px;">Vous avez un compte fidélité ?</h3>
+      <div class="fid-box-sous" style="font-size:16px;">
+        <b>1 € = 1 point</b> · Dessert offert à 50 pts · Entrée à 100 pts · Plat à 200 pts · Formule à 300 pts<br>
+        Vos points sont les mêmes ici, au comptoir et sur notre site !
+      </div>
+      <div class="fid-choix2" style="margin-bottom:20px;">
+        <button style="padding:34px 12px;font-size:18px;" onclick="ouvrirClavierTel()"><span style="font-size:52px;">📱</span>Mon numéro<br><small style="font-weight:600;color:var(--text-soft);">Je me connecte ou je m'inscris</small></button>
+        <button style="padding:34px 12px;font-size:18px;" onclick="fermerFidelite(); ouvrirScanQRDepuisAccueil();"><span style="font-size:52px;">📷</span>Mon QR code<br><small style="font-weight:600;color:var(--text-soft);">Je scanne ma carte</small></button>
+      </div>
+      <div class="fid-actions">
+        <button class="fid-btn-annuler" style="flex:1;padding:18px;font-size:16px;" onclick="fermerFidelite()">Continuer sans compte →</button>
+      </div>
+    </div>`;
+}
+
+// Scan QR lancé depuis l'accueil : retour vers les catégories après scan
+let scanRetourEcran = 'ecran-panier';
+function ouvrirScanQRDepuisAccueil() {
+  scanRetourEcran = 'ecran-accueil-cats';
+  allerEcran('ecran-scan-qr');
+  demarrerScanner();
 }
 
 // --- Étape 1 : clavier téléphone (custom, pas de clavier système) ---
@@ -4653,8 +4687,10 @@ function afficherEcranSoldeFid(vientDeSInscrire) {
       </div>
       ${recompenseEnAttente
         ? `<div class="fid-inscription-note">🎁 <b>${recompenseEnAttente.libelle}</b> appliquée à la commande (−${fmt(recompenseEnAttente.montant)}).<br><a href="#" onclick="retirerRecompense(); return false;" style="color:var(--orange-dark);">Retirer la récompense</a></div>`
-        : `<div class="fid-box-sous" style="margin-bottom:10px;">Utiliser une récompense sur cette commande :</div>
-           <div class="fid-recompenses">${recosHtml}</div>`}
+        : (panier.length === 0
+          ? `<div class="fid-inscription-note">✅ Compte reconnu ! Composez votre commande — vous pourrez utiliser vos récompenses depuis le <b>panier</b> (bandeau 🎫).</div>`
+          : `<div class="fid-box-sous" style="margin-bottom:10px;">Utiliser une récompense sur cette commande :</div>
+           <div class="fid-recompenses">${recosHtml}</div>`)}
       <div class="fid-actions">
         <button class="fid-btn-annuler" onclick="detacherClient(); fermerFidelite();">Détacher</button>
         <button class="fid-btn-ok" onclick="fermerFidelite()">C'est noté ✓</button>
