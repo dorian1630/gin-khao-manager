@@ -4653,11 +4653,18 @@ function annulerPaiementSumUp() {
     try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
     sumupRealtimeChannel = null;
   }
+  
+  // ✨ Annuler aussi le paiement EN COURS sur le terminal SumUp
+  fetch('/.netlify/functions/sumup-cancel-reader', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reader_id: SUMUP_READER_ID })
+  }).catch(e => console.error('Annulation TPE KO:', e));
+  
   sumupCheckoutId = null;
   envoiEnCours = false;
   allerEcran('ecran-paiement');
 }
-
 // ============================================================
 //  🧾 IMPRESSION TICKET CUISINE (auto)
 // ============================================================
