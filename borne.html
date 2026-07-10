@@ -4793,32 +4793,76 @@ function genererTicketBorneEscPos(numero, methode, lignes) {
   return s;
 }
 
+// ============================================================
+//  🧾 IMPRESSION CUISINE/SUSHI — via table Supabase impressions_borne
+//  Le relais Termux (relais-borne.js) surveille cette table et
+//  imprime : bon cuisine, bon sushi, récap comptoir.
+// ============================================================
+
+// Catégories routées vers la station SUSHI (nom de la cat OU de son parent)
+const CATS_SUSHI = ['sushi','sushis','maki','makis','california','californias','crispy','crispys','tiger','tigers','poke bowl','pokebowl','pokebowls','poke','pokes'];
+// Catégories SANS bon de préparation (préparées/servies au comptoir)
+const CATS_SANS_BON = ['boisson','boissons','dessert','desserts'];
+
+function normNomCat(s) {
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+function stationPourLigne(l) {
+  // Les lignes liées (suppléments/sauces sous un plat) suivent la station du plat
+  const pid = l.lien_plat || l.produit_id;
+  const p = produits.find(x => x.id === pid);
+  if (!p) return 'cuisine';
+  const cat = categories.find(c => c.id === p.categorie_id);
+  const nomCat = normNomCat(cat ? cat.nom : '');
+  const parent = (cat && cat.parent_id) ? categories.find(c => c.id === cat.parent_id) : null;
+  const nomParent = normNomCat(parent ? parent.nom : '');
+  if (CATS_SUSHI.includes(nomCat) || CATS_SUSHI.includes(nomParent)) return 'sushi';
+  if (CATS_SANS_BON.includes(nomCat) || CATS_SANS_BON.includes(nomParent)) return 'comptoir';
+  return 'cuisine';
+}
+
 async function imprimerTicketCuisine(venteId, numero, lignes) {
   try {
-    // Appel du serveur d'impression local (déjà en place au resto)
-    await fetch('/.netlify/functions/imprimer-ticket', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        vente_id: venteId,
-        numero: numero,
-        mode_service: modeService,
-        origine: 'borne',
-        client_nom: clientFid ? clientFid.nom : null,
-        lignes: lignes.map(l => {
-          // Détection si c'est un sushi/maki (pour routage station sushi)
-          const nom = l.nom.toLowerCase();
-          const isSushi = /sushi|maki|sashimi|nigiri|temaki|california/.test(nom);
-          return {
-            nom: l.nom,
-            quantite: l.quantite,
-            station: isSushi ? 'sushi' : 'cuisine'
-          };
-        })
-      })
+    // On construit les items depuis le PANIER (il contient options + liens plat)
+    const items = panier.map(l => {
+      const details = [];
+      if (l.options) {
+        if (l.options.options_base) {
+          Object.entries(l.options.options_base).forEach(([g, c]) => details.push(g + ' : ' + c));
+        }
+        if (l.options.retirable && l.options.retirable.length > 0) {
+          details.push('SANS : ' + l.options.retirable.join(', '));
+        }
+        if (l.options.sauces && l.options.sauces.length > 0) {
+          const noms = l.options.sauces.map(sid => {
+            const s = produits.find(p => p.id === sid);
+            return s ? s.nom.replace('Sauce ', '') : null;
+          }).filter(n => n);
+          if (noms.length) details.push('Sauce : ' + noms.join(', '));
+        }
+      }
+      return {
+        nom: l.nom.replace('↳', '>'),
+        quantite: l.quantite,
+        prix: l.prix,
+        station: stationPourLigne(l),
+        details: details
+      };
     });
+
+    const { error } = await sb.from('impressions_borne').insert({
+      restaurant_id: RESTO_ID,
+      numero: String(numero),
+      mode_service: modeService,
+      mode_paiement: 'carte',
+      client_nom: clientFid ? clientFid.nom : null,
+      total: totalPanier(),
+      lignes: items
+    });
+    if (error) console.error('Insert impressions_borne KO:', error.message);
   } catch (e) {
-    console.error('Impression échouée (non bloquant) :', e);
+    console.error('Envoi impression cuisine échoué (non bloquant) :', e);
   }
 }
 
