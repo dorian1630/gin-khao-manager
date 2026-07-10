@@ -4577,20 +4577,18 @@ async function lancerPaiementSumUp() {
       })
       .subscribe();
     
-    // FALLBACK : Polling en cas de souci avec le Realtime (toutes les 3s)
+    // ✨ POLLING ACTIF : on interroge directement l'API SumUp via notre fonction
+    // (le webhook SumUp ne nous notifie pas, donc on va chercher l'info nous-mêmes)
     sumupPolling = setInterval(async () => {
       try {
-        const { data: paiement } = await sb
-          .from('paiements_sumup')
-          .select('statut')
-          .eq('client_transaction_id', sumupCheckoutId)
-          .single();
-        
-        if (paiement && paiement.statut === 'PAID') {
+        const resp = await fetch('/.netlify/functions/sumup-check-status?ctid=' + encodeURIComponent(sumupCheckoutId));
+        const data = await resp.json();
+        if (data.statut === 'PAID') {
           gererPaiementSumUpReussi();
-        } else if (paiement && paiement.statut === 'FAILED') {
+        } else if (data.statut === 'FAILED') {
           gererPaiementSumUpEchoue();
         }
+        // PENDING → on continue d'attendre
       } catch (e) {}
     }, 3000);
     
