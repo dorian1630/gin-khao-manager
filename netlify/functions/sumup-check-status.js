@@ -1,7 +1,8 @@
 // ============================================================
-// 💳 SumUp — Vérifier le statut d'une transaction (polling actif)
-// La borne appelle cette fonction toutes les 3s après le lancement
-// du paiement. On interroge l'API SumUp et on met à jour Supabase.
+// 💳 SumUp — Vérifier le statut d'une transaction Reader/Solo
+// V2 : interroge l'API Transactions (client_transaction_id)
+// La borne appelle cette fonction toutes les 3s pendant le paiement.
+// Elle met aussi à jour paiements_sumup dans Supabase.
 // ============================================================
 
 const SUPABASE_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
@@ -10,7 +11,7 @@ exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Content-Type': 'application/json'
   };
 
@@ -23,7 +24,7 @@ exports.handler = async (event, context) => {
 
     if (!SUMUP_API_KEY || !SUMUP_MERCHANT_CODE) throw new Error('Config SumUp manquante');
 
-    // client_transaction_id passé par la borne
+    // client_transaction_id passé par la borne (?ctid=...)
     const params = event.queryStringParameters || {};
     let clientTransactionId = params.ctid;
     if (!clientTransactionId && event.body) {
@@ -31,7 +32,7 @@ exports.handler = async (event, context) => {
     }
     if (!clientTransactionId) throw new Error('ctid manquant');
 
-    // Interroger l'API SumUp Transactions
+    // Interroger l'API SumUp Transactions (Reader API)
     const url = 'https://api.sumup.com/v2.1/merchants/'
       + encodeURIComponent(SUMUP_MERCHANT_CODE)
       + '/transactions?client_transaction_id=' + encodeURIComponent(clientTransactionId);
@@ -42,7 +43,7 @@ exports.handler = async (event, context) => {
     const data = await resp.json();
     console.log('SumUp transaction lookup (HTTP ' + resp.status + '):', JSON.stringify(data));
 
-    // La transaction n'existe pas encore côté SumUp → toujours en cours
+    // Transaction pas encore visible côté SumUp → paiement toujours en cours
     if (resp.status === 404 || !data || (data.items && data.items.length === 0)) {
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, statut: 'PENDING' }) };
     }
