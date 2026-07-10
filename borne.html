@@ -1003,7 +1003,6 @@ body {
   font-size: 17px;
   font-weight: 800;
   color: var(--text);
-  letter-spacing: -0.01em;
 }
 .pl-prix {
   font-size: 13px;
@@ -2232,6 +2231,211 @@ body {
 }
 .scan-aide a { color: var(--gold); text-decoration: underline; }
 
+/* ===== 🎫 MODALE FIDÉLITÉ (téléphone / inscription / récompenses) ===== */
+.fid-modal {
+  position: fixed; inset: 0;
+  background: rgba(26, 26, 26, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 8000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.25s ease;
+}
+.fid-modal.actif { display: flex; }
+.fid-box {
+  background: #FFFFFF;
+  border-radius: 32px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3);
+  animation: upsellPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fid-box h3 {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.fid-box .fid-box-sous {
+  font-size: 14px;
+  color: var(--text-soft);
+  margin-bottom: 22px;
+}
+.fid-choix2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.fid-choix2 button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 26px 12px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface-2);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.15s;
+}
+.fid-choix2 button span { font-size: 40px; line-height: 1; }
+.fid-choix2 button:active { transform: scale(0.95); border-color: var(--orange); background: var(--orange-pale); }
+.fid-tel-display {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  min-height: 66px;
+  color: var(--text);
+}
+.fid-tel-display .fid-tel-vide { color: var(--text-dim); font-size: 20px; letter-spacing: 0; }
+.fid-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.fid-key {
+  padding: 20px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  background: #FFFFFF;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.1s;
+}
+.fid-key:active { transform: scale(0.93); background: var(--orange-pale); border-color: var(--orange); }
+.fid-key-back { background: var(--surface-2); color: var(--orange-dark); }
+.fid-actions { display: flex; gap: 10px; }
+.fid-btn-annuler {
+  flex: 1;
+  padding: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: var(--text-soft);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+}
+.fid-btn-ok {
+  flex: 2;
+  padding: 16px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--body);
+  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.4);
+}
+.fid-btn-ok:disabled { opacity: 0.35; box-shadow: none; }
+.fid-solde-box {
+  background: linear-gradient(135deg, #E8F8D5, #DFF1C0);
+  border: 2px solid #88C04F;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.fid-solde-nom { font-size: 18px; font-weight: 800; color: var(--text); }
+.fid-solde-pts {
+  font-family: var(--display);
+  font-size: 44px;
+  font-weight: 700;
+  color: #4C8A1F;
+  line-height: 1.1;
+}
+.fid-solde-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-soft); font-weight: 700; }
+.fid-recompenses { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.fid-reco {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.fid-reco:active { transform: scale(0.97); }
+.fid-reco.dispo { border-color: var(--orange); background: var(--orange-pale); }
+.fid-reco.verrou { opacity: 0.45; pointer-events: none; }
+.fid-reco .fid-reco-pts {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--orange-dark);
+  background: #FFFFFF;
+  border: 1.5px solid var(--orange-soft);
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.fid-inscription-note {
+  background: var(--orange-pale);
+  border: 1.5px solid var(--orange-soft);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+/* Bouton fidélité sur l'écran de confirmation */
+.fin-fid-cta {
+  margin-top: 6px;
+  margin-bottom: 20px;
+  padding: 18px 34px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--body);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+}
+.fin-fid-resultat {
+  margin-top: 4px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #E8F8D5, #DFF1C0);
+  border: 2px solid #88C04F;
+  border-radius: 16px;
+  padding: 14px 26px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #3E7418;
+}
+
 /* ===== ÉCRAN PAIEMENT SUMUP ===== */
 #ecran-paiement-sumup {
   background: var(--bg-soft);
@@ -2376,21 +2580,21 @@ body {
 
   <!-- 🎫 BANDEAU FIDÉLITÉ -->
   <div class="fid-bandeau" id="fid-bandeau">
-    <div class="fid-bandeau-pas-connecte" id="fid-pas-connecte" onclick="ouvrirScanQR()">
+    <div class="fid-bandeau-pas-connecte" id="fid-pas-connecte" onclick="ouvrirFidelite()">
       <div class="fid-icone">🎫</div>
       <div class="fid-info">
-        <div class="fid-titre">Carte de fidélité Gin Khao</div>
-        <div class="fid-sous">Scannez votre QR code pour cumuler vos tampons</div>
+        <div class="fid-titre">Fidélité Gin Khao — 1 € = 1 point</div>
+        <div class="fid-sous">QR code ou numéro de téléphone · récompenses dès 50 pts</div>
       </div>
       <div class="fid-arrow">→</div>
     </div>
-    <div class="fid-bandeau-connecte" id="fid-connecte" style="display:none;" onclick="detacherClient()">
+    <div class="fid-bandeau-connecte" id="fid-connecte" style="display:none;" onclick="afficherEcranSoldeFid()">
       <div class="fid-icone">✅</div>
       <div class="fid-info">
         <div class="fid-titre" id="fid-nom-client">Client</div>
         <div class="fid-sous">
-          <span id="fid-tampons-affiche">0/10 tampons</span>
-          <span class="fid-detach-hint">· toucher pour annuler</span>
+          <span id="fid-tampons-affiche">0 points</span>
+          <span class="fid-detach-hint">· toucher pour voir mes récompenses</span>
         </div>
       </div>
     </div>
@@ -2470,6 +2674,11 @@ body {
   <!-- Contenu injecté par JS selon l'étape -->
 </div>
 
+<!-- ===== 🎫 MODALE FIDÉLITÉ (choix / téléphone / solde / récompenses) ===== -->
+<div class="fid-modal" id="modal-fidelite">
+  <!-- Contenu injecté par JS selon l'étape -->
+</div>
+
 <!-- ===== ÉCRAN 6 : CONFIRMATION ===== -->
 <div class="ecran" id="ecran-fin">
   <div id="conteneur-confettis"></div>
@@ -2480,6 +2689,8 @@ body {
     <div class="fin-numero-lbl">Votre numéro</div>
     <div class="fin-numero" id="fin-numero">—</div>
   </div>
+  <button class="fin-fid-cta" id="fin-fid-cta" style="display:none;" onclick="ouvrirFideliteApresVente()">🎫 Cumuler mes points fidélité</button>
+  <div class="fin-fid-resultat" id="fin-fid-resultat" style="display:none;"></div>
   <div class="fin-instructions" id="fin-instructions"></div>
   <div class="fin-mode" id="fin-mode"></div>
 </div>
@@ -4163,337 +4374,15 @@ function afficherPanier() {
   document.getElementById('panier-total-final').innerHTML = `${e}<span>,${c} €</span>`;
 }
 
-// ===== PAIEMENT =====
-
-let envoiEnCours = false;
-async function payer(methode) {
-  if (envoiEnCours || panier.length === 0) return;
-  envoiEnCours = true;
-
-  const lignes = panier.map(l => ({
-    produit_id: l.produit_id,
-    nom: l.nom,
-    prix: l.prix,
-    quantite: l.quantite
-  }));
-  const totalCmd = totalPanier();
-  
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🎯 PAIEMENT AU COMPTOIR : nouveau flow
-  // → On NE crée PAS la vente
-  // → On crée juste une commande_en_cours pour la caisse
-  // → Le caissier l'attrapera et la chargera dans son ticket
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  if (methode === 'comptoir') {
-    try {
-      // Récupérer le prochain numéro pour affichage
-      const numAttente = '#' + Math.floor(Math.random() * 900 + 100); // numéro temporaire
-      
-      // Insérer directement dans commandes_en_cours (sans passer par /ventes)
-      const { data: cmd, error } = await sb.from('commandes_en_cours').insert({
-        restaurant_id: RESTO_ID,
-        numero: numAttente,
-        source: 'borne',
-        mode_service: modeService,
-        total: totalCmd,
-        lignes: lignes,
-        statut: 'paiement_comptoir'  // ✨ statut spécial
-      }).select().single();
-      
-      if (error) throw error;
-      
-      // Imprimer ticket borne client (pour qu'il sache son numéro)
-      imprimerTicketBorneRawBT(numAttente.replace('#',''), methode, lignes).catch(e => console.error('RawBT KO:', e));
-      
-      // Affichage confirmation
-      afficherConfirmation(numAttente.replace('#',''), methode);
-      return;
-    } catch (e) {
-      alert('Erreur lors de l\'envoi : ' + e.message);
-      envoiEnCours = false;
-      allerEcran('ecran-paiement');
-      return;
-    }
-  }
-  
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 💳 PAIEMENT CARTE / autre : flow normal
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  try {
-    // ✨ On passe par notre Netlify Function (sécurisée, service_role)
-    const resp = await fetch('/.netlify/functions/borne-enregistrer-vente', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        restaurant_id: RESTO_ID,
-        mode_paiement: 'carte',
-        lignes: lignes,
-        mode_service: modeService,
-        client_id: clientFid ? clientFid.id : null
-      })
-    });
-    const data = await resp.json();
-    if (!data.ok) throw new Error(data.erreur || 'Erreur enregistrement vente');
-
-    const numero = data.numero ?? '?';
-    const venteId = data.vente_id;
-
-    // 🧾 Impression cuisine UNIQUEMENT si payé maintenant (carte)
-    // Si paiement au comptoir → la cuisine n'imprime QUE quand le caissier encaisse
-    if (methode === 'carte') {
-      imprimerTicketCuisine(venteId, numero, lignes).catch(e => console.error('Impression KO:', e));
-    }
-
-    // 🖨️ Impression du ticket BORNE client (numéro géant) via RawBT
-    // → Sortir le ticket que le client récupère devant la borne
-    imprimerTicketBorneRawBT(numero, methode, lignes).catch(e => console.error('RawBT KO:', e));
-
-    afficherConfirmation(numero, methode);
-  } catch (e) {
-    alert('Erreur lors de l\'envoi : ' + e.message);
-    envoiEnCours = false;
-    allerEcran('ecran-paiement');
-  }
-}
-
-function afficherConfirmation(numero, methode) {
-  document.getElementById('fin-numero').textContent = numero;
-  const modeBadge = (modeService === 'sur_place' ? '🍽️ Sur place' : '🥡 À emporter');
-  const instructions = document.getElementById('fin-instructions');
-
-  if (methode === 'comptoir') {
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  PAIEMENT AU COMPTOIR — pas encore réglé
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    document.getElementById('fin-titre').textContent = 'Commande prise en compte !';
-    document.getElementById('fin-sub').textContent = '👇 Étapes à suivre :';
-    document.getElementById('fin-check').textContent = '📝';
-    instructions.className = 'fin-instructions comptoir';
-    instructions.innerHTML = `
-      <strong>1.</strong> Récupérez votre ticket de commande<br>
-      <strong>2.</strong> Présentez-vous au comptoir pour <strong>régler</strong><br>
-      <strong>3.</strong> Patientez, on prépare votre plat 🍜
-    `;
-    document.getElementById('fin-mode').textContent = modeBadge + ' · À régler au comptoir';
-  } else {
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  PAIEMENT CARTE — déjà réglé
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    document.getElementById('fin-titre').textContent = 'Paiement validé !';
-    document.getElementById('fin-sub').textContent = 'Merci pour votre commande 🙏';
-    document.getElementById('fin-check').textContent = '✓';
-    instructions.className = 'fin-instructions paye';
-    instructions.innerHTML = `
-      <strong>Récupérez votre ticket de commande</strong><br>
-      Patientez, on prépare votre plat 🍜<br>
-      Vous serez appelé(e) par votre numéro
-    `;
-    document.getElementById('fin-mode').textContent = modeBadge + ' · Déjà réglé ✓';
-  }
-
-  allerEcran('ecran-fin');
-  
-  // ✨ Confettis de célébration !
-  declencherConfettis();
-
-  // Reset auto au bout de 10 secondes pour le client suivant
-  setTimeout(() => {
-    panier = [];
-    catActive = 'tout';
-    modeService = 'sur_place';
-    envoiEnCours = false;
-    clientFid = null;
-    sumupCheckoutId = null;
-    upsellDejaProposees.clear();  // ✨ Reset des upsells proposés
-    if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
-    majBarrePanier();
-    afficherCats();
-    afficherMenu();
-    afficherFidelite();
-    allerEcran('ecran-accueil');
-    chargerMenu();
-  }, 10000);
-}
-
-// ===== UTILITAIRE =====
+// ===== FORMAT =====
 function fmt(n) {
-  return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  return parseFloat(n).toFixed(2).replace('.', ',') + ' €';
 }
 
 // ============================================================
-//  🎫 SCAN QR FIDÉLITÉ
+//  🎫 FIDÉLITÉ — Scan QR + attache client
 // ============================================================
 let qrScanner = null;
-
-function ouvrirScanQR() {
-  allerEcran('ecran-scan-qr');
-  setTimeout(() => demarrerScanner(), 300);
-}
-
-function fermerScanQR() {
-  arreterScanner();
-  allerEcran('ecran-panier');
-}
-
-async function demarrerScanner() {
-  try {
-    qrScanner = new Html5Qrcode("qr-reader");
-    await qrScanner.start(
-      { facingMode: "user" },  // caméra frontale (tablette borne)
-      {
-        fps: 10,
-        qrbox: { width: 280, height: 280 },
-        aspectRatio: 1.0
-      },
-      onScanSuccess,
-      onScanError
-    );
-  } catch (e) {
-    console.error('Erreur scanner:', e);
-    // Si caméra frontale KO, essayer caméra arrière
-    try {
-      qrScanner = new Html5Qrcode("qr-reader");
-      await qrScanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 280, height: 280 } },
-        onScanSuccess,
-        onScanError
-      );
-    } catch (e2) {
-      alert('Impossible d\'accéder à la caméra : ' + e2.message);
-      fermerScanQR();
-    }
-  }
-}
-
-async function arreterScanner() {
-  if (qrScanner) {
-    try {
-      await qrScanner.stop();
-      qrScanner.clear();
-    } catch (e) { /* silent */ }
-    qrScanner = null;
-  }
-}
-
-function onScanError(err) { /* silent : on ignore les "no qr code found" */ }
-
-async function onScanSuccess(decodedText) {
-  await arreterScanner();
-  await traiterScanFidelite(decodedText);
-}
-
-// ============================================================
-//  🔫 SCANNER PHYSIQUE INTÉGRÉ (mode HID/Clavier)
-// ============================================================
-// Détecte automatiquement les scans rapides depuis un scanner physique
-// qui tape le contenu comme un clavier (mode HID).
-// Le scan typique : "GINKHAO:UUID" + Entrée, tapé en < 100ms
-// ============================================================
-
-let scanBuffer = '';
-let scanLastKeyTime = 0;
-const SCAN_TIMEOUT_MS = 50; // Délai max entre 2 touches pour considérer que c'est un scan
-
-document.addEventListener('keydown', function(e) {
-  const now = Date.now();
-  const isScanFast = (now - scanLastKeyTime) < SCAN_TIMEOUT_MS;
-
-  // Si trop lent depuis la dernière touche, on reset (c'est de la frappe humaine)
-  if (!isScanFast && scanBuffer.length > 0) {
-    scanBuffer = '';
-  }
-
-  // Touche Entrée = fin du scan
-  if (e.key === 'Enter') {
-    if (scanBuffer.length >= 8) {  // Minimum sensé pour un QR
-      const scanned = scanBuffer;
-      scanBuffer = '';
-      // Si ça ressemble à un QR fidélité, on traite
-      if (/^GINKHAO:|^[0-9a-f]{8}-[0-9a-f]{4}/i.test(scanned)) {
-        e.preventDefault();
-        traiterScanFidelite(scanned);
-      }
-    } else {
-      scanBuffer = '';
-    }
-    return;
-  }
-
-  // Caractères imprimables seulement
-  if (e.key.length === 1) {
-    scanBuffer += e.key;
-    scanLastKeyTime = now;
-  }
-});
-
-// ============================================================
-//  Traitement du scan (commun caméra + scanner physique)
-// ============================================================
-async function traiterScanFidelite(decodedText) {
-  let clientId = decodedText.trim();
-
-  // ✨ Format Gin Khao : "GINKHAO:UUID"
-  const matchGinKhao = clientId.match(/^GINKHAO:([0-9a-f-]{36})$/i);
-  if (matchGinKhao) clientId = matchGinKhao[1];
-
-  // Extraire l'UUID si c'est une URL (ex: https://gin-khao.com/?c=UUID)
-  const matchUrl = clientId.match(/[?&]c=([0-9a-f-]{36})/i);
-  if (matchUrl) clientId = matchUrl[1];
-
-  // Vérifier que c'est bien un UUID
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)) {
-    // Si le scan n'est pas un UUID valide, ne RIEN faire (silencieux)
-    // Évite d'afficher des erreurs intempestives quand on tape au clavier
-    return;
-  }
-
-  // Récupérer le client en base
-  try {
-    const { data, error } = await sb.from('clients')
-      .select('id, nom, points, nb_visites, total_points_gagnes')
-      .eq('id', clientId)
-      .eq('restaurant_id', RESTO_ID)
-      .single();
-    if (error || !data) {
-      alert('Client introuvable. Veuillez réessayer ou demander de l\'aide au comptoir.');
-      return;
-    }
-    clientFid = data;
-    afficherFidelite();
-    // Si on est sur l'écran scanner caméra, on retourne au panier
-    const ecranScanQr = document.getElementById('ecran-scan-qr');
-    if (ecranScanQr && ecranScanQr.classList.contains('actif')) {
-      allerEcran('ecran-panier');
-    }
-    // Sinon (depuis menu, accueil-cats, panier), on reste sur la page actuelle
-
-    // Toast/feedback visuel
-    afficherToastFidelite(data.nom);
-  } catch (e) {
-    alert('Erreur : ' + e.message);
-  }
-}
-
-function afficherToastFidelite(nom) {
-  // Petit toast en bas pour confirmer l'identification
-  const toast = document.createElement('div');
-  toast.style.cssText = `
-    position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
-    background:linear-gradient(135deg, var(--gold), var(--gold-soft));
-    color:var(--bg-deep); padding:18px 32px; border-radius:999px;
-    font-size:18px; font-weight:700; z-index:9999;
-    box-shadow:0 10px 40px rgba(0,0,0,0.5);
-    animation: toastIn 0.3s ease;
-  `;
-  toast.textContent = '👋 Bienvenue ' + nom;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.style.transition = 'opacity 0.3s';
-    toast.style.opacity = '0';
-    setTimeout(() => toast.remove(), 300);
-  }, 2500);
-}
 
 function afficherFidelite() {
   const pasConnecte = document.getElementById('fid-pas-connecte');
@@ -4501,10 +4390,11 @@ function afficherFidelite() {
   if (clientFid) {
     pasConnecte.style.display = 'none';
     connecte.style.display = 'flex';
-    document.getElementById('fid-nom-client').textContent = 'Bienvenue ' + (clientFid.nom || 'cher client') + ' 👋';
-    const pts = clientFid.points || 0;
-    let txt = pts + '/10 tampons';
-    if (pts === 9) txt += ' · 🎉 Prochaine commande = 1 plat offert !';
+    document.getElementById('fid-nom-client').textContent =
+      clientFid.nom || (clientFid.telephone ? clientFid.telephone.replace(/(\d{2})(?=\d)/g, '$1 ') : 'Client');
+    const pts = clientFid.points != null ? clientFid.points : 0;
+    let txt = pts + ' point' + (pts > 1 ? 's' : '');
+    if (recompenseEnAttente) txt += ' · 🎁 ' + recompenseEnAttente.libelle;
     document.getElementById('fid-tampons-affiche').textContent = txt;
   } else {
     pasConnecte.style.display = 'flex';
@@ -4512,390 +4402,577 @@ function afficherFidelite() {
   }
 }
 
+function ouvrirScanQR() {
+  allerEcran('ecran-scan-qr');
+  demarrerScanner();
+}
+
+function fermerScanQR() {
+  arreterScanner();
+  allerEcran('ecran-panier');
+}
+
+function demarrerScanner() {
+  if (qrScanner) return;
+  try {
+    qrScanner = new Html5Qrcode('qr-reader');
+    qrScanner.start(
+      { facingMode: 'user' },
+      { fps: 10, qrbox: { width: 260, height: 260 } },
+      (decodedText) => { traiterScanFidelite(decodedText); },
+      () => {}
+    ).catch(err => {
+      document.getElementById('qr-reader').innerHTML =
+        '<div style="padding:40px;text-align:center;color:var(--text-mute);">Caméra indisponible<br><small>' + err + '</small></div>';
+      qrScanner = null;
+    });
+  } catch (e) {
+    document.getElementById('qr-reader').innerHTML =
+      '<div style="padding:40px;text-align:center;color:var(--text-mute);">Scanner non disponible</div>';
+    qrScanner = null;
+  }
+}
+
+function arreterScanner() {
+  if (qrScanner) {
+    try { qrScanner.stop().then(() => { qrScanner.clear(); }); } catch (e) {}
+    qrScanner = null;
+  }
+}
+
+async function traiterScanFidelite(code) {
+  arreterScanner();
+  // Le QR contient l'UUID du client (carte fidélité Gin Khao)
+  const clientId = (code || '').trim();
+  try {
+    const { data, error } = await sb.from('clients')
+      .select('id, nom, telephone, points, nb_visites')
+      .eq('id', clientId)
+      .single();
+    if (error || !data) {
+      alert('Carte non reconnue. Demandez au comptoir.');
+      allerEcran('ecran-panier');
+      return;
+    }
+    clientFid = data;
+    afficherFidelite();
+    allerEcran('ecran-panier');
+  } catch (e) {
+    alert('Erreur de lecture : ' + e.message);
+    allerEcran('ecran-panier');
+  }
+}
+
 function detacherClient() {
-  if (!confirm('Annuler la carte fidélité ?')) return;
   clientFid = null;
+  if (recompenseEnAttente) {
+    panier = panier.filter(l => !l.recompense);
+    recompenseEnAttente = null;
+    majBarrePanier();
+    afficherPanier();
+  }
   afficherFidelite();
 }
 
 function afficherInfoFidelite() {
-  alert('📱 Pour créer votre carte fidélité Gin Khao :\n\n1. Demandez à un employé au comptoir\n2. Donnez votre numéro de téléphone\n3. Recevez votre QR code par SMS\n\nÀ partir de la prochaine commande, scannez-le ici pour cumuler vos tampons et obtenir un plat offert !');
+  alert('Demandez votre carte de fidélité au comptoir ! 🎫\nCumulez des points à chaque commande.');
 }
 
 // ============================================================
-//  💳 PAIEMENT SUMUP (online checkout - DEPRECATED, voir Reader API plus bas)
+//  🎫 FIDÉLITÉ TÉLÉPHONE — solde, inscription, récompenses
+//  (RPC Supabase sécurisées : fid_solde / fid_inscrire /
+//   fid_crediter_vente / fid_utiliser_recompense)
 // ============================================================
+let fidTelSaisi = '';
+let fidModeApresVente = false;   // true = saisie depuis l'écran de confirmation
+let recompenseEnAttente = null;  // { palier, libelle, montant } appliquée au panier
+const FID_PALIERS = [
+  { palier: 50,  libelle: 'Dessert offert',  emoji: '🍮', cats: ['Desserts'] },
+  { palier: 100, libelle: 'Entrée offerte',  emoji: '🥟', cats: ['Entrées'] },
+  { palier: 200, libelle: 'Plat offert',     emoji: '🍜', cats: null },   // null = tout plat principal
+  { palier: 300, libelle: 'Formule offerte', emoji: '🍱', cats: ['FORMULE'] }
+];
+
+function fidModal() { return document.getElementById('modal-fidelite'); }
+function fermerFidelite() {
+  const m = fidModal();
+  m.classList.remove('actif');
+  m.innerHTML = '';
+  fidModeApresVente = false;
+}
+
+// --- Étape 0 : choix QR / téléphone ---
+function ouvrirFidelite() {
+  fidModeApresVente = false;
+  const m = fidModal();
+  m.classList.add('actif');
+  m.innerHTML = `
+    <div class="fid-box">
+      <h3>🎫 Fidélité Gin Khao</h3>
+      <div class="fid-box-sous">1 € dépensé = 1 point · récompenses dès 50 points</div>
+      <div class="fid-choix2">
+        <button onclick="fermerFidelite(); ouvrirScanQR();"><span>📷</span>Scanner mon QR</button>
+        <button onclick="ouvrirClavierTel()"><span>📱</span>Mon numéro</button>
+      </div>
+      <div class="fid-actions">
+        <button class="fid-btn-annuler" onclick="fermerFidelite()">Fermer</button>
+      </div>
+    </div>`;
+}
+
+// --- Étape 1 : clavier téléphone (custom, pas de clavier système) ---
+function ouvrirClavierTel(apresVente) {
+  fidModeApresVente = !!apresVente;
+  fidTelSaisi = '';
+  const m = fidModal();
+  m.classList.add('actif');
+  m.innerHTML = `
+    <div class="fid-box">
+      <h3>📱 Votre numéro</h3>
+      <div class="fid-box-sous">${fidModeApresVente ? 'Pour créditer vos points sur cette commande' : 'Pour retrouver ou créer votre compte fidélité'}</div>
+      <div class="fid-tel-display" id="fid-tel-display"><span class="fid-tel-vide">06 XX XX XX XX</span></div>
+      <div class="fid-keypad">
+        ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" class="fid-key" onclick="fidTaper('${n}')">${n}</button>`).join('')}
+        <button type="button" class="fid-key fid-key-back" onclick="fidEffacer()">⌫</button>
+        <button type="button" class="fid-key" onclick="fidTaper('0')">0</button>
+        <button type="button" class="fid-key fid-key-back" onclick="fidTelSaisi=''; fidMajAffichageTel();">C</button>
+      </div>
+      <div class="fid-actions">
+        <button class="fid-btn-annuler" onclick="fermerFidelite()">Annuler</button>
+        <button class="fid-btn-ok" id="fid-btn-valider-tel" disabled onclick="validerTelFidelite()">Valider</button>
+      </div>
+    </div>`;
+}
+function fidTaper(c) {
+  if (fidTelSaisi.length >= 10) return;
+  fidTelSaisi += c;
+  fidMajAffichageTel();
+}
+function fidEffacer() {
+  fidTelSaisi = fidTelSaisi.slice(0, -1);
+  fidMajAffichageTel();
+}
+function fidMajAffichageTel() {
+  const disp = document.getElementById('fid-tel-display');
+  if (!disp) return;
+  if (!fidTelSaisi) {
+    disp.innerHTML = '<span class="fid-tel-vide">06 XX XX XX XX</span>';
+  } else {
+    disp.textContent = fidTelSaisi.replace(/(\d{2})(?=\d)/g, '$1 ');
+  }
+  const btn = document.getElementById('fid-btn-valider-tel');
+  if (btn) btn.disabled = !(fidTelSaisi.length === 10 && /^0[1-9]/.test(fidTelSaisi));
+}
+
+// --- Étape 2 : recherche du compte ---
+async function validerTelFidelite() {
+  const btn = document.getElementById('fid-btn-valider-tel');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const { data, error } = await sb.rpc('fid_solde', { p_telephone: fidTelSaisi });
+    if (error) throw error;
+    if (data && data.length > 0) {
+      // Client trouvé
+      const c = data[0];
+      clientFid = { id: c.client_id, nom: c.nom, telephone: fidTelSaisi, points: c.points, nb_visites: c.visites };
+      if (fidModeApresVente) {
+        await crediterApresVente();
+      } else {
+        afficherFidelite();
+        afficherEcranSoldeFid();
+      }
+    } else {
+      // Inconnu → proposer l'inscription
+      afficherEcranInscriptionFid();
+    }
+  } catch (e) {
+    alert('Erreur fidélité : ' + (e.message || e));
+    fermerFidelite();
+  }
+}
+
+// --- Inscription (numéro inconnu) ---
+function afficherEcranInscriptionFid() {
+  const m = fidModal();
+  const telJoli = fidTelSaisi.replace(/(\d{2})(?=\d)/g, '$1 ');
+  m.innerHTML = `
+    <div class="fid-box">
+      <h3>✨ Bienvenue !</h3>
+      <div class="fid-box-sous">Le ${telJoli} n'a pas encore de compte fidélité</div>
+      <div class="fid-inscription-note">
+        Créez votre compte en 1 clic : vous cumulerez <b>1 point par euro</b> dès cette commande,
+        et vos points seront aussi visibles sur notre site de commande en ligne.
+      </div>
+      <div class="fid-actions">
+        <button class="fid-btn-annuler" onclick="fermerFidelite()">Non merci</button>
+        <button class="fid-btn-ok" onclick="inscrireFidelite()">Créer mon compte 🎉</button>
+      </div>
+    </div>`;
+}
+async function inscrireFidelite() {
+  try {
+    const { data, error } = await sb.rpc('fid_inscrire', { p_telephone: fidTelSaisi, p_nom: null });
+    if (error) throw error;
+    const c = data && data[0];
+    clientFid = { id: c.client_id, nom: null, telephone: fidTelSaisi, points: c.points, nb_visites: 0 };
+    if (fidModeApresVente) {
+      await crediterApresVente();
+    } else {
+      afficherFidelite();
+      afficherEcranSoldeFid(true);
+    }
+  } catch (e) {
+    alert('Inscription impossible : ' + (e.message || e));
+    fermerFidelite();
+  }
+}
+
+// --- Étape 3 : solde + récompenses ---
+function afficherEcranSoldeFid(vientDeSInscrire) {
+  const m = fidModal();
+  m.classList.add('actif');
+  const pts = clientFid.points || 0;
+  const recosHtml = FID_PALIERS.map(r => {
+    const dispo = pts >= r.palier && !recompenseEnAttente;
+    const ligneOk = dispo && trouverLigneEligible(r) !== null;
+    const cls = ligneOk ? 'dispo' : 'verrou';
+    const note = !dispo ? '' : (ligneOk ? '' : ' (aucun article éligible au panier)');
+    return `
+      <div class="fid-reco ${cls}" onclick="choisirRecompense(${r.palier})">
+        <span>${r.emoji} ${r.libelle}${note}</span>
+        <span class="fid-reco-pts">${r.palier} pts</span>
+      </div>`;
+  }).join('');
+  m.innerHTML = `
+    <div class="fid-box">
+      <h3>${vientDeSInscrire ? '🎉 Compte créé !' : '👋 ' + (clientFid.nom || 'Bonjour !')}</h3>
+      <div class="fid-solde-box">
+        <div class="fid-solde-nom">${clientFid.nom || clientFid.telephone.replace(/(\d{2})(?=\d)/g, '$1 ')}</div>
+        <div class="fid-solde-pts">${pts}</div>
+        <div class="fid-solde-lbl">point${pts > 1 ? 's' : ''} fidélité</div>
+      </div>
+      ${recompenseEnAttente
+        ? `<div class="fid-inscription-note">🎁 <b>${recompenseEnAttente.libelle}</b> appliquée à la commande (−${fmt(recompenseEnAttente.montant)}).<br><a href="#" onclick="retirerRecompense(); return false;" style="color:var(--orange-dark);">Retirer la récompense</a></div>`
+        : `<div class="fid-box-sous" style="margin-bottom:10px;">Utiliser une récompense sur cette commande :</div>
+           <div class="fid-recompenses">${recosHtml}</div>`}
+      <div class="fid-actions">
+        <button class="fid-btn-annuler" onclick="detacherClient(); fermerFidelite();">Détacher</button>
+        <button class="fid-btn-ok" onclick="fermerFidelite()">C'est noté ✓</button>
+      </div>
+    </div>`;
+}
+
+// Trouve la ligne du panier éligible à une récompense (la moins chère qui correspond)
+function trouverLigneEligible(reco) {
+  let candidates = [];
+  panier.forEach((l, idx) => {
+    if (l.recompense || l.lien_plat || l.prix <= 0) return;
+    const p = produits.find(pp => pp.id === l.produit_id);
+    if (!p) return;
+    const cat = categories.find(c => c.id === p.categorie_id);
+    const catNom = cat ? cat.nom : '';
+    const parent = cat && cat.parent_id ? categories.find(c => c.id === cat.parent_id) : null;
+    const estFormule = (parent && parent.nom === 'Formules') || (catNom === 'Formules') || p.est_formule === true;
+    let ok = false;
+    if (reco.cats === null) {
+      // "Plat offert" : tout sauf boissons/desserts/entrées/sauces/suppléments/formules
+      const exclus = ['Boissons', 'Desserts', 'Entrées', 'Sauces', 'Suppléments', 'Extras'];
+      ok = !exclus.includes(catNom) && !estFormule;
+    } else if (reco.cats[0] === 'FORMULE') {
+      ok = estFormule;
+    } else {
+      ok = reco.cats.includes(catNom);
+    }
+    if (ok) candidates.push({ idx, prix: l.prix });
+  });
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.prix - b.prix);
+  return candidates[0].idx;
+}
+
+function choisirRecompense(palier) {
+  if (recompenseEnAttente) return;
+  const reco = FID_PALIERS.find(r => r.palier === palier);
+  if (!reco || (clientFid.points || 0) < palier) return;
+  const idx = trouverLigneEligible(reco);
+  if (idx === null) return;
+  const ligne = panier[idx];
+  const montant = ligne.prix;   // 1 unité offerte
+  recompenseEnAttente = { palier: palier, libelle: reco.libelle, montant: montant };
+  panier.push({
+    produit_id: null,
+    nom: '🎁 ' + reco.libelle + ' (fidélité)',
+    prix: -montant,
+    quantite: 1,
+    emoji: '🎁',
+    recompense: palier
+  });
+  majBarrePanier();
+  afficherPanier();
+  afficherEcranSoldeFid();
+}
+
+function retirerRecompense() {
+  if (!recompenseEnAttente) return;
+  panier = panier.filter(l => !l.recompense);
+  recompenseEnAttente = null;
+  majBarrePanier();
+  afficherPanier();
+  afficherEcranSoldeFid();
+}
+
+// --- Crédit des points après la vente (carte payée sur la borne) ---
+async function crediterFideliteApresVente(venteId) {
+  if (!clientFid || !clientFid.telephone || !venteId) return null;
+  try {
+    // 1. Déduire la récompense utilisée (si présente)
+    if (recompenseEnAttente) {
+      try {
+        await sb.rpc('fid_utiliser_recompense', {
+          p_telephone: clientFid.telephone,
+          p_palier: recompenseEnAttente.palier
+        });
+      } catch (e) { /* solde changé entre-temps : on n'annule pas la vente */ }
+    }
+    // 2. Créditer les points de la vente (le serveur lit le total lui-même)
+    const { data, error } = await sb.rpc('fid_crediter_vente', {
+      p_telephone: clientFid.telephone,
+      p_vente_id: venteId
+    });
+    if (error) {
+      // 23505 = déjà créditée (anti-rejeu) : on ignore
+      if (String(error.code) === '23505') return null;
+      throw error;
+    }
+    return data && data[0] ? data[0] : null;   // { points_credites, nouveau_solde }
+  } catch (e) {
+    console.warn('Crédit fidélité échoué :', e.message || e);
+    return null;
+  }
+}
+
+// --- Bouton "Cumuler mes points" sur l'écran de confirmation ---
+function ouvrirFideliteApresVente() {
+  if (!derniereVente || !derniereVente.vente_id) return;
+  prolongerTimerFin();          // laisser le temps de taper
+  ouvrirClavierTel(true);
+}
+async function crediterApresVente() {
+  const res = await crediterFideliteApresVente(derniereVente ? derniereVente.vente_id : null);
+  fermerFidelite();
+  const cta = document.getElementById('fin-fid-cta');
+  const resultat = document.getElementById('fin-fid-resultat');
+  if (cta) cta.style.display = 'none';
+  if (resultat && res) {
+    resultat.style.display = 'block';
+    resultat.textContent = '🎉 +' + res.points_credites + ' points crédités · nouveau solde : ' + res.nouveau_solde + ' pts';
+  } else if (resultat) {
+    resultat.style.display = 'block';
+    resultat.textContent = '✅ Points enregistrés sur votre compte';
+  }
+  relancerTimerFin(12000);
+}
 
 // ============================================================
-//  💳 SUMUP SOLO — Paiement direct au terminal via Reader API
+//  💳 PAIEMENT
 // ============================================================
-// Configuration du Reader (le Solo physique)
-const SUMUP_READER_ID = 'rdr_2SD5M6R7GJ9SJAKDEBV2TRQ5PW';
-
-let sumupRealtimeChannel = null;
-let sumupCheckoutId = null;
-let sumupPolling = null;
+let paiementEnCours = null;   // { checkoutId, clientTransactionId }
+let pollingInterval = null;
+let derniereVente = null;     // { numero, vente_id } après enregistrement
 
 async function lancerPaiementSumUp() {
-  if (envoiEnCours || panier.length === 0) return;
-  envoiEnCours = true;
-  const montant = totalPanier();
-  
-  document.getElementById('paie-sumup-montant').textContent = fmt(montant);
-  document.getElementById('paie-sumup-sub').textContent = 'Préparation du paiement...';
+  const total = totalPanier();
+  if (total <= 0) return;
+
+  document.getElementById('paie-sumup-montant').textContent = fmt(total);
+  document.getElementById('paie-sumup-sub').textContent = 'Suivez les instructions sur le terminal';
   allerEcran('ecran-paiement-sumup');
 
   try {
-    // Envoyer le paiement au Solo via la nouvelle Reader API
+    // 1. Créer le checkout sur le lecteur SumUp (Netlify Function)
     const resp = await fetch('/.netlify/functions/sumup-reader-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        reader_id: SUMUP_READER_ID,
-        montant: montant.toFixed(2),
-        description: 'Gin Khao - Borne',
-        restaurant_id: RESTO_ID
+        montant: Math.round(total * 100),  // en centimes
+        description: 'Borne Gin Khao'
       })
     });
     const data = await resp.json();
-    
-    if (!data.ok) {
-      throw new Error(data.erreur || 'Erreur création paiement');
+    if (!resp.ok || !data.client_transaction_id) {
+      throw new Error(data.error || 'Erreur de connexion au terminal');
     }
-
-    sumupCheckoutId = data.client_transaction_id;
-    
-    document.getElementById('paie-sumup-sub').textContent = '✨ Présentez votre carte sur le terminal';
-
-    // S'abonner aux changements en temps réel sur la table paiements_sumup
-    if (sumupRealtimeChannel) {
-      try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
-    }
-    
-    sumupRealtimeChannel = sb
-      .channel('sumup-paiement-' + sumupCheckoutId)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'paiements_sumup',
-        filter: 'client_transaction_id=eq.' + sumupCheckoutId
-      }, (payload) => {
-        const nouvelEnregistrement = payload.new;
-        console.log('Paiement maj:', nouvelEnregistrement);
-        if (nouvelEnregistrement.statut === 'PAID') {
-          gererPaiementSumUpReussi();
-        } else if (nouvelEnregistrement.statut === 'FAILED') {
-          gererPaiementSumUpEchoue();
-        }
-      })
-      .subscribe();
-    
-    // ✨ POLLING ACTIF : on interroge directement l'API SumUp via notre fonction
-    // (le webhook SumUp ne nous notifie pas, donc on va chercher l'info nous-mêmes)
-    sumupPolling = setInterval(async () => {
-      try {
-        const resp = await fetch('/.netlify/functions/sumup-check-status?ctid=' + encodeURIComponent(sumupCheckoutId));
-        const data = await resp.json();
-        if (data.statut === 'PAID') {
-          gererPaiementSumUpReussi();
-        } else if (data.statut === 'FAILED') {
-          gererPaiementSumUpEchoue();
-        }
-        // PENDING → on continue d'attendre
-      } catch (e) {}
-    }, 3000);
-    
+    paiementEnCours = {
+      clientTransactionId: data.client_transaction_id
+    };
+    // 2. Poller le statut du paiement
+    demarrerPollingStatut();
   } catch (e) {
-    alert('Erreur SumUp : ' + e.message + '\n\nVeuillez payer au comptoir.');
-    envoiEnCours = false;
+    alert('Paiement impossible : ' + e.message);
     allerEcran('ecran-paiement');
   }
 }
 
-async function gererPaiementSumUpReussi() {
-  // Nettoyer
-  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
-  if (sumupRealtimeChannel) { 
-    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
-    sumupRealtimeChannel = null;
-  }
-  
-  // Animation succès
-  document.getElementById('paie-sumup-sub').innerHTML = '<span style="color:#10b981;">✅ Paiement validé !</span>';
-  
-  // Enregistrer la vente
-  setTimeout(async () => {
-    envoiEnCours = false;  // ✨ débloquer payer() (verrouillé par lancerPaiementSumUp)
-    await payer('carte');
-  }, 800);
-}
-function gererPaiementSumUpEchoue() {
-  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
-  if (sumupRealtimeChannel) { 
-    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
-    sumupRealtimeChannel = null;
-  }
-  
-  alert('❌ Paiement refusé ou annulé.\n\nVeuillez réessayer ou payer au comptoir.');
-  envoiEnCours = false;
-  sumupCheckoutId = null;
-  allerEcran('ecran-paiement');
-}
-
-// Ancienne fonction conservée pour compat (no-op)
-async function verifierStatutSumUp() {
-  // Plus utilisée — remplacée par le Realtime + polling
-}
-
-function annulerPaiementSumUp() {
-  if (sumupPolling) { clearInterval(sumupPolling); sumupPolling = null; }
-  if (sumupRealtimeChannel) { 
-    try { sb.removeChannel(sumupRealtimeChannel); } catch(e) {}
-    sumupRealtimeChannel = null;
-  }
-  
-  // ✨ Annuler aussi le paiement EN COURS sur le terminal SumUp
-  fetch('/.netlify/functions/sumup-cancel-reader', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reader_id: SUMUP_READER_ID })
-  }).catch(e => console.error('Annulation TPE KO:', e));
-  
-  sumupCheckoutId = null;
-  envoiEnCours = false;
-  allerEcran('ecran-paiement');
-}
-// ============================================================
-//  🧾 IMPRESSION TICKET CUISINE (auto)
-// ============================================================
-// ============================================================
-//  🖨️ IMPRESSION RawBT — Ticket borne client (numéro géant)
-// ============================================================
-// RawBT est une app Android (ru.a402d.rawbtprinter) qui reçoit
-// des commandes ESC/POS en base64 via intent et les imprime
-// sur l'imprimante USB connectée.
-// ============================================================
-// Nettoie les caractères que l'imprimante ne connaît pas (accents, ↳, emojis)
-function versAscii(str) {
-  return str
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // é → e
-    .replace(/↳/g, '>')
-    .replace(/[^\x00-\x7F]/g, '');
-}
-
-async function imprimerTicketBorneRawBT(numero, methode, lignes) {
-  try {
-    const escpos = versAscii(genererTicketBorneEscPos(numero, methode, lignes));
-    const base64 = btoa(escpos);
-
-    // ✨ Impression native directe via l'APK
-    if (window.AndroidPrinter) {
-      AndroidPrinter.print(base64);
+function demarrerPollingStatut() {
+  let tentatives = 0;
+  const maxTentatives = 60;  // 60 x 2s = 2 minutes max
+  pollingInterval = setInterval(async () => {
+    tentatives++;
+    if (tentatives > maxTentatives) {
+      arreterPolling();
+      document.getElementById('paie-sumup-sub').textContent = 'Délai dépassé';
+      setTimeout(() => allerEcran('ecran-paiement'), 2000);
       return;
     }
-    // Fallback si la page est ouverte hors APK (test dans Chrome)
-    window.location.href = 'rawbt:base64,' + base64;
-  } catch (e) {
-    console.error('Erreur impression:', e);
-  }
-}
-
-function genererTicketBorneEscPos(numero, methode, lignes) {
-  const ESC = '\x1B';
-  const GS = '\x1D';
-  const LF = '\x0A';
-  let s = '';
-
-  // Init imprimante
-  s += ESC + '@';
-
-  // Logo / en-tête (gros, centré, gras)
-  s += ESC + 'a' + '\x01';      // Centré
-  s += GS + '!' + '\x11';        // Double hauteur + largeur
-  s += ESC + 'E' + '\x01';       // Gras
-  s += 'Gin Khao' + LF;
-  s += ESC + 'E' + '\x00';       // Gras off
-  s += GS + '!' + '\x00';        // Taille normale
-  s += 'Street Food Thai' + LF;
-  s += LF;
-
-  // Mode service
-  const modeLabel = modeService === 'sur_place' ? 'SUR PLACE' : 'A EMPORTER';
-  s += ESC + 'E' + '\x01';
-  s += '[' + modeLabel + ']' + LF;
-  s += ESC + 'E' + '\x00';
-  s += LF;
-
-  // Séparateur
-  s += '========================================' + LF;
-  s += LF;
-
-  // Numéro de commande GÉANT
-  s += 'VOTRE NUMERO' + LF;
-  s += LF;
-  s += GS + '!' + '\x77';        // TAILLE GÉANTE (8x8)
-  s += ESC + 'E' + '\x01';
-  s += '#' + numero + LF;
-  s += ESC + 'E' + '\x00';
-  s += GS + '!' + '\x00';        // Taille normale
-
-  // Séparateur
-  s += LF;
-  s += '========================================' + LF;
-  s += LF;
-
-  // Détail commande
-  s += ESC + 'a' + '\x00';        // Aligné à gauche
-  s += 'Date : ' + new Date().toLocaleString('fr-FR') + LF;
-  if (clientFid && clientFid.nom) {
-    s += 'Client : ' + clientFid.nom + LF;
-  }
-  s += '----------------------------------------' + LF;
-
-  // Lignes
-  let total = 0;
-  lignes.forEach(l => {
-    const qte = l.quantite || 1;
-    const nom = l.nom || l.nom_produit || '';
-    const prix = parseFloat(l.prix) * qte;
-    total += prix;
-    const debut = qte + 'x ' + nom;
-    const prixStr = prix.toFixed(2).replace('.', ',') + ' EUR';
-    // Padding pour aligner à droite
-    const espacesMax = 42 - debut.length - prixStr.length;
-    if (espacesMax > 0) {
-      s += debut + ' '.repeat(espacesMax) + prixStr + LF;
-    } else {
-      s += debut + LF;
-      s += '  ' + ' '.repeat(40 - prixStr.length - 2) + prixStr + LF;
-    }
-  });
-
-  s += '----------------------------------------' + LF;
-
-  // Total
-  s += ESC + 'E' + '\x01';
-  s += GS + '!' + '\x11';
-  const totalStr = total.toFixed(2).replace('.', ',') + ' EUR';
-  s += 'TOTAL : ' + totalStr + LF;
-  s += GS + '!' + '\x00';
-  s += ESC + 'E' + '\x00';
-  s += LF;
-
-  // Instructions selon mode de paiement
-  s += ESC + 'a' + '\x01';        // Centré
-  if (methode === 'comptoir') {
-    s += ESC + 'E' + '\x01';
-    s += '*** A REGLER AU COMPTOIR ***' + LF;
-    s += ESC + 'E' + '\x00';
-    s += 'Presentez ce ticket au comptoir' + LF;
-    s += 'pour regler votre commande' + LF;
-  } else {
-    s += ESC + 'E' + '\x01';
-    s += '*** PAIEMENT VALIDE ***' + LF;
-    s += ESC + 'E' + '\x00';
-    s += 'Merci, patientez svp' + LF;
-    s += 'Nous preparons votre commande' + LF;
-  }
-
-  s += LF;
-  s += 'Vous serez appele(e) par votre numero' + LF;
-  s += LF;
-  s += LF;
-  s += 'Merci pour votre commande !' + LF;
-  s += LF;
-  s += LF;
-  s += LF;
-
-  // Couper le papier
-  s += GS + 'V' + '\x00';
-
-  return s;
-}
-
-// ============================================================
-//  🧾 IMPRESSION CUISINE/SUSHI — via table Supabase impressions_borne
-//  Le relais Termux (relais-borne.js) surveille cette table et
-//  imprime : bon cuisine, bon sushi, récap comptoir.
-// ============================================================
-
-// Catégories routées vers la station SUSHI (nom de la cat OU de son parent)
-const CATS_SUSHI = ['sushi','sushis','maki','makis','california','californias','crispy','crispys','tiger','tigers','poke bowl','pokebowl','pokebowls','poke','pokes'];
-// Catégories SANS bon de préparation (préparées/servies au comptoir)
-const CATS_SANS_BON = ['boisson','boissons','dessert','desserts'];
-
-function normNomCat(s) {
-  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-}
-
-function stationPourLigne(l) {
-  // Les lignes liées (suppléments/sauces sous un plat) suivent la station du plat
-  const pid = l.lien_plat || l.produit_id;
-  const p = produits.find(x => x.id === pid);
-  if (!p) return 'cuisine';
-  const cat = categories.find(c => c.id === p.categorie_id);
-  const nomCat = normNomCat(cat ? cat.nom : '');
-  const parent = (cat && cat.parent_id) ? categories.find(c => c.id === cat.parent_id) : null;
-  const nomParent = normNomCat(parent ? parent.nom : '');
-  if (CATS_SUSHI.includes(nomCat) || CATS_SUSHI.includes(nomParent)) return 'sushi';
-  if (CATS_SANS_BON.includes(nomCat) || CATS_SANS_BON.includes(nomParent)) return 'comptoir';
-  return 'cuisine';
-}
-
-async function imprimerTicketCuisine(venteId, numero, lignes) {
-  try {
-    // On construit les items depuis le PANIER (il contient options + liens plat)
-    const items = panier.map(l => {
-      const details = [];
-      if (l.options) {
-        if (l.options.options_base) {
-          Object.entries(l.options.options_base).forEach(([g, c]) => details.push(g + ' : ' + c));
-        }
-        if (l.options.retirable && l.options.retirable.length > 0) {
-          details.push('SANS : ' + l.options.retirable.join(', '));
-        }
-        if (l.options.sauces && l.options.sauces.length > 0) {
-          const noms = l.options.sauces.map(sid => {
-            const s = produits.find(p => p.id === sid);
-            return s ? s.nom.replace('Sauce ', '') : null;
-          }).filter(n => n);
-          if (noms.length) details.push('Sauce : ' + noms.join(', '));
-        }
+    try {
+      const resp = await fetch('/.netlify/functions/sumup-check-status?client_transaction_id=' +
+        encodeURIComponent(paiementEnCours.clientTransactionId));
+      const data = await resp.json();
+      if (data.statut === 'SUCCESSFUL') {
+        arreterPolling();
+        await payer('carte');
+      } else if (data.statut === 'FAILED' || data.statut === 'CANCELLED') {
+        arreterPolling();
+        document.getElementById('paie-sumup-sub').textContent = 'Paiement refusé ou annulé';
+        setTimeout(() => allerEcran('ecran-paiement'), 2000);
       }
-      return {
-        nom: l.nom.replace('↳', '>'),
-        quantite: l.quantite,
-        prix: l.prix,
-        station: stationPourLigne(l),
-        details: details
-      };
-    });
+      // PENDING → on continue le polling
+    } catch (e) {
+      // Erreur réseau ponctuelle : on continue
+    }
+  }, 2000);
+}
 
-    const { error } = await sb.from('impressions_borne').insert({
-      restaurant_id: RESTO_ID,
-      numero: String(numero),
-      mode_service: modeService,
-      mode_paiement: 'carte',
-      client_nom: clientFid ? clientFid.nom : null,
-      total: totalPanier(),
-      lignes: items
-    });
-    if (error) console.error('Insert impressions_borne KO:', error.message);
-  } catch (e) {
-    console.error('Envoi impression cuisine échoué (non bloquant) :', e);
+function arreterPolling() {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+    pollingInterval = null;
   }
 }
-// ============================================================
-//  🎠 CARROUSEL ACCUEIL — rotation automatique des images
-// ============================================================
-let carrouselIndex = 0;
-setInterval(() => {
-  const slides = document.querySelectorAll('#ecran-accueil .carrousel-slide');
-  if (slides.length < 2) return;
-  slides[carrouselIndex].classList.remove('visible');
-  carrouselIndex = (carrouselIndex + 1) % slides.length;
-  slides[carrouselIndex].classList.add('visible');
-}, 5000);
+
+async function annulerPaiementSumUp() {
+  arreterPolling();
+  try {
+    await fetch('/.netlify/functions/sumup-cancel-reader', { method: 'POST' });
+  } catch (e) {}
+  allerEcran('ecran-paiement');
+}
+
+// ===== ENREGISTREMENT DE LA COMMANDE =====
+async function payer(methode) {
+  // methode : 'carte' (payé sur borne) ou 'comptoir' (à encaisser)
+  const total = totalPanier();
+  const lignes = panier.map(l => ({
+    produit_id: l.produit_id,
+    nom: l.nom,
+    prix: l.prix,
+    quantite: l.quantite,
+    options: l.options || null,
+    lien_plat: l.lien_plat || null
+  }));
+
+  try {
+    if (methode === 'carte') {
+      // Vente ferme : enregistrée via Netlify Function (service_role)
+      const resp = await fetch('/.netlify/functions/borne-enregistrer-vente', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lignes,
+          total,
+          mode_service: modeService,
+          paiement: 'cb_borne',
+          client_id: clientFid ? clientFid.id : null
+        })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Erreur d\'enregistrement');
+      derniereVente = { numero: data.numero, vente_id: data.vente_id };
+      // 🎫 Crédit fidélité immédiat si un client est déjà attaché (QR ou téléphone)
+      let fidResultat = null;
+      if (clientFid && clientFid.telephone) {
+        fidResultat = await crediterFideliteApresVente(data.vente_id);
+      }
+      afficherConfirmation(data.numero, 'paye', fidResultat);
+    } else {
+      // Paiement au comptoir : commande en attente (encaissée à la caisse)
+      const numero = 'B' + Math.floor(100 + Math.random() * 900);
+      const { error } = await sb.from('commandes_en_cours').insert({
+        restaurant_id: RESTO_ID,
+        numero: numero,
+        lignes: lignes,
+        total: total,
+        mode_service: modeService,
+        statut: 'paiement_comptoir',
+        client_id: clientFid ? clientFid.id : null
+      });
+      if (error) throw error;
+      derniereVente = null;
+      afficherConfirmation(numero, 'comptoir');
+    }
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  }
+}
+
+let timerFin = null;
+function relancerTimerFin(delai) {
+  if (timerFin) clearTimeout(timerFin);
+  timerFin = setTimeout(() => {
+    panier = [];
+    clientFid = null;
+    derniereVente = null;
+    recompenseEnAttente = null;
+    fermerFidelite();
+    majBarrePanier();
+    afficherFidelite();
+    allerEcran('ecran-accueil');
+  }, delai);
+}
+function prolongerTimerFin() {
+  relancerTimerFin(60000);   // 60 s pendant la saisie du téléphone
+}
+
+function afficherConfirmation(numero, type, fidResultat) {
+  document.getElementById('fin-numero').textContent = numero;
+  const instructions = document.getElementById('fin-instructions');
+  const cta = document.getElementById('fin-fid-cta');
+  const resultat = document.getElementById('fin-fid-resultat');
+  cta.style.display = 'none';
+  resultat.style.display = 'none';
+
+  if (type === 'comptoir') {
+    document.getElementById('fin-titre').textContent = 'Commande enregistrée !';
+    document.getElementById('fin-sub').textContent = 'Présentez-vous au comptoir pour régler';
+    instructions.className = 'fin-instructions comptoir';
+    instructions.innerHTML = 'Rendez-vous au <strong>comptoir</strong> avec votre numéro pour payer et récupérer votre commande.'
+      + (clientFid ? '<br>🎫 Vos points seront crédités à l\'encaissement.' : '');
+  } else {
+    document.getElementById('fin-titre').textContent = 'Paiement accepté !';
+    document.getElementById('fin-sub').textContent = 'Votre commande part en cuisine';
+    instructions.className = 'fin-instructions paye';
+    instructions.innerHTML = 'Votre ticket sort au comptoir. <strong>Gardez votre numéro</strong>, on vous appelle dès que c\'est prêt !';
+    // 🎫 Fidélité : points crédités OU proposition de saisie
+    if (fidResultat) {
+      resultat.style.display = 'block';
+      resultat.textContent = '🎉 +' + fidResultat.points_credites + ' points crédités · nouveau solde : ' + fidResultat.nouveau_solde + ' pts';
+    } else if (clientFid && clientFid.telephone) {
+      resultat.style.display = 'block';
+      resultat.textContent = '✅ Points enregistrés sur votre compte';
+    } else if (derniereVente && derniereVente.vente_id) {
+      cta.style.display = 'inline-block';
+    }
+  }
+  document.getElementById('fin-mode').textContent =
+    modeService === 'sur_place' ? '🍽️ Sur place' : '🥡 À emporter';
+  allerEcran('ecran-fin');
+  declencherConfettis();
+
+  // Retour à l'accueil (14 s — le temps de lire / taper son numéro)
+  relancerTimerFin(14000);
+}
+
+// ===== GO =====
 init();
 </script>
 </body>
