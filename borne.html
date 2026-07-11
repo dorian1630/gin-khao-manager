@@ -4830,6 +4830,36 @@ async function inscrireFidelite() {
 }
 
 // --- Étape 3 : solde + récompenses ---
+function jaugeProgressionHtml() {
+  // Jauge vers la prochaine récompense (points actuels + panier en cours, récompense déduite)
+  const PALIERS = [
+    { s: 50,  l: '🍮 Dessert offert' },
+    { s: 100, l: '🥟 Entrée offerte' },
+    { s: 200, l: '🍜 Plat offert' },
+    { s: 300, l: '🍱 Formule offerte' }
+  ];
+  const ptsCommande = Math.floor(Math.max(0, totalPanier()));
+  const ptsActuels = ((clientFid && clientFid.points) || 0) - (recompenseEnAttente ? recompenseEnAttente.palier : 0);
+  const futur = Math.max(0, ptsActuels) + ptsCommande;
+  const bonus = ptsCommande > 0 ? ` <span style="color:var(--orange-dark);">(+${ptsCommande} avec le panier)</span>` : '';
+  const prochain = PALIERS.find(p => futur < p.s);
+  if (!prochain) {
+    return `
+      <div class="fid-progress" style="margin:0 0 16px;">
+        <div class="fid-progress-titre"><span>🎉 ${futur} pts${bonus}</span><span class="fid-progress-cible">Tout est débloqué !</span></div>
+        <div class="fid-progress-barre"><div class="fid-progress-fill" style="width:100%;"></div></div>
+      </div>`;
+  }
+  const pct = Math.min(100, Math.round(futur / prochain.s * 100));
+  const manque = prochain.s - futur;
+  return `
+    <div class="fid-progress" style="margin:0 0 16px;">
+      <div class="fid-progress-titre"><span>${futur} pts${bonus}</span><span class="fid-progress-cible">${prochain.l} · ${prochain.s} pts</span></div>
+      <div class="fid-progress-barre"><div class="fid-progress-fill" style="width:${pct}%;"></div></div>
+      <div class="fid-progress-sous">Plus que <b>${manque} point${manque > 1 ? 's' : ''}</b> pour ${prochain.l}</div>
+    </div>`;
+}
+
 function afficherEcranSoldeFid(vientDeSInscrire) {
   const m = fidModal();
   m.classList.add('actif');
@@ -4853,6 +4883,7 @@ function afficherEcranSoldeFid(vientDeSInscrire) {
         <div class="fid-solde-pts">${pts}</div>
         <div class="fid-solde-lbl">point${pts > 1 ? 's' : ''} fidélité</div>
       </div>
+      ${jaugeProgressionHtml()}
       ${recompenseEnAttente
         ? `<div class="fid-inscription-note">🎁 <b>${recompenseEnAttente.libelle}</b> appliquée à la commande (−${fmt(recompenseEnAttente.montant)}).<br><a href="#" onclick="retirerRecompense(); return false;" style="color:var(--orange-dark);">Retirer la récompense</a></div>`
         : (panier.length === 0
