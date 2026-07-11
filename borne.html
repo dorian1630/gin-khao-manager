@@ -4896,55 +4896,44 @@ async function annulerPaiementSumUp() {
 
 // ===== ENREGISTREMENT DE LA COMMANDE =====
 async function payer(methode) {
-  // methode : 'carte' (payé sur borne) ou 'comptoir' (à encaisser)
-  const total = totalPanier();
+  // methode : 'carte' (payé sur borne) ou 'comptoir' (à encaisser à la caisse)
   const lignes = panier.map(l => ({
     produit_id: l.produit_id,
     nom: l.nom,
     prix: l.prix,
     quantite: l.quantite,
     options: l.options || null,
-    lien_plat: l.lien_plat || null
+    lien_plat: l.lien_plat || null,
+    recompense: l.recompense || null      // 🎁 palier fidélité (ligne remise)
   }));
 
   try {
+    const resp = await fetch('/.netlify/functions/borne-enregistrer-vente', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        restaurant_id: RESTO_ID,
+        mode_paiement: methode,
+        lignes,
+        mode_service: modeService,
+        client_id: clientFid ? clientFid.id : null
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) throw new Error(data.erreur || 'Erreur d\'enregistrement');
+
     if (methode === 'carte') {
-      // Vente ferme : enregistrée via Netlify Function (service_role)
-      const resp = await fetch('/.netlify/functions/borne-enregistrer-vente', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lignes,
-          total,
-          mode_service: modeService,
-          paiement: 'cb_borne',
-          client_id: clientFid ? clientFid.id : null
-        })
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Erreur d\'enregistrement');
       derniereVente = { numero: data.numero, vente_id: data.vente_id };
-      // 🎫 Crédit fidélité immédiat si un client est déjà attaché (QR ou téléphone)
+      // 🎫 Crédit fidélité immédiat si un client est attaché (QR ou téléphone)
       let fidResultat = null;
       if (clientFid && clientFid.telephone) {
         fidResultat = await crediterFideliteApresVente(data.vente_id);
       }
       afficherConfirmation(data.numero, 'paye', fidResultat);
     } else {
-      // Paiement au comptoir : commande en attente (encaissée à la caisse)
-      const numero = 'B' + Math.floor(100 + Math.random() * 900);
-      const { error } = await sb.from('commandes_en_cours').insert({
-        restaurant_id: RESTO_ID,
-        numero: numero,
-        lignes: lignes,
-        total: total,
-        mode_service: modeService,
-        statut: 'paiement_comptoir',
-        client_id: clientFid ? clientFid.id : null
-      });
-      if (error) throw error;
+      // Comptoir : vente 'en_attente' → encaissée à la caisse (points crédités là-bas)
       derniereVente = null;
-      afficherConfirmation(numero, 'comptoir');
+      afficherConfirmation(data.numero, 'comptoir');
     }
   } catch (e) {
     alert('Erreur : ' + e.message);
