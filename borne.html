@@ -2456,6 +2456,86 @@ body {
 }
 .fid-progress-sous b { color: var(--orange-dark); }
 
+/* ===== 💬 DIALOGUE CUSTOM (style borne, remplace alert/confirm) ===== */
+.borne-dialog {
+  position: fixed; inset: 0;
+  background: rgba(26, 26, 26, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.2s ease;
+}
+.borne-dialog.actif { display: flex; }
+.borne-dialog-box {
+  background: #FFFFFF;
+  border-radius: 28px;
+  padding: 34px 30px 26px;
+  width: 100%;
+  max-width: 460px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3);
+  animation: upsellPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.borne-dialog-ic { font-size: 56px; line-height: 1; margin-bottom: 14px; }
+.borne-dialog-msg {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+.borne-dialog-actions { display: flex; gap: 10px; }
+.bd-btn-ok {
+  flex: 2;
+  padding: 17px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--body);
+  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.4);
+}
+.bd-btn-ok:active { transform: scale(0.97); }
+.bd-btn-cancel {
+  flex: 1;
+  padding: 17px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: var(--text-soft);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--body);
+}
+.bd-btn-cancel:active { transform: scale(0.97); background: var(--surface-2); }
+
+/* ===== 🏠 BOUTON RETOUR ACCUEIL ===== */
+.btn-home {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid var(--orange-soft);
+  background: var(--orange-pale);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.btn-home:active { transform: scale(0.9); background: var(--orange-soft); }
+
+/* ===== 💬 DIALOGUE CUSTOM — fin ===== */
+
 /* ===== 🎁 BOUTONS RÉCOMPENSE (panier) ===== */
 .fid-reco-cta {
   margin: 10px 28px 0;
@@ -2642,7 +2722,10 @@ body {
 <!-- ===== ÉCRAN 2 bis : ACCUEIL CATÉGORIES (style McDo) ===== -->
 <div class="ecran" id="ecran-accueil-cats">
   <div class="ac-top">
-    <div class="ac-logo">Gin <span>Khao</span></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
+      <div class="ac-logo">Gin <span>Khao</span></div>
+    </div>
     <div class="ac-fid" id="ac-fid" onclick="acFidClic()">
       <div class="ac-fid-nom">🎫 Se connecter</div>
       <div class="ac-fid-sous">Fidélité · 1 € = 1 pt</div>
@@ -2685,7 +2768,10 @@ body {
 <!-- ===== ÉCRAN 3 : MENU ===== -->
 <div class="ecran" id="ecran-menu">
   <div class="menu-top">
-    <button class="btn-retour-cats" onclick="retourCategories()">← Catégories</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
+      <button class="btn-retour-cats" onclick="retourCategories()">← Catégories</button>
+    </div>
     <div class="logo">Gin <span>Khao</span></div>
     <div class="menu-mode-badge" id="menu-mode-badge">Sur place</div>
   </div>
@@ -2704,7 +2790,10 @@ body {
 <div class="ecran" id="ecran-panier">
   <div class="panier-head">
     <h2>Votre commande</h2>
-    <button class="btn-retour" onclick="allerEcran('ecran-menu')">← Ajouter des plats</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
+      <button class="btn-retour" onclick="allerEcran('ecran-menu')">← Ajouter des plats</button>
+    </div>
   </div>
 
   <!-- 🎫 BANDEAU FIDÉLITÉ -->
@@ -2809,6 +2898,15 @@ body {
   <!-- Contenu injecté par JS selon l'étape -->
 </div>
 
+<!-- ===== 💬 DIALOGUE CUSTOM (remplace alert/confirm navigateur) ===== -->
+<div class="borne-dialog" id="borne-dialog">
+  <div class="borne-dialog-box">
+    <div class="borne-dialog-ic" id="bd-ic">❓</div>
+    <div class="borne-dialog-msg" id="bd-msg"></div>
+    <div class="borne-dialog-actions" id="bd-actions"></div>
+  </div>
+</div>
+
 <!-- ===== 🎫 MODALE FIDÉLITÉ (choix / téléphone / solde / récompenses) ===== -->
 <div class="fid-modal" id="modal-fidelite">
   <!-- Contenu injecté par JS selon l'étape -->
@@ -2879,6 +2977,68 @@ let clientFid = null;     // 🎫 Client attaché via QR code fidélité {id, no
 function allerEcran(id) {
   document.querySelectorAll('.ecran').forEach(e => e.classList.remove('actif'));
   document.getElementById(id).classList.add('actif');
+}
+
+// ============================================================
+//  💬 DIALOGUES CUSTOM (remplacent alert / confirm navigateur)
+// ============================================================
+function borneDialog(opts) {
+  const d = document.getElementById('borne-dialog');
+  document.getElementById('bd-ic').textContent = opts.ic || '❓';
+  document.getElementById('bd-msg').innerHTML = opts.msg || '';
+  const act = document.getElementById('bd-actions');
+  act.innerHTML = '';
+  (opts.boutons || []).forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = b.classe || 'bd-btn-ok';
+    btn.textContent = b.label;
+    btn.onclick = function () { fermerBorneDialog(); if (b.action) b.action(); };
+    act.appendChild(btn);
+  });
+  d.classList.add('actif');
+}
+function fermerBorneDialog() {
+  document.getElementById('borne-dialog').classList.remove('actif');
+}
+function borneAlert(msg, ic) {
+  borneDialog({ ic: ic || 'ℹ️', msg: msg, boutons: [{ label: 'OK', classe: 'bd-btn-ok' }] });
+}
+function borneConfirm(msg, onOk, opts) {
+  opts = opts || {};
+  borneDialog({
+    ic: opts.ic || '❓',
+    msg: msg,
+    boutons: [
+      { label: opts.nonLabel || 'Annuler', classe: 'bd-btn-cancel' },
+      { label: opts.okLabel || 'Oui', classe: 'bd-btn-ok', action: onOk }
+    ]
+  });
+}
+
+// ============================================================
+//  🏠 RETOUR ACCUEIL (avec confirmation si commande en cours)
+// ============================================================
+function retourAccueil() {
+  const reset = function () {
+    panier = [];
+    clientFid = null;
+    recompenseEnAttente = null;
+    recompensePendingAjout = null;
+    parcoursPlatEnCours = null;
+    formuleEnCours = null;
+    fermerModaleParcours();
+    if (typeof fermerUpsellModal === 'function') fermerUpsellModal();
+    if (typeof fermerFidelite === 'function') fermerFidelite();
+    majBarrePanier();
+    afficherFidelite();
+    allerEcran('ecran-accueil');
+  };
+  if (panier.length > 0 || clientFid) {
+    borneConfirm('Abandonner la commande en cours<br>et revenir à l\'accueil ?', reset,
+      { ic: '🏠', okLabel: 'Oui, recommencer', nonLabel: 'Rester' });
+  } else {
+    reset();
+  }
 }
 
 function allerMode() { allerEcran('ecran-mode'); }
@@ -2986,7 +3146,7 @@ function filtrerCatEtAller(catId) {
 function filtrerCatEtAllerFormules() {
   const cat = categories.find(c => c.nom === 'Formules' && !c.parent_id);
   if (!cat) {
-    alert('Aucune formule disponible pour le moment');
+    borneAlert('Aucune formule disponible pour le moment', '🍱');
     return;
   }
   filtrerCatEtAller(cat.id);
@@ -3029,7 +3189,10 @@ function afficherSousCategories(parentId) {
   
   ecran.innerHTML = `
     <div class="sc-header">
-      <button class="btn-retour-cats" onclick="allerEcran('ecran-accueil-cats')">← Catégories</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
+        <button class="btn-retour-cats" onclick="allerEcran('ecran-accueil-cats')">← Catégories</button>
+      </div>
       <div class="logo">${parent.nom}</div>
       <div></div>
     </div>
@@ -3810,7 +3973,7 @@ function lancerParcoursFormule(sousCatFormule) {
   const nomSource = sousCatFormule.nom.replace(/^Formule\s+/, '');
   const catSource = categories.find(c => c.nom === nomSource && !c.parent_id);
   if (!catSource) {
-    alert('Catégorie source introuvable : ' + nomSource);
+    borneAlert('Catégorie source introuvable : ' + nomSource, '⚠️');
     return;
   }
   
@@ -3849,7 +4012,7 @@ function barrePanierFormule() {
 function afficherEcranFormuleEntree() {
   const catEntrees = categories.find(c => c.nom === 'Entrées');
   if (!catEntrees) {
-    alert('Catégorie Entrées introuvable');
+    borneAlert('Catégorie Entrées introuvable', '⚠️');
     return;
   }const entrees = produits.filter(p => p.categorie_id === catEntrees.id && p.actif !== false);
   
@@ -3873,7 +4036,10 @@ function afficherEcranFormuleEntree() {
   
   ecran.innerHTML = `
     <div class="formule-step-header">
-      <button class="btn-retour-cats" onclick="annulerFormule()">← Annuler</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
+        <button class="btn-retour-cats" onclick="annulerFormule()">← Annuler</button>
+      </div>
       <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
       <div class="formule-step-num">Étape 1/3</div>
     </div>
@@ -3915,7 +4081,10 @@ function afficherEcranFormulePlat() {
   const ecran = document.getElementById('ecran-formule-step');
   ecran.innerHTML = `
     <div class="formule-step-header">
-      <button class="btn-retour-cats" onclick="afficherEcranFormuleEntree()">← Retour</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
+        <button class="btn-retour-cats" onclick="afficherEcranFormuleEntree()">← Retour</button>
+      </div>
       <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
       <div class="formule-step-num">Étape 2/3</div>
     </div>
@@ -4009,7 +4178,10 @@ function afficherEcranFormuleBoisson() {
   
   ecran.innerHTML = `
     <div class="formule-step-header">
-      <button class="btn-retour-cats" onclick="afficherEcranFormulePlat()">← Retour</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
+        <button class="btn-retour-cats" onclick="afficherEcranFormulePlat()">← Retour</button>
+      </div>
       <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
       <div class="formule-step-num">Étape 3/3</div>
     </div>
@@ -4061,17 +4233,18 @@ function finaliserFormule() {
 }
 
 function annulerFormule() {
-  if (!confirm('Annuler la formule ?')) return;
-  formuleEnCours = null;
-  parcoursPlatEnCours = null;
-  fermerModaleParcours();
-  // Retour à l'accueil catégories
-  const formulesCat = categories.find(c => c.nom === 'Formules' && !c.parent_id);
-  if (formulesCat) {
-    afficherSousCategories(formulesCat.id);
-  } else {
-    allerEcran('ecran-accueil-cats');
-  }
+  borneConfirm('Annuler la formule en cours ?', function () {
+    formuleEnCours = null;
+    parcoursPlatEnCours = null;
+    fermerModaleParcours();
+    // Retour à l'accueil catégories
+    const formulesCat = categories.find(c => c.nom === 'Formules' && !c.parent_id);
+    if (formulesCat) {
+      afficherSousCategories(formulesCat.id);
+    } else {
+      allerEcran('ecran-accueil-cats');
+    }
+  }, { ic: '🍱', okLabel: 'Oui, annuler', nonLabel: 'Continuer' });
 }
 
 // ============================================================
@@ -4692,7 +4865,7 @@ async function traiterScanFidelite(code) {
       .eq('id', clientId)
       .single();
     if (error || !data) {
-      alert('Carte non reconnue. Demandez au comptoir.');
+      borneAlert('Carte non reconnue.<br>Demandez au comptoir.', '🎫');
       allerEcran(scanRetourEcran);
       return;
     }
@@ -4700,7 +4873,7 @@ async function traiterScanFidelite(code) {
     afficherFidelite();
     allerEcran(scanRetourEcran);
   } catch (e) {
-    alert('Erreur de lecture : ' + e.message);
+    borneAlert('Erreur de lecture : ' + e.message, '⚠️');
     allerEcran(scanRetourEcran);
   }
 }
@@ -4717,7 +4890,7 @@ function detacherClient() {
 }
 
 function afficherInfoFidelite() {
-  alert('Demandez votre carte de fidélité au comptoir ! 🎫\nCumulez des points à chaque commande.');
+  borneAlert('Demandez votre carte de fidélité au comptoir !<br>Cumulez des points à chaque commande.', '🎫');
 }
 
 // ============================================================
@@ -4859,7 +5032,7 @@ async function validerTelFidelite() {
       afficherEcranInscriptionFid();
     }
   } catch (e) {
-    alert('Erreur fidélité : ' + (e.message || e));
+    borneAlert('Erreur fidélité : ' + (e.message || e), '⚠️');
     fermerFidelite();
   }
 }
@@ -4895,7 +5068,7 @@ async function inscrireFidelite() {
       afficherEcranSoldeFid(true);
     }
   } catch (e) {
-    alert('Inscription impossible : ' + (e.message || e));
+    borneAlert('Inscription impossible : ' + (e.message || e), '⚠️');
     fermerFidelite();
   }
 }
@@ -4970,9 +5143,10 @@ function afficherEcranSoldeFid(vientDeSInscrire) {
 
 // 🔒 Détachement UNIQUEMENT sur confirmation explicite (anti clic accidentel)
 function confirmerDetachement() {
-  if (!confirm('Détacher le compte fidélité de cette commande ?')) return;
-  detacherClient();
-  fermerFidelite();
+  borneConfirm('Détacher le compte fidélité<br>de cette commande ?', function () {
+    detacherClient();
+    fermerFidelite();
+  }, { ic: '🎫', okLabel: 'Détacher', nonLabel: 'Garder' });
 }
 
 // --- 🎁 Ajouter sa récompense : boutons panier + modale de choix ---
@@ -5015,7 +5189,7 @@ function ouvrirChoixRecompense(palier) {
   if (palier === 300) {
     recompensePendingAjout = { palier: 300 };
     fermerFidelite();
-    alert('🍱 Composez votre formule : elle sera OFFERTE à la fin !');
+    borneAlert('🍱 Composez votre formule :<br>elle sera <b>OFFERTE</b> à la fin !', '🎁');
     filtrerCatEtAllerFormules();
     return;
   }
@@ -5039,7 +5213,7 @@ function ouvrirChoixRecompense(palier) {
       return !exclus.includes(cat.nom) && !(parent && exclus.includes(parent.nom));
     });
   }
-  if (items.length === 0) { alert('Aucun article disponible pour cette récompense'); return; }
+  if (items.length === 0) { borneAlert('Aucun article disponible pour cette récompense', '🎁'); return; }
 
   recompensePendingAjout = { palier: palier };
   const m = fidModal();
@@ -5228,7 +5402,7 @@ async function lancerPaiementSumUp() {
     // 2. Poller le statut du paiement
     demarrerPollingStatut();
   } catch (e) {
-    alert('Paiement impossible : ' + e.message);
+    borneAlert('Paiement impossible : ' + e.message, '💳');
     allerEcran('ecran-paiement');
   }
 }
@@ -5284,7 +5458,7 @@ async function payer(methode) {
   // 🔒 Anti-triche : une récompense fidélité exige le paiement CARTE sur la borne
   // (les points sont déduits au moment du paiement ; au comptoir rien ne garantit l'encaissement)
   if (methode === 'comptoir' && recompenseEnAttente) {
-    alert('🎁 Votre récompense fidélité nécessite un paiement par carte sur la borne.\n\nSinon, retirez la récompense et utilisez-la directement au comptoir.');
+    borneAlert('🎁 Votre récompense fidélité nécessite<br>un <b>paiement par carte</b> sur la borne.<br><br>Sinon, retirez la récompense et<br>demandez-la directement au comptoir.', '💳');
     return;
   }
   const lignes = panier.map(l => ({
@@ -5326,7 +5500,7 @@ async function payer(methode) {
       afficherConfirmation(data.numero, 'comptoir');
     }
   } catch (e) {
-    alert('Erreur : ' + e.message);
+    borneAlert('Erreur : ' + e.message, '⚠️');
   }
 }
 
