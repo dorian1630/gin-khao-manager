@@ -55,13 +55,32 @@ exports.handler = async function (event) {
   if (lignes.length > 50) {
     return jsonResp(400, { ok: false, erreur: 'Trop de lignes (max 50)' });
   }
+  let nbRecompenses = 0;
   for (const l of lignes) {
+    // 🎁 Ligne récompense fidélité : produit_id null, prix négatif borné, quantité 1
+    if (l.recompense) {
+      nbRecompenses++;
+      if (nbRecompenses > 1) {
+        return jsonResp(400, { ok: false, erreur: 'Une seule récompense par commande' });
+      }
+      if (l.produit_id !== null || typeof l.prix !== 'number' ||
+          l.prix >= 0 || l.prix < -100 || l.quantite !== 1 ||
+          ![50, 100, 200, 300].includes(l.recompense)) {
+        return jsonResp(400, { ok: false, erreur: 'Ligne récompense invalide' });
+      }
+      continue;
+    }
     if (!l.produit_id || typeof l.prix !== 'number' || typeof l.quantite !== 'number') {
       return jsonResp(400, { ok: false, erreur: 'Ligne invalide' });
     }
     if (l.prix < 0 || l.quantite < 1 || l.quantite > 50) {
       return jsonResp(400, { ok: false, erreur: 'Prix ou quantite invalide' });
     }
+  }
+  // Le total (lignes cumulées) ne peut jamais être négatif
+  const totalCalc = lignes.reduce((s, l) => s + l.prix * l.quantite, 0);
+  if (totalCalc < 0) {
+    return jsonResp(400, { ok: false, erreur: 'Total négatif interdit' });
   }
 
   const sb = createClient(SUPA_URL, SUPA_KEY);
