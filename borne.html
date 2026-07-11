@@ -2409,6 +2409,93 @@ body {
   line-height: 1.5;
   margin-bottom: 18px;
 }
+/* ===== 📊 JAUGE DE POINTS (panier) ===== */
+.fid-progress {
+  margin: 12px 28px 0;
+  background: #FFFFFF;
+  border: 2px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+}
+.fid-progress-titre {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.fid-progress-titre .fid-progress-cible {
+  font-size: 12px;
+  color: var(--orange-dark);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.fid-progress-barre {
+  height: 14px;
+  background: var(--orange-pale);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.fid-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), var(--orange-dark));
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 6px;
+}
+.fid-progress-sous {
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+.fid-progress-sous b { color: var(--orange-dark); }
+
+/* ===== 👋 BLOC FIDÉLITÉ EN-TÊTE CATÉGORIES ===== */
+.ac-fid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 9px 20px;
+  border-radius: 16px;
+  border: 2px solid var(--orange-soft);
+  background: var(--orange-pale);
+  cursor: pointer;
+  transition: transform 0.15s;
+  min-width: 140px;
+  text-align: center;
+}
+.ac-fid:active { transform: scale(0.95); }
+.ac-fid .ac-fid-nom {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.15;
+  white-space: nowrap;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ac-fid .ac-fid-sous {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ac-fid.ac-fid-connecte {
+  border-color: #88C04F;
+  background: linear-gradient(135deg, #E8F8D5, #DFF1C0);
+}
+.ac-fid.ac-fid-connecte .ac-fid-sous { color: #4C8A1F; }
+
 /* Bouton fidélité sur l'écran de confirmation */
 .fin-fid-cta {
   margin-top: 6px;
@@ -2518,6 +2605,10 @@ body {
 <div class="ecran" id="ecran-accueil-cats">
   <div class="ac-top">
     <div class="ac-logo">Gin <span>Khao</span></div>
+    <div class="ac-fid" id="ac-fid" onclick="acFidClic()">
+      <div class="ac-fid-nom">🎫 Se connecter</div>
+      <div class="ac-fid-sous">Fidélité · 1 € = 1 pt</div>
+    </div>
     <div class="ac-mode-badge" id="ac-mode-badge">Sur place</div>
   </div>
 
@@ -2599,6 +2690,9 @@ body {
       </div>
     </div>
   </div>
+
+  <!-- 📊 Jauge de progression fidélité -->
+  <div class="fid-progress" id="fid-progress" style="display:none;"></div>
 
   <div class="panier-liste" id="panier-liste"></div>
   <div class="panier-foot">
@@ -4323,6 +4417,9 @@ function majBarrePanier() {
   if (acTotal) acTotal.innerHTML = totalHtml;
   const acBtn = document.getElementById('ac-panier-btn');
   if (acBtn) acBtn.disabled = (n === 0);
+
+  // 📊 Jauge fidélité (suit le total en temps réel)
+  if (typeof majFidProgress === 'function') majFidProgress();
 }
 
 function afficherPanier() {
@@ -4401,6 +4498,77 @@ function afficherFidelite() {
   } else {
     pasConnecte.style.display = 'flex';
     connecte.style.display = 'none';
+  }
+  majFidHeader();
+  majFidProgress();
+}
+
+// --- 👋 Bloc fidélité de l'en-tête catégories ---
+function majFidHeader() {
+  const el = document.getElementById('ac-fid');
+  if (!el) return;
+  if (clientFid) {
+    const prenom = (clientFid.nom || '').trim().split(/\s+/)[0] ||
+      (clientFid.telephone ? clientFid.telephone.replace(/(\d{2})(?=\d)/g, '$1 ') : 'Mon compte');
+    const pts = clientFid.points != null ? clientFid.points : 0;
+    el.className = 'ac-fid ac-fid-connecte';
+    el.innerHTML = `
+      <div class="ac-fid-nom">👋 ${prenom}</div>
+      <div class="ac-fid-sous">Voir mes points (${pts})</div>`;
+  } else {
+    el.className = 'ac-fid';
+    el.innerHTML = `
+      <div class="ac-fid-nom">🎫 Se connecter</div>
+      <div class="ac-fid-sous">Fidélité · 1 € = 1 pt</div>`;
+  }
+}
+function acFidClic() {
+  if (clientFid) {
+    afficherEcranSoldeFid();
+  } else {
+    ouvrirFideliteAccueil();
+  }
+}
+
+// --- 📊 Jauge de progression des points (panier) ---
+function majFidProgress() {
+  const zone = document.getElementById('fid-progress');
+  if (!zone) return;
+  const totalCmd = Math.max(0, totalPanier());
+  const ptsCommande = Math.floor(totalCmd);
+  if (ptsCommande <= 0 && !clientFid) { zone.style.display = 'none'; return; }
+  zone.style.display = 'block';
+
+  const PALIERS = [
+    { s: 50,  l: '🍮 Dessert offert' },
+    { s: 100, l: '🥟 Entrée offerte' },
+    { s: 200, l: '🍜 Plat offert' },
+    { s: 300, l: '🍱 Formule offerte' }
+  ];
+
+  if (clientFid) {
+    const ptsActuels = (clientFid.points || 0) - (recompenseEnAttente ? recompenseEnAttente.palier : 0);
+    const futur = Math.max(0, ptsActuels) + ptsCommande;
+    const prochain = PALIERS.find(p => futur < p.s);
+    if (!prochain) {
+      zone.innerHTML = `
+        <div class="fid-progress-titre"><span>🎉 ${futur} points après cette commande</span><span class="fid-progress-cible">Toutes les récompenses débloquées !</span></div>
+        <div class="fid-progress-barre"><div class="fid-progress-fill" style="width:100%;"></div></div>
+        <div class="fid-progress-sous">🍱 <b>Formule offerte</b> disponible dès maintenant</div>`;
+    } else {
+      const pct = Math.min(100, Math.round(futur / prochain.s * 100));
+      const manque = prochain.s - futur;
+      zone.innerHTML = `
+        <div class="fid-progress-titre"><span>🎫 ${futur} pts après cette commande <span style="color:var(--orange-dark);">(+${ptsCommande})</span></span><span class="fid-progress-cible">${prochain.l} à ${prochain.s} pts</span></div>
+        <div class="fid-progress-barre"><div class="fid-progress-fill" style="width:${pct}%;"></div></div>
+        <div class="fid-progress-sous">Plus que <b>${manque} point${manque > 1 ? 's' : ''}</b> pour ${prochain.l}</div>`;
+    }
+  } else {
+    const pct = Math.min(100, Math.round(ptsCommande / 50 * 100));
+    zone.innerHTML = `
+      <div class="fid-progress-titre"><span>✨ +${ptsCommande} point${ptsCommande > 1 ? 's' : ''} à gagner avec cette commande</span><span class="fid-progress-cible">🍮 Dessert offert à 50 pts</span></div>
+      <div class="fid-progress-barre"><div class="fid-progress-fill" style="width:${pct}%;"></div></div>
+      <div class="fid-progress-sous">Touchez le bandeau 🎫 ci-dessus pour les cumuler !</div>`;
   }
 }
 
@@ -4692,10 +4860,17 @@ function afficherEcranSoldeFid(vientDeSInscrire) {
           : `<div class="fid-box-sous" style="margin-bottom:10px;">Utiliser une récompense sur cette commande :</div>
            <div class="fid-recompenses">${recosHtml}</div>`)}
       <div class="fid-actions">
-        <button class="fid-btn-annuler" onclick="detacherClient(); fermerFidelite();">Détacher</button>
+        <button class="fid-btn-annuler" onclick="confirmerDetachement()">Détacher</button>
         <button class="fid-btn-ok" onclick="fermerFidelite()">C'est noté ✓</button>
       </div>
     </div>`;
+}
+
+// 🔒 Détachement UNIQUEMENT sur confirmation explicite (anti clic accidentel)
+function confirmerDetachement() {
+  if (!confirm('Détacher le compte fidélité de cette commande ?')) return;
+  detacherClient();
+  fermerFidelite();
 }
 
 // Trouve la ligne du panier éligible à une récompense (la moins chère qui correspond)
@@ -4897,6 +5072,12 @@ async function annulerPaiementSumUp() {
 // ===== ENREGISTREMENT DE LA COMMANDE =====
 async function payer(methode) {
   // methode : 'carte' (payé sur borne) ou 'comptoir' (à encaisser à la caisse)
+  // 🔒 Anti-triche : une récompense fidélité exige le paiement CARTE sur la borne
+  // (les points sont déduits au moment du paiement ; au comptoir rien ne garantit l'encaissement)
+  if (methode === 'comptoir' && recompenseEnAttente) {
+    alert('🎁 Votre récompense fidélité nécessite un paiement par carte sur la borne.\n\nSinon, retirez la récompense et utilisez-la directement au comptoir.');
+    return;
+  }
   const lignes = panier.map(l => ({
     produit_id: l.produit_id,
     nom: l.nom,
