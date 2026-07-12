@@ -4692,32 +4692,6 @@ html, body {
   </button>
 </div>
 
-<!-- 🔎 PANNEAU DEBUG TEMPORAIRE (visible tant que le gate est affiché) -->
-<div id="debug-panel" style="position:fixed;left:0;right:0;bottom:0;max-height:45vh;overflow:auto;background:#111;color:#0f0;font:11px/1.5 monospace;padding:8px 10px;z-index:99999;white-space:pre-wrap;word-break:break-all;">[debug] démarrage…</div>
-<script>
-(function(){
-  var panel=document.getElementById('debug-panel');
-  var t0=Date.now();
-  window.dbg=function(m){
-    try{ panel.textContent += '\n['+((Date.now()-t0)/1000).toFixed(1)+'s] '+m; panel.scrollTop=panel.scrollHeight; }catch(e){}
-  };
-  // Capture les erreurs JS
-  window.addEventListener('error',function(ev){ dbg('❌ ERREUR: '+ev.message+' @ '+(ev.filename||'').split('/').pop()+':'+ev.lineno); });
-  window.addEventListener('unhandledrejection',function(ev){ dbg('❌ PROMESSE REJETÉE: '+(ev.reason && (ev.reason.message||ev.reason))); });
-  // Copie console.log/warn/error dans le panneau
-  ['log','warn','error'].forEach(function(k){
-    var o=console[k]; console[k]=function(){ try{dbg('['+k+'] '+Array.prototype.slice.call(arguments).join(' '));}catch(e){} o.apply(console,arguments); };
-  });
-  // Infos environnement
-  dbg('UA: '+navigator.userAgent);
-  dbg('localStorage: '+(function(){try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return 'OK';}catch(e){return 'KO '+e.message}})());
-  dbg('navigator.locks: '+(navigator.locks?'présent':'ABSENT'));
-  var tok=null; try{ for(var i=0;i<localStorage.length;i++){ var key=localStorage.key(i); if(key.indexOf('auth-token')!==-1) tok=key; } }catch(e){}
-  dbg('jeton session en storage: '+(tok?('OUI ('+tok+')'):'NON'));
-  // Masquer le panneau quand la caisse s'ouvre (gate caché)
-  setInterval(function(){ var g=document.getElementById('gate'); if(g && g.classList.contains('hidden')) panel.style.display='none'; },1000);
-})();
-</script>
 
 <!-- ⛶ Bouton plein écran (Chrome/Android) -->
 <button id="btn-fullscreen" title="Plein écran" onclick="basculerPleinEcran()" style="position:fixed;right:14px;bottom:14px;z-index:9500;width:52px;height:52px;border-radius:50%;border:none;background:rgba(26,22,18,.75);color:#fff;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;cursor:pointer;">⛶</button>
@@ -5837,13 +5811,17 @@ function fraisPourDistance(km) {
   return 6;
 }
 
-// --- Fidélité ---
-const OBJECTIF_FID = 10;        // 10 tampons = plat offert (même règle que le scanner)
-const MIN_TAMPON = 12.90;       // minimum de commande pour gagner un tampon
-let clientFid = null;           // client attaché au ticket {id, nom, points, ...}
+// --- Fidélité unifiée (site + borne + caisse : 1 € = 1 point) ---
+const FID_PALIERS_CAISSE = [
+  { palier: 50,  libelle: 'Dessert offert',  emoji: '🍮', cats: ['Desserts'] },
+  { palier: 100, libelle: 'Entrée offerte',  emoji: '🥟', cats: ['Entrées'] },
+  { palier: 200, libelle: 'Plat offert',     emoji: '🍜', cats: null },
+  { palier: 300, libelle: 'Formule offerte', emoji: '🍱', cats: ['FORMULE'] }
+];
+let clientFid = null;           // client attaché au ticket {id, nom, telephone, points, ...}
 let scannerFid = null;          // instance Html5Qrcode
 let scanEnCours = false;
-let platOffertApplique = false; // true quand le plat offert est appliqué sur le ticket courant
+let recompenseCaisse = null;    // { palier, libelle, montant, nomArticle } remise fidélité sur le ticket
 
 // --- Remise manuelle ---
 let remise = null;  // { type: 'pct'|'montant', valeur: number }  ou null
@@ -7235,20 +7213,17 @@ function afficherTicket() {
     `;
   }).join('');
 
-  // Ligne "plat offert" (remise fidélité) si appliquée
-  if (platOffertApplique) {
-    const l = ligneLaMoinsChere();
-    if (l) {
-      zone.innerHTML += `
-        <div class="ligne ligne-offert">
-          <div class="ligne-info">
-            <div class="ligne-nom">🎁 Plat offert — ${l.nom}</div>
-            <div class="ligne-pu">Fidélité · 10 tampons</div>
-          </div>
-          <button class="offert-retirer" onclick="retirerPlatOffert()">retirer</button>
-          <div class="ligne-st offert-montant">−${fmt(l.prix)}</div>
-        </div>`;
-    }
+  // Ligne "récompense fidélité" si appliquée (dessert/entrée/plat/formule offert)
+  if (recompenseCaisse) {
+    zone.innerHTML += `
+      <div class="ligne ligne-offert">
+        <div class="ligne-info">
+          <div class="ligne-nom">🎁 ${recompenseCaisse.libelle} — ${recompenseCaisse.nomArticle}</div>
+          <div class="ligne-pu">Fidélité · −${recompenseCaisse.palier} points</div>
+        </div>
+        <button class="offert-retirer" onclick="retirerRecompenseCaisse()">retirer</button>
+        <div class="ligne-st offert-montant">−${fmt(recompenseCaisse.montant)}</div>
+      </div>`;
   }
 
   // 🚗 Ligne frais de livraison — cliquable pour modifier le montant
@@ -7297,11 +7272,9 @@ function ligneLaMoinsChere() {
   return min;
 }
 
-// Montant de la remise (prix d'une unité du plat le moins cher), 0 si non appliqué.
+// Montant de la remise fidélité appliquée au ticket (0 si aucune).
 function remisePlatOffert() {
-  if (!platOffertApplique) return 0;
-  const l = ligneLaMoinsChere();
-  return l ? l.prix : 0;
+  return recompenseCaisse ? recompenseCaisse.montant : 0;
 }
 
 // Sous-total après plat offert, avant remise manuelle.
@@ -7547,7 +7520,7 @@ async function viderTicket() {
   
   // Reset du ticket
   ticket = [];
-  platOffertApplique = false;
+  recompenseCaisse = null;
   remise = null;
   
   // Reset visuel ticket-num
@@ -8092,18 +8065,16 @@ async function validerVente() {
       });
     });
   }
-  // Si plat offert appliqué : on ajoute une ligne de remise négative
+  // Si récompense fidélité appliquée : ligne de remise négative
   // pour que le total enregistré reflète le montant réellement payé.
-  if (platOffertApplique) {
-    const lo = ligneLaMoinsChere();
-    if (lo) {
-      lignes.push({
-        produit_id: null,            // pas un produit → pas de stock touché
-        nom: '🎁 Plat offert (fidélité) — ' + lo.nom,
-        prix: -lo.prix,              // remise
-        quantite: 1
-      });
-    }
+  if (recompenseCaisse) {
+    lignes.push({
+      produit_id: null,              // pas un produit → pas de stock touché
+      nom: '🎁 ' + recompenseCaisse.libelle + ' (fidélité) — ' + recompenseCaisse.nomArticle,
+      prix: -recompenseCaisse.montant,
+      quantite: 1,
+      recompense: recompenseCaisse.palier
+    });
   }
 
   // Si remise manuelle : on ajoute une ligne de remise négative
@@ -8199,8 +8170,8 @@ async function validerVente() {
       }))
     };
 
-    // Applique le tampon fidélité si un client est attaché
-    const infoFid = await appliquerTampon(totalVente);
+    // 🎫 Crédit fidélité unifié (client scanné OU client téléphone)
+    const infoFid = await crediterFideliteCaisse(venteId);
 
     fermerPaiement();
     if (infoFid) {
@@ -8218,7 +8189,7 @@ async function validerVente() {
   modeTicketPro = false;
     paiementsMixtes = [];
     clientFid = null;
-    platOffertApplique = false;
+    recompenseCaisse = null;
     remise = null;
     clientActif = null;  // ✨ Reset client téléphone
     fraisLivraison = 0; infoLivraison = null; fraisLivraisonManuel = null;  // 🚗 Reset frais livraison
@@ -8404,10 +8375,11 @@ async function traiterCodeFid(texte, camera = false) {
 
 function detacherClientFid() {
   clientFid = null;
-  platOffertApplique = false;
+  recompenseCaisse = null;
   afficherClientFid();
   afficherTicket();
 }
+
 
 function afficherClientFid() {
   const bloc = document.getElementById('fid-bloc');
@@ -8420,30 +8392,32 @@ function afficherClientFid() {
     return;
   }
   const pts = clientFid.points || 0;
-  const aDejaTampon = clientFid.derniere_visite === ymdAujourdhui();
-  let tamponTxt, tamponCls = '';
-  if (pts >= OBJECTIF_FID) {
-    tamponTxt = '🎁 Plat offert disponible !';
-    tamponCls = 'reward';
-  } else if (aDejaTampon) {
-    tamponTxt = `${pts}/10 · tampon déjà ajouté aujourd'hui`;
-  } else {
-    tamponTxt = `${pts}/10 tampons · +1 si commande ≥ ${fmt(MIN_TAMPON)}`;
+  // Jauge vers le prochain palier
+  const prochain = FID_PALIERS_CAISSE.find(r => pts < r.palier);
+  const jauge = prochain
+    ? `<div class="fid-client-tampons">${pts} pts · encore ${prochain.palier - pts} pour ${prochain.emoji} ${prochain.libelle.toLowerCase()}</div>`
+    : `<div class="fid-client-tampons reward">${pts} pts · toutes les récompenses disponibles 🎉</div>`;
+  // Boutons récompenses utilisables (solde suffisant + article éligible au ticket)
+  let recosHtml = '';
+  if (!recompenseCaisse && ticket.length > 0) {
+    const boutons = FID_PALIERS_CAISSE
+      .filter(r => pts >= r.palier && ligneEligibleRecompense(r) !== null)
+      .map(r => `<button class="btn-offrir" onclick="caisseAppliquerRecompense(${r.palier})">${r.emoji} ${r.libelle} · −${r.palier} pts</button>`)
+      .join('');
+    recosHtml = boutons;
   }
   bloc.innerHTML = `
     <div class="fid-client">
       <div class="fid-avatar">${initialesFid(clientFid.nom)}</div>
       <div class="fid-client-info">
-        <div class="fid-client-nom">${clientFid.nom}</div>
-        <div class="fid-client-tampons ${tamponCls}">${tamponTxt}</div>
+        <div class="fid-client-nom">${clientFid.nom || (clientFid.telephone || 'Client')}</div>
+        ${jauge}
       </div>
       <button class="fid-detacher" onclick="detacherClientFid()" title="Retirer le client">×</button>
     </div>
-    ${(pts >= OBJECTIF_FID && !platOffertApplique && ticket.length > 0)
-      ? `<button class="btn-offrir" onclick="appliquerPlatOffert()">🎁 Offrir le plat le moins cher</button>`
-      : ''}
-    ${platOffertApplique
-      ? `<div class="offert-actif">🎁 Plat offert appliqué · tampons remis à 0 après validation</div>`
+    ${recosHtml}
+    ${recompenseCaisse
+      ? `<div class="offert-actif">🎁 ${recompenseCaisse.libelle} appliquée · −${recompenseCaisse.palier} pts à la validation</div>`
       : ''}`;
 }
 
@@ -8451,80 +8425,93 @@ function initialesFid(nom) {
   return (nom || '?').split(' ').map(m => m[0]).join('').slice(0, 2).toUpperCase();
 }
 
-// Applique le plat offert (déduit le plat le moins cher)
-function appliquerPlatOffert() {
-  if (!clientFid || (clientFid.points || 0) < OBJECTIF_FID) return;
-  if (ticket.length === 0) { alert('Ajoutez d\'abord des produits au ticket.'); return; }
-  platOffertApplique = true;
-  afficherClientFid();
-  afficherTicket();
-}
-
-function retirerPlatOffert() {
-  platOffertApplique = false;
-  afficherClientFid();
-  afficherTicket();
-}
-
 function ymdAujourdhui() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Applique le tampon fidélité après une vente validée.
-// Reproduit EXACTEMENT la règle du scanner : +1 point/visite/total,
-// 1 seul tampon par jour, retour à 1 après 10. Conditionné au minimum de commande.
-// CAS SPÉCIAL : si le plat offert a été utilisé, on remet les tampons à 0
-// (visite "récompense") sans ajouter de nouveau tampon.
-// Renvoie un message à afficher, ou null si rien à signaler.
-async function appliquerTampon(totalVente) {
-  if (!clientFid) return null;
-
-  // CAS RÉCOMPENSE : le client a utilisé son plat offert → remise à 0
-  if (platOffertApplique) {
-    try {
-      const { error } = await sb.from('clients').update({
-        points: 0,
-        nb_visites: (clientFid.nb_visites || 0) + 1,
-        derniere_visite: ymdAujourdhui()
-      }).eq('id', clientFid.id);
-      if (error) throw error;
-      return { titre: '🎁 Plat offert utilisé', sous: `${clientFid.nom} : carte repartie à 0/10` };
-    } catch (e) {
-      return { titre: 'Vente enregistrée', sous: 'Récompense non enregistrée : ' + e.message };
+// --- Récompenses fidélité (paliers unifiés 50/100/200/300) ---
+// Trouve la ligne du ticket la moins chère éligible au palier (null si aucune).
+function ligneEligibleRecompense(reco) {
+  let best = null;
+  ticket.forEach(l => {
+    if (l.prix <= 0) return;
+    let ok;
+    if (!l.categorie_id) {
+      // Ligne sans catégorie (ex: commande borne chargée) : laissée au jugement caissier
+      ok = true;
+    } else {
+      const cat = (typeof categories !== 'undefined' && categories.find) ? categories.find(c => c.id === l.categorie_id) : null;
+      const catNom = cat ? cat.nom : '';
+      const parent = (cat && cat.parent_id && categories.find) ? categories.find(c => c.id === cat.parent_id) : null;
+      const estFormule = (catNom === 'Formules') || (parent && parent.nom === 'Formules');
+      if (reco.cats === null) {
+        const exclus = ['Boissons', 'Desserts', 'Entrées', 'Sauces', 'Suppléments', 'Extras'];
+        ok = !exclus.includes(catNom) && !(parent && exclus.includes(parent.nom)) && !estFormule;
+      } else if (reco.cats[0] === 'FORMULE') {
+        ok = estFormule;
+      } else {
+        ok = reco.cats.includes(catNom) || (parent && reco.cats.includes(parent.nom));
+      }
     }
-  }
+    if (ok && (best === null || l.prix < best.prix)) best = l;
+  });
+  return best;
+}
 
-  // Condition minimum de commande
-  if (totalVente < MIN_TAMPON) {
-    return { titre: 'Vente enregistrée', sous: `${clientFid.nom} : pas de tampon (min. ${fmt(MIN_TAMPON)})` };
-  }
+function caisseAppliquerRecompense(palier) {
+  if (recompenseCaisse) return;
+  const cli = clientFid;
+  if (!cli || (cli.points || 0) < palier) return;
+  const reco = FID_PALIERS_CAISSE.find(r => r.palier === palier);
+  const ligne = ligneEligibleRecompense(reco);
+  if (!ligne) { alert('Aucun article éligible dans le ticket pour cette récompense.'); return; }
+  recompenseCaisse = { palier: palier, libelle: reco.libelle, montant: ligne.prix, nomArticle: ligne.nom };
+  afficherClientFid();
+  afficherTicket();
+}
 
-  // Anti-doublon : 1 tampon par jour max
-  const aujourdhui = ymdAujourdhui();
-  if (clientFid.derniere_visite === aujourdhui) {
-    return { titre: 'Vente enregistrée', sous: `${clientFid.nom} : tampon déjà ajouté aujourd'hui` };
-  }
+function retirerRecompenseCaisse() {
+  recompenseCaisse = null;
+  afficherClientFid();
+  afficherTicket();
+}
 
-  // Calcul du nouveau total de points (même logique que le scanner)
-  let points = (clientFid.points || 0) + 1;
-  if (points > OBJECTIF_FID) points = 1;
-  const recompense = (points === OBJECTIF_FID);
-
+// 🎫 Crédit fidélité unifié après une vente validée (site + borne + caisse = même solde).
+// 1) Déduit la récompense utilisée (si appliquée), 2) crédite 1 € = 1 pt via RPC sécurisée.
+// Fonctionne pour le client scanné (QR) OU le client téléphone attaché.
+// Renvoie un message à afficher, ou null si aucun client.
+async function crediterFideliteCaisse(venteId) {
+  const cli = clientFid || clientActif;
+  if (!cli || !cli.telephone || !venteId) return null;
   try {
-    const { error } = await sb.from('clients').update({
-      points,
-      total_points_gagnes: (clientFid.total_points_gagnes || 0) + 1,
-      nb_visites: (clientFid.nb_visites || 0) + 1,
-      derniere_visite: aujourdhui
-    }).eq('id', clientFid.id);
-    if (error) throw error;
-
-    if (recompense) {
-      return { titre: '🎉 Plat offert débloqué !', sous: `${clientFid.nom} a atteint 10 tampons` };
+    // 1. Récompense appliquée sur ce ticket → déduction du palier
+    if (recompenseCaisse) {
+      try {
+        await sb.rpc('fid_utiliser_recompense', {
+          p_telephone: cli.telephone,
+          p_palier: recompenseCaisse.palier
+        });
+      } catch (e) { /* solde modifié entre-temps : on n'annule pas la vente */ }
     }
-    return { titre: 'Vente enregistrée', sous: `${clientFid.nom} : +1 tampon (${points}/10)` };
+    // 2. Crédit des points (le serveur lit lui-même le total de la vente)
+    const { data, error } = await sb.rpc('fid_crediter_vente', {
+      p_telephone: cli.telephone,
+      p_vente_id: venteId
+    });
+    if (error) {
+      if (String(error.code) === '23505') {
+        return { titre: 'Vente enregistrée', sous: 'Points déjà crédités pour cette vente' };
+      }
+      throw error;
+    }
+    const r = data && data[0];
+    if (!r) return null;
+    return {
+      titre: '🎫 +' + r.points_credites + ' point' + (r.points_credites > 1 ? 's' : ''),
+      sous: (cli.nom || cli.telephone) + ' · solde : ' + r.nouveau_solde + ' pts'
+    };
   } catch (e) {
-    return { titre: 'Vente enregistrée', sous: 'Tampon non ajouté : ' + e.message };
+    return { titre: 'Vente enregistrée', sous: 'Points non crédités : ' + e.message };
   }
 }
 
@@ -11058,6 +11045,19 @@ async function chargerCommandeAttente(id) {
   
   // Stocker l'ID de la commande_en_cours liée (pour MAJ après encaissement)
   window.commandeEnCoursLiee = id;
+  
+  // 🎫 Client fidélité identifié à la borne → attaché automatiquement (crédit auto à l'encaissement)
+  if (cmd.client_id) {
+    try {
+      const { data: cli } = await sb.from('clients')
+        .select('*').eq('id', cmd.client_id).single();
+      if (cli) {
+        clientFid = cli;
+        afficherClientFid();
+        toast('🎫 ' + (cli.nom || 'Client fidélité') + ' attaché — points crédités à l\'encaissement');
+      }
+    } catch (e) { console.warn('Client fidélité borne non chargé:', e.message); }
+  }
   
   // Afficher
   afficherTicket();
