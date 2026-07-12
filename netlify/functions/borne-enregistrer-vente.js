@@ -38,6 +38,11 @@ exports.handler = async function (event) {
   const lignes = body.lignes;
   const modeService = body.mode_service || 'sur_place';
   const clientId = body.client_id || null;
+  // 👋 Prénom du client fidélité (pour l'en-tête du ticket : "Commande de Karim")
+  let clientPrenom = null;
+  if (typeof body.client_prenom === 'string') {
+    clientPrenom = body.client_prenom.replace(/[^\p{L}\s'-]/gu, '').trim().slice(0, 20) || null;
+  }
 
   // Validation basique
   if (!restaurantId) return jsonResp(400, { ok: false, erreur: 'restaurant_id manquant' });
@@ -102,6 +107,15 @@ exports.handler = async function (event) {
     }
 
     const venteId = data?.vente_id;
+
+    // 👋 Mémoriser le prénom sur la vente (pour le ticket) — best-effort
+    if (venteId && clientPrenom) {
+      const { error: errNom } = await sb
+        .from('ventes')
+        .update({ client_prenom: clientPrenom })
+        .eq('id', venteId);
+      if (errNom) console.warn('client_prenom non enregistré :', errNom.message);
+    }
 
     // ✨ NOUVEAU : Si paiement comptoir, on passe la vente en "en_attente"
     // pour que le caissier la voie sur pos.html et l'encaisse
