@@ -2534,6 +2534,47 @@ body {
 }
 .btn-home:active { transform: scale(0.9); background: var(--orange-soft); }
 
+/* Clavier alphabétique (prénom inscription) */
+.fid-abc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.fid-abc-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.fid-abc-key {
+  flex: 1;
+  max-width: 52px;
+  padding: 15px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: #FFFFFF;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.1s;
+}
+.fid-abc-key:active { transform: scale(0.9); background: var(--orange-pale); border-color: var(--orange); }
+.fid-abc-key.fid-abc-large { max-width: 110px; background: var(--surface-2); }
+.fid-nom-display {
+  font-size: 26px;
+  font-weight: 800;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+  min-height: 62px;
+  color: var(--text);
+}
+.fid-nom-display .fid-tel-vide { color: var(--text-dim); font-size: 18px; font-weight: 600; }
+
 /* ===== 💬 DIALOGUE CUSTOM — fin ===== */
 
 /* ===== 🎁 BOUTONS RÉCOMPENSE (panier) ===== */
@@ -5037,7 +5078,7 @@ async function validerTelFidelite() {
   }
 }
 
-// --- Inscription (numéro inconnu) ---
+// --- Inscription (numéro inconnu) : Bienvenue → prénom → création ---
 function afficherEcranInscriptionFid() {
   const m = fidModal();
   const telJoli = fidTelSaisi.replace(/(\d{2})(?=\d)/g, '$1 ');
@@ -5051,16 +5092,76 @@ function afficherEcranInscriptionFid() {
       </div>
       <div class="fid-actions">
         <button class="fid-btn-annuler" onclick="fermerFidelite()">Non merci</button>
-        <button class="fid-btn-ok" onclick="inscrireFidelite()">Créer mon compte 🎉</button>
+        <button class="fid-btn-ok" onclick="afficherEcranPrenomFid()">Créer mon compte 🎉</button>
       </div>
     </div>`;
 }
+
+// --- Saisie du prénom (clavier tactile custom, optionnel) ---
+let fidPrenomSaisi = '';
+function afficherEcranPrenomFid() {
+  fidPrenomSaisi = '';
+  const m = fidModal();
+  const rangées = [
+    ['A','Z','E','R','T','Y','U','I','O','P'],
+    ['Q','S','D','F','G','H','J','K','L','M'],
+    ['W','X','C','V','B','N','-','É','È']
+  ];
+  m.innerHTML = `
+    <div class="fid-box" style="max-width:620px;">
+      <h3>😊 Votre prénom ?</h3>
+      <div class="fid-box-sous">Pour vous accueillir par votre prénom (optionnel)</div>
+      <div class="fid-nom-display" id="fid-nom-display"><span class="fid-tel-vide">Tapez votre prénom…</span></div>
+      <div class="fid-abc">
+        ${rangées.map(r => `
+          <div class="fid-abc-row">
+            ${r.map(k => `<button type="button" class="fid-abc-key" onclick="fidPrenomTaper('${k}')">${k}</button>`).join('')}
+          </div>`).join('')}
+        <div class="fid-abc-row">
+          <button type="button" class="fid-abc-key fid-abc-large" onclick="fidPrenomEffacer()">⌫</button>
+          <button type="button" class="fid-abc-key fid-abc-large" style="max-width:180px;" onclick="fidPrenomTaper(' ')">Espace</button>
+        </div>
+      </div>
+      <div class="fid-actions">
+        <button class="fid-btn-annuler" onclick="inscrireFidelite()">Passer</button>
+        <button class="fid-btn-ok" id="fid-btn-prenom-ok" disabled onclick="inscrireFidelite()">Valider ✓</button>
+      </div>
+    </div>`;
+}
+function fidPrenomTaper(c) {
+  if (fidPrenomSaisi.length >= 20) return;
+  if (c === ' ' && (!fidPrenomSaisi || fidPrenomSaisi.endsWith(' '))) return;
+  fidPrenomSaisi += c;
+  fidPrenomMajAffichage();
+}
+function fidPrenomEffacer() {
+  fidPrenomSaisi = fidPrenomSaisi.slice(0, -1);
+  fidPrenomMajAffichage();
+}
+function fidPrenomMajAffichage() {
+  const disp = document.getElementById('fid-nom-display');
+  if (!disp) return;
+  const joli = fidPrenomJoli();
+  disp.innerHTML = joli ? joli : '<span class="fid-tel-vide">Tapez votre prénom…</span>';
+  const btn = document.getElementById('fid-btn-prenom-ok');
+  if (btn) btn.disabled = joli.length < 2;
+}
+function fidPrenomJoli() {
+  // "KARIM-ALI DU" → "Karim-Ali Du"
+  return fidPrenomSaisi.trim().toLowerCase()
+    .replace(/(^|[\s-])([a-zà-ÿ])/g, (m0, sep, l) => sep + l.toUpperCase());
+}
+
 async function inscrireFidelite() {
+  const prenom = fidPrenomJoli();
   try {
-    const { data, error } = await sb.rpc('fid_inscrire', { p_telephone: fidTelSaisi, p_nom: null });
+    const { data, error } = await sb.rpc('fid_inscrire', {
+      p_telephone: fidTelSaisi,
+      p_nom: prenom && prenom.length >= 2 ? prenom : null
+    });
     if (error) throw error;
     const c = data && data[0];
-    clientFid = { id: c.client_id, nom: null, telephone: fidTelSaisi, points: c.points, nb_visites: 0 };
+    clientFid = { id: c.client_id, nom: (prenom && prenom.length >= 2) ? prenom : null, telephone: fidTelSaisi, points: c.points, nb_visites: 0 };
     if (fidModeApresVente) {
       await crediterApresVente();
     } else {
@@ -5480,7 +5581,8 @@ async function payer(methode) {
         mode_paiement: methode,
         lignes,
         mode_service: modeService,
-        client_id: clientFid ? clientFid.id : null
+        client_id: clientFid ? clientFid.id : null,
+        client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null
       })
     });
     const data = await resp.json();
