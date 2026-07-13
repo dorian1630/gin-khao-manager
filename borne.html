@@ -5594,7 +5594,6 @@ async function payer(methode) {
         lignes: lignes,
         total: totalCmd,
         mode_service: modeService,
-        canal: 'borne',
         statut: methode === 'comptoir' ? 'paiement_comptoir' : 'nouvelle',
         client_id: clientFid ? clientFid.id : null,
         client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null,
