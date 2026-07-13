@@ -2244,22 +2244,23 @@ html, body {
 /* ===== MODALE RECHERCHE CLIENT ===== */
 .modal-client {
   max-width: 620px;
-  max-height: 88vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
 }
 .client-pave {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
 }
 .client-pave button {
-  padding: 18px 0;
-  font-size: 24px;
+  padding: 9px 0;
+  font-size: 19px;
   font-weight: 800;
   border: 1.5px solid var(--border);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
@@ -2269,6 +2270,30 @@ html, body {
 .client-pave button:active { transform: scale(0.94); background: var(--gold); color: #fff; border-color: var(--gold); }
 .client-pave .pave-efface { background: var(--bg-soft); color: var(--gold-soft); }
 .client-pave .pave-clear { background: var(--bg-soft); color: var(--sriracha); }
+.client-resultats { flex: 1; overflow-y: auto; min-height: 90px; }
+
+/* 💬 Dialogue custom (remplace alert/confirm) */
+.pos-dialog-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  background: rgba(20,16,12,0.55);
+  display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.pos-dialog-overlay.actif { display: flex; }
+.pos-dialog-box {
+  background: var(--surface); border-radius: 20px; padding: 30px 28px 22px;
+  width: 440px; max-width: 94%; text-align: center;
+  box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+}
+.pos-dialog-ic { font-size: 46px; line-height: 1; margin-bottom: 12px; }
+.pos-dialog-msg { font-size: 17px; font-weight: 600; color: var(--text); line-height: 1.5; margin-bottom: 22px; }
+.pos-dialog-actions { display: flex; gap: 10px; }
+.pos-dialog-actions button {
+  flex: 1; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 700;
+  cursor: pointer; font-family: var(--body); border: none;
+}
+.pos-dialog-actions .pd-ok { background: linear-gradient(135deg, var(--gold), var(--gold-soft)); color: #fff; }
+.pos-dialog-actions .pd-cancel { background: var(--surface-2); color: var(--text-soft); border: 1px solid var(--border); }
+.pos-dialog-actions button:active { transform: scale(0.97); }
 .client-search-zone {
   position: relative;
   margin-bottom: 16px;
@@ -5831,6 +5856,48 @@ html, body {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ============================================
+//  💬 DIALOGUES CUSTOM (remplacent alert/confirm Android)
+// ============================================
+function posDialog(opts) {
+  let d = document.getElementById('pos-dialog');
+  if (!d) {
+    d = document.createElement('div');
+    d.id = 'pos-dialog';
+    d.className = 'pos-dialog-overlay';
+    document.body.appendChild(d);
+  }
+  const msg = (opts.msg || '').replace(/\n/g, '<br>');
+  d.innerHTML = `
+    <div class="pos-dialog-box">
+      <div class="pos-dialog-ic">${opts.ic || 'ℹ️'}</div>
+      <div class="pos-dialog-msg">${msg}</div>
+      <div class="pos-dialog-actions"></div>
+    </div>`;
+  const act = d.querySelector('.pos-dialog-actions');
+  (opts.boutons || [{ label: 'OK' }]).forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = b.classe || 'pd-ok';
+    btn.textContent = b.label;
+    btn.onclick = () => { d.classList.remove('actif'); if (b.action) b.action(); };
+    act.appendChild(btn);
+  });
+  d.classList.add('actif');
+}
+function posAlert(msg, ic) {
+  posDialog({ msg: msg, ic: ic || 'ℹ️', boutons: [{ label: 'OK', classe: 'pd-ok' }] });
+}
+function posConfirm(msg, onOk, opts) {
+  opts = opts || {};
+  posDialog({
+    msg: msg, ic: opts.ic || '❓',
+    boutons: [
+      { label: opts.nonLabel || 'Annuler', classe: 'pd-cancel' },
+      { label: opts.okLabel || 'Confirmer', classe: 'pd-ok', action: onOk }
+    ]
+  });
+}
+
+// ============================================
 //  CONFIG — même base que l'app Gin Khao
 // ============================================
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
@@ -6695,7 +6762,7 @@ function edToggleSauce(id, max) {
   if (i >= 0) {
     l.sauces_sel.splice(i, 1);
   } else {
-    if (l.sauces_sel.length >= max) { alert('Maximum ' + max + ' sauces'); return; }
+    if (l.sauces_sel.length >= max) { posAlert('Maximum ' + max + ' sauces'); return; }
     l.sauces_sel.push(id);
   }
   reconstruireSousLignes(editeurUid);
@@ -6959,7 +7026,7 @@ function validerOptionsBase() {
   // Vérif que toutes les options sont remplies
   const p = parcoursPlat.produit;
   const tousChoisis = p.options_base.every(opt => parcoursPlat.options_base[opt.label]);
-  if (!tousChoisis) { alert('Veuillez sélectionner toutes les options'); return; }
+  if (!tousChoisis) { posAlert('Veuillez sélectionner toutes les options'); return; }
   parcoursPlat.etape = 'retirables';
   passerEtapeParcours();
 }
@@ -7083,7 +7150,7 @@ function afficherModaleSauces() {
     btn.classList.remove('active');
   } else {
     if (parcoursPlat.sauces.length >= max) {
-      alert(`Maximum ${max} sauces`);
+      posAlert(`Maximum ${max} sauces`);
       return;
     }
     parcoursPlat.sauces.push(sauceId);
@@ -7440,7 +7507,7 @@ function majTotal() {
 let typeRemiseChoisi = 'pct';
 
 function ouvrirRemise() {
-  if (ticket.length === 0) { alert('Ajoutez d\'abord des produits.'); return; }
+  if (ticket.length === 0) { posAlert('Ajoutez d\'abord des produits.'); return; }
   document.getElementById('overlay-remise').classList.add('show');
   document.getElementById('remise-soustotal').textContent = fmt(sousTotalApresPlatOffert());
   document.getElementById('remise-input').value = remise ? remise.valeur : '';
@@ -7558,10 +7625,10 @@ function choisirRaisonRL(raison, btn) {
 function validerRemiseLigne() {
   if (remiseLigneIdx === null) return;
   const val = parseFloat(document.getElementById('rl-input').value) || 0;
-  if (val <= 0) { alert('Saisissez un montant de remise'); return; }
+  if (val <= 0) { posAlert('Saisissez un montant de remise'); return; }
   
   const raison = document.getElementById('rl-raison-actuelle').value;
-  if (!raison) { alert('Choisissez une raison'); return; }
+  if (!raison) { posAlert('Choisissez une raison'); return; }
   
   ticket[remiseLigneIdx].remise_ligne = {
     type: remiseLigneType,
@@ -7605,8 +7672,10 @@ async function viderTicket() {
     ? '⚠️ Annuler la commande borne ?\nElle sera marquée comme annulée et disparaîtra de l\'écran.'
     : 'Vider la commande en cours ?';
   
-  if (!confirm(msg)) return;
-  
+  posConfirm(msg, () => _viderCommandeConfirme(estCommandeBorne),
+    { ic: estCommandeBorne ? '⚠️' : '🗑️', okLabel: estCommandeBorne ? 'Annuler la commande' : 'Vider', nonLabel: 'Retour' });
+}
+async function _viderCommandeConfirme(estCommandeBorne) {
   // Si commande borne → marquer en base comme 'annulee'
   if (estCommandeBorne) {
     try {
@@ -7620,7 +7689,7 @@ async function viderTicket() {
       toast('🗑️ Commande borne annulée');
     } catch (e) {
       console.error('Erreur annulation commande borne:', e);
-      alert('Erreur lors de l\'annulation : ' + e.message);
+      posAlert('Erreur lors de l\'annulation : ' + e.message);
     }
     window.commandeEnCoursLiee = null;
   }
@@ -7649,7 +7718,7 @@ function ouvrirPaiement(canalEncaissement) {
   if (ticket.length === 0) return;
   // ✨ Vérifier qu'un caissier est connecté
   if (!caissierActif) {
-    alert('🔒 Aucun caissier connecté. Cliquez sur le bouton rouge en haut pour vous connecter.');
+    posAlert('🔒 Aucun caissier connecté. Cliquez sur le bouton rouge en haut pour vous connecter.');
     ouvrirModaleCaissier();
     return;
   }
@@ -7848,11 +7917,11 @@ function choisirModeMixte(mode) {
 function ajouterPaiementMixte() {
   const input = document.getElementById('mixte-input');
   const val = parseFloat(input.value) || 0;
-  if (val <= 0) { alert('Saisissez un montant valide'); return; }
+  if (val <= 0) { posAlert('Saisissez un montant valide'); return; }
   
   const reste = restePaiementMixte();
   if (val > reste + 0.01 && modeMixteActuel !== 'especes') {
-    alert('Le montant dépasse le reste à payer (' + fmt(reste) + ').\nSeules les espèces autorisent un dépassement (rendu monnaie).');
+    posAlert('Le montant dépasse le reste à payer (' + fmt(reste) + ').\nSeules les espèces autorisent un dépassement (rendu monnaie).');
     return;
   }
   
@@ -8072,11 +8141,11 @@ async function validerVente() {
   if (modePaiement === 'mixte') {
     const reste = restePaiementMixte();
     if (reste > 0.01) {
-      alert('Il reste ' + fmt(reste) + ' à régler.');
+      posAlert('Il reste ' + fmt(reste) + ' à régler.');
       return;
     }
     if (paiementsMixtes.length === 0) {
-      alert('Ajoutez au moins un mode de paiement.');
+      posAlert('Ajoutez au moins un mode de paiement.');
       return;
     }
     // On stocke en libellé combiné pour mode_paiement
@@ -8085,7 +8154,7 @@ async function validerVente() {
   // ✨ Vérif Ticket Restaurant
   if (modePaiement === 'ticket_resto') {
     if (!trEstValide()) {
-      alert('Le paiement par tickets restaurant n\'est pas valide.\nVérifiez le message d\'avertissement.');
+      posAlert('Le paiement par tickets restaurant n\'est pas valide.\nVérifiez le message d\'avertissement.');
       return;
     }
     // Si paiement carte TR : on bascule sur le mode "carte" pour SumUp
@@ -8334,7 +8403,7 @@ async function validerVente() {
     // Prépare les données pour l'impression auto (le bouton "Imprimer" appellera le relais)
     preparerImpression(lignesPourCuisine, venteLocale);
   } catch (e) {
-    alert('Erreur lors de l\'enregistrement : ' + e.message);
+    posAlert('Erreur lors de l\'enregistrement : ' + e.message);
   } finally {
     enCours = false;
     btnValider.disabled = false;
@@ -8571,7 +8640,7 @@ function caisseAppliquerRecompense(palier) {
   if (!cli || (cli.points || 0) < palier) return;
   const reco = FID_PALIERS_CAISSE.find(r => r.palier === palier);
   const ligne = ligneEligibleRecompense(reco);
-  if (!ligne) { alert('Aucun article éligible dans le ticket pour cette récompense.'); return; }
+  if (!ligne) { posAlert('Aucun article éligible dans le ticket pour cette récompense.'); return; }
   recompenseCaisse = { palier: palier, libelle: reco.libelle, montant: ligne.prix, nomArticle: ligne.nom };
   afficherClientFid();
   afficherTicket();
@@ -8764,10 +8833,11 @@ async function chargerHistorique() {
   }
 }
 
-async function annulerVente(venteId, numero) {
-  if (!confirm(`Annuler le ticket #${numero} ?\n\nLa vente sera marquée annulée et les produits seront remis en stock. Cette action est tracée et irréversible.`)) {
-    return;
-  }
+function annulerVente(venteId, numero) {
+  posConfirm(`Annuler le ticket #${numero} ?<br><br>La vente sera marquée annulée et les produits remis en stock. Action tracée et irréversible.`,
+    () => _annulerVenteConfirme(venteId, numero), { ic: '⚠️', okLabel: 'Annuler le ticket', nonLabel: 'Retour' });
+}
+async function _annulerVenteConfirme(venteId, numero) {
   try {
     const { data, error } = await sb.rpc('annuler_vente', {
       p_vente_id: venteId,
@@ -8780,7 +8850,7 @@ async function annulerVente(venteId, numero) {
     await chargerHistorique();  // rafraîchit la liste
     await chargerMenu();        // rafraîchit le stock affiché sur la caisse
   } catch (e) {
-    alert('Erreur lors de l\'annulation : ' + e.message);
+    posAlert('Erreur lors de l\'annulation : ' + e.message);
   }
 }
 
@@ -8921,7 +8991,7 @@ let derniereVenteLocale = null;  // pour réutiliser dans basculerTicketPro
 
 function basculerTicketPro() {
   if (!derniereVenteLocale) {
-    alert('Aucun ticket disponible');
+    posAlert('Aucun ticket disponible');
     return;
   }
   modeTicketPro = !modeTicketPro;
@@ -8949,7 +9019,7 @@ function basculerTicketPro() {
 }
 function voirTicket(venteId) {
   const v = ventesDuJour.find(x => x.id === venteId);
-  if (!v) { alert('Ticket introuvable'); return; }
+  if (!v) { posAlert('Ticket introuvable'); return; }
   
   // ✨ Mémoriser pour le bouton "Ticket pro"
   derniereVenteLocale = v;
@@ -9100,7 +9170,7 @@ let derniereImpression = null;
 
 async function imprimerTicket() {
   if (!derniereImpression) {
-    alert('Aucun ticket à imprimer.');
+    posAlert('Aucun ticket à imprimer.');
     return;
   }
   try {
@@ -9120,10 +9190,10 @@ async function imprimerTicket() {
       const msgs = (data.resultats || []).map(r =>
         r.ok ? `✓ ${r.type}` : `✗ ${r.type} : ${r.erreur}`
       ).join('\n');
-      alert('Problème d\'impression :\n\n' + (msgs || (data.erreur || 'Erreur inconnue')));
+      posAlert('Problème d\'impression :\n\n' + (msgs || (data.erreur || 'Erreur inconnue')));
     }
   } catch (e) {
-    alert(
+    posAlert(
       'Le relais d\'impression ne répond pas.\n\n' +
       'Vérifie que serveur-impression.js tourne bien sur ce PC ' +
       '(fenêtre noire visible avec "RELAIS D\'IMPRESSION GIN KHAO").\n\n' +
@@ -9311,9 +9381,12 @@ async function calculerApercuCloture() {
 }
 
 let clotureEnCours = false;
-async function confirmerCloture() {
+function confirmerCloture() {
   if (clotureEnCours) return;
-  if (!confirm('Clôturer la journée ?\n\nUn Z sera généré et archivé de façon définitive. Les ventes après clôture compteront pour le prochain Z.')) return;
+  posConfirm('Clôturer la journée ?<br><br>Un Z sera généré et archivé définitivement. Les ventes après clôture compteront pour le prochain Z.',
+    _confirmerClotureConfirme, { ic: '📋', okLabel: 'Clôturer', nonLabel: 'Retour' });
+}
+async function _confirmerClotureConfirme() {
   clotureEnCours = true;
   const btn = document.getElementById('btn-cloturer');
   btn.disabled = true;
@@ -9346,7 +9419,7 @@ async function confirmerCloture() {
     document.getElementById('cloture-actions').innerHTML =
       '<button class="btn-valider" onclick="fermerCloture()">Terminé</button>';
   } catch (e) {
-    alert('Erreur lors de la clôture : ' + e.message);
+    posAlert('Erreur lors de la clôture : ' + e.message);
     btn.disabled = false;
     btn.textContent = '🔒 Clôturer la journée';
   } finally {
@@ -9960,11 +10033,12 @@ function fermerCaissierInfo() {
 }
 
 function deconnecterCaissier() {
-  if (!confirm('Se déconnecter de la caisse ?')) return;
-  caissierActif = null;
-  localStorage.removeItem('gin-khao-caissier');
-  majAffichageCaissier();
-  fermerCaissierInfo();
+  posConfirm('Se déconnecter de la caisse ?', () => {
+    caissierActif = null;
+    localStorage.removeItem('gin-khao-caissier');
+    majAffichageCaissier();
+    fermerCaissierInfo();
+  }, { ic: '🔒', okLabel: 'Déconnexion', nonLabel: 'Rester' });
 }
 
 // ============================================
@@ -10105,12 +10179,16 @@ async function enregistrerCaissier() {
   }
 }
 
-async function basculerCaissier(id, nouvelEtat) {
+function basculerCaissier(id, nouvelEtat) {
   const c = listeCaissiers.find(x => x.id === id);
   if (!c) return;
   const action = nouvelEtat ? 'réactiver' : 'désactiver';
-  if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${c.nom} ?`)) return;
-  
+  posConfirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${c.nom} ?`,
+    () => _basculerCaissierConfirme(id, nouvelEtat), { ic: '👥', okLabel: 'Oui', nonLabel: 'Non' });
+}
+async function _basculerCaissierConfirme(id, nouvelEtat) {
+  const c = listeCaissiers.find(x => x.id === id);
+  if (!c) return;
   try {
     const { error } = await sb.from('caissiers')
       .update({ actif: nouvelEtat })
@@ -10126,7 +10204,7 @@ async function basculerCaissier(id, nouvelEtat) {
     
     await chargerListeCaissiers();
   } catch (e) {
-    alert('Erreur : ' + e.message);
+    posAlert('Erreur : ' + e.message);
   }
 }
 
@@ -10674,7 +10752,7 @@ async function selectionnerClient(id) {
     chargerClientCommande(data);
     fermerRechercheClient();
   } catch (e) {
-    alert('Erreur : ' + e.message);
+    posAlert('Erreur : ' + e.message);
   }
 }
 
@@ -10853,7 +10931,7 @@ function modifierFraisLivraison() {
 function setFraisLivr(v) { const i = document.getElementById('fl-input'); if (i) i.value = v; }
 function validerFraisLivr() {
   const v = parseFloat(document.getElementById('fl-input').value);
-  if (isNaN(v) || v < 0) { alert('Montant invalide'); return; }
+  if (isNaN(v) || v < 0) { posAlert('Montant invalide'); return; }
   fraisLivraisonManuel = Math.round(v * 100) / 100;
   fraisLivraison = fraisLivraisonManuel;
   infoLivraison = Object.assign({}, infoLivraison, { manuel: true, frais: fraisLivraison });
@@ -10918,8 +10996,8 @@ async function sauverClient() {
   const ville = document.getElementById('fc-ville').value.trim();
   const notes = document.getElementById('fc-notes').value.trim();
   
-  if (!nom) { alert('Le nom est obligatoire'); return; }
-  if (!tel) { alert('Le téléphone est obligatoire'); return; }
+  if (!nom) { posAlert('Le nom est obligatoire'); return; }
+  if (!tel) { posAlert('Le téléphone est obligatoire'); return; }
   
   const btn = document.getElementById('btn-form-save');
   btn.disabled = true;
@@ -10958,7 +11036,7 @@ async function sauverClient() {
     chargerClientCommande(resultat);
     fermerFormClient();
   } catch (e) {
-    alert('Erreur : ' + e.message);
+    posAlert('Erreur : ' + e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = '💾 Enregistrer';
@@ -11143,13 +11221,13 @@ function majEncartAttente() {
 async function chargerCommandeAttente(id) {
   // ⚠️ Bloquer si un ticket est déjà en cours
   if (ticket && ticket.length > 0) {
-    alert('⚠️ Un ticket est déjà en cours.\n\nVeuillez d\'abord l\'encaisser ou le vider avant de charger une commande de la borne.');
+    posAlert('⚠️ Un ticket est déjà en cours.\n\nVeuillez d\'abord l\'encaisser ou le vider avant de charger une commande de la borne.');
     return;
   }
   
   const cmd = kdsCommandes.find(c => c.id === id);
   if (!cmd) {
-    alert('Commande introuvable');
+    posAlert('Commande introuvable');
     return;
   }
   
@@ -11219,17 +11297,23 @@ async function encaisserDirectBorne() {
   
   // Vérifier qu'un caissier est connecté
   if (!caissierActif) {
-    alert('🔒 Aucun caissier connecté. Connectez-vous d\'abord.');
+    posAlert('🔒 Aucun caissier connecté. Connectez-vous d\'abord.');
     ouvrirModaleCaissier();
     return;
   }
   
   // Vérifier que le ticket actuel est vide
   if (ticket.length > 0) {
-    if (!confirm('Un ticket est en cours. Le remplacer par cette commande ?')) return;
-    ticket = [];
-    afficherTicket();
+    posConfirm('Un ticket est en cours.<br>Le remplacer par cette commande ?', () => {
+      ticket = [];
+      afficherTicket();
+      _chargerCommandeAttenteSuite(id, cmd);
+    }, { ic: '🧾', okLabel: 'Remplacer', nonLabel: 'Garder' });
+    return;
   }
+  _chargerCommandeAttenteSuite(id, cmd);
+}
+async function _chargerCommandeAttenteSuite(id, cmd) {
   
   // Charger la commande dans le ticket (réutilise la fonction existante)
   await chargerCommandeAttente(id);
@@ -11384,7 +11468,7 @@ async function changerStatutKDS(id, nouveauStatut) {
   try {
     await sb.from('commandes_en_cours').update(maj).eq('id', id);
   } catch (e) {
-    alert('Erreur : ' + e.message);
+    posAlert('Erreur : ' + e.message);
   }
 }
 
