@@ -2112,7 +2112,7 @@ html, body {
   right: 420px;  /* avant le ticket à droite (420px) */
   background: var(--surface);
   border-top: 2px solid var(--gold);
-  padding: 10px 20px;
+  padding: 10px 14px;
   z-index: 100;
   box-shadow: 0 -4px 16px rgba(28, 24, 20, 0.08);
 }
@@ -2120,19 +2120,20 @@ html, body {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 14px;
   background: linear-gradient(135deg, var(--bg-soft), #fff);
   border: 2px solid var(--gold);
   color: var(--text);
-  padding: 12px 24px;
+  padding: 14px 28px;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   font-family: var(--body);
   transition: all 0.18s;
 }
+.barre-client-btn .barre-client-label { flex: 1; text-align: left; }
 .barre-client-btn:hover {
   background: linear-gradient(135deg, var(--gold), var(--gold-soft));
   color: #fff;
@@ -2242,11 +2243,32 @@ html, body {
 
 /* ===== MODALE RECHERCHE CLIENT ===== */
 .modal-client {
-  max-width: 560px;
-  max-height: 80vh;
+  max-width: 620px;
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
 }
+.client-pave {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.client-pave button {
+  padding: 18px 0;
+  font-size: 24px;
+  font-weight: 800;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--body);
+  transition: all 0.1s;
+}
+.client-pave button:active { transform: scale(0.94); background: var(--gold); color: #fff; border-color: var(--gold); }
+.client-pave .pave-efface { background: var(--bg-soft); color: var(--gold-soft); }
+.client-pave .pave-clear { background: var(--bg-soft); color: var(--sriracha); }
 .client-search-zone {
   position: relative;
   margin-bottom: 16px;
@@ -3841,15 +3863,15 @@ html, body {
 .ep-canal-actuel { font-size: 16px; font-weight: 700; color: var(--gold-soft); padding: 10px 0; }
 
 /* Pop-up choix du canal */
-.modal-canal { background: var(--surface); border-radius: 18px; padding: 26px; width: 440px; max-width: 92%; box-shadow: var(--shadow-lg); text-align: center; }
-.modal-canal h3 { margin: 0 0 4px; font-size: 22px; color: var(--text); }
-.modal-canal p { margin: 0 0 20px; color: var(--text-mute); font-size: 13px; }
-.canal-choix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-.canal-choix button { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 8px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface-2); font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer; transition: all .15s; }
-.canal-choix button span { font-size: 34px; line-height: 1; }
+.modal-canal { background: var(--surface); border-radius: 22px; padding: 40px 44px; width: 680px; max-width: 94%; box-shadow: var(--shadow-lg); text-align: center; }
+.modal-canal h3 { margin: 0 0 6px; font-size: 30px; color: var(--text); }
+.modal-canal p { margin: 0 0 30px; color: var(--text-mute); font-size: 16px; }
+.canal-choix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 22px; }
+.canal-choix button { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 42px 12px; border: 2px solid var(--border); border-radius: 18px; background: var(--surface-2); font-size: 17px; font-weight: 700; color: var(--text); cursor: pointer; transition: all .15s; }
+.canal-choix button span { font-size: 52px; line-height: 1; }
 .canal-choix button:hover { border-color: var(--gold); background: var(--bg-soft); }
 .canal-choix button:active { transform: scale(0.96); background: var(--gold); color: #fff; }
-.canal-annuler { background: none; border: none; color: var(--text-mute); font-size: 13px; cursor: pointer; text-decoration: underline; padding: 8px; }
+.canal-annuler { background: none; border: none; color: var(--text-mute); font-size: 15px; cursor: pointer; text-decoration: underline; padding: 10px; }
 
 /* MODES PAIEMENT */
 .ep-modes {
@@ -4871,15 +4893,31 @@ html, body {
     
     <div class="client-search-zone">
       <input 
-        type="tel" 
+        type="text" 
         class="client-search-input" 
         id="client-search-input" 
         placeholder="Téléphone du client (06...)" 
         autocomplete="off"
-        oninput="rechercheClientLive()"
-        autofocus
+        readonly
+        inputmode="none"
       />
       <button class="client-clear-btn" id="client-clear-btn" onclick="effacerRechercheClient()" style="display:none;">✕</button>
+    </div>
+
+    <!-- Pavé numérique custom (évite le clavier Android qui masque les résultats) -->
+    <div class="client-pave">
+      <button type="button" onclick="paveClientTape('1')">1</button>
+      <button type="button" onclick="paveClientTape('2')">2</button>
+      <button type="button" onclick="paveClientTape('3')">3</button>
+      <button type="button" onclick="paveClientTape('4')">4</button>
+      <button type="button" onclick="paveClientTape('5')">5</button>
+      <button type="button" onclick="paveClientTape('6')">6</button>
+      <button type="button" onclick="paveClientTape('7')">7</button>
+      <button type="button" onclick="paveClientTape('8')">8</button>
+      <button type="button" onclick="paveClientTape('9')">9</button>
+      <button type="button" class="pave-efface" onclick="paveClientEfface()">⌫</button>
+      <button type="button" onclick="paveClientTape('0')">0</button>
+      <button type="button" class="pave-clear" onclick="effacerRechercheClient()">C</button>
     </div>
     
     <div class="client-resultats" id="client-resultats">
@@ -10520,20 +10558,32 @@ function ouvrirRechercheClient() {
       <p style="font-size:11px; margin-top:4px; opacity:0.6;">Recherche dans la base des 3500+ clients</p>
     </div>
   `;
-  setTimeout(() => {
-    document.getElementById('client-search-input').focus();
-  }, 100);
+  // ⚠️ Pas de focus() : on utilise le pavé custom, on ne veut PAS du clavier Android
 }
 
 function fermerRechercheClient() {
   document.getElementById('overlay-client').classList.remove('show');
 }
 
+// --- Pavé numérique custom (recherche client) ---
+function paveClientTape(chiffre) {
+  const input = document.getElementById('client-search-input');
+  if (input.value.length >= 10) return;
+  input.value += chiffre;
+  document.getElementById('client-clear-btn').style.display = 'block';
+  rechercheClientLive();
+}
+function paveClientEfface() {
+  const input = document.getElementById('client-search-input');
+  input.value = input.value.slice(0, -1);
+  document.getElementById('client-clear-btn').style.display = input.value ? 'block' : 'none';
+  rechercheClientLive();
+}
+
 function effacerRechercheClient() {
   document.getElementById('client-search-input').value = '';
   document.getElementById('client-clear-btn').style.display = 'none';
   rechercheClientLive();
-  document.getElementById('client-search-input').focus();
 }
 
 function rechercheClientLive() {
