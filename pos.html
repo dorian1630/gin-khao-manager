@@ -11249,6 +11249,21 @@ async function chargerCommandeAttente(id) {
     quantite: Number(l.quantite || 1),
     sous_total: Number(l.prix || 0) * Number(l.quantite || 1)
   }));
+
+  // 🎁 Récompense fidélité appliquée à la borne → on la reconnaît pour la déduire à l'encaissement
+  recompenseCaisse = null;
+  const ligneReco = (cmd.lignes || []).find(l => l.recompense);
+  if (ligneReco) {
+    const reco = FID_PALIERS_CAISSE.find(r => r.palier === ligneReco.recompense);
+    recompenseCaisse = {
+      palier: ligneReco.recompense,
+      libelle: reco ? reco.libelle : 'Récompense',
+      montant: Math.abs(Number(ligneReco.prix || 0)),
+      nomArticle: (ligneReco.nom || '').replace(/^🎁\s*/, '')
+    };
+    // On retire la ligne remise du ticket : recompenseCaisse la ré-affiche proprement
+    ticket = ticket.filter(l => !(l.prix < 0));
+  }
   
   // Stocker l'ID de la commande_en_cours liée (pour MAJ après encaissement)
   window.commandeEnCoursLiee = id;
