@@ -5584,6 +5584,27 @@ async function payer(methode) {
     const data = await resp.json();
     if (!resp.ok || !data.ok) throw new Error(data.erreur || 'Erreur d\'enregistrement');
 
+    // 🖨️ Créer la commande dans commandes_en_cours → cuisine (KDS) + impression + encart caisse.
+    //    (La vente créée par la fonction garde le rôle fidélité.)
+    try {
+      const totalCmd = lignes.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.quantite) || 1), 0);
+      await sb.from('commandes_en_cours').insert({
+        restaurant_id: RESTO_ID,
+        numero: data.numero,
+        lignes: lignes,
+        total: totalCmd,
+        mode_service: modeService,
+        canal: 'borne',
+        statut: methode === 'comptoir' ? 'paiement_comptoir' : 'nouvelle',
+        client_id: clientFid ? clientFid.id : null,
+        client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null,
+        vente_id: data.vente_id || null,
+        cree_le: new Date().toISOString()
+      });
+    } catch (eKds) {
+      console.warn('commandes_en_cours non créée :', eKds.message);
+    }
+
     if (methode === 'carte') {
       derniereVente = { numero: data.numero, vente_id: data.vente_id };
       // 🎫 Crédit fidélité immédiat si un client est attaché (QR ou téléphone)
