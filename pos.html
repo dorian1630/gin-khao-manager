@@ -11017,10 +11017,20 @@ async function sauverClient() {
     
     let resultat;
     if (modeFormClient === 'creation') {
+      // 🎫 Entrée directe dans le programme fidélité (0 point de départ)
+      payload.points = 0;
+      payload.total_points_gagnes = 0;
+      payload.nb_visites = 0;
       const { data, error } = await sb.from('clients').insert(payload).select().single();
       if (error) throw error;
       resultat = data;
-      toast('✅ Client créé');
+      // Journaliser l'inscription (best-effort, n'empêche pas la création)
+      try {
+        await sb.from('fidelite_mouvements').insert({
+          client_id: data.id, points_delta: 0, source: 'inscription'
+        });
+      } catch (e) { /* le trigger/RPC peut déjà l'avoir fait, on ignore */ }
+      toast('✅ Client créé — inscrit au programme fidélité 🎫');
     } else {
       const { data, error } = await sb.from('clients')
         .update(payload)
