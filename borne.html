@@ -5556,12 +5556,8 @@ async function annulerPaiementSumUp() {
 // ===== ENREGISTREMENT DE LA COMMANDE =====
 async function payer(methode) {
   // methode : 'carte' (payé sur borne) ou 'comptoir' (à encaisser à la caisse)
-  // 🔒 Anti-triche : une récompense fidélité exige le paiement CARTE sur la borne
-  // (les points sont déduits au moment du paiement ; au comptoir rien ne garantit l'encaissement)
-  if (methode === 'comptoir' && recompenseEnAttente) {
-    borneAlert('🎁 Votre récompense fidélité nécessite<br>un <b>paiement par carte</b> sur la borne.<br><br>Sinon, retirez la récompense et<br>demandez-la directement au comptoir.', '💳');
-    return;
-  }
+  // 🎁 Récompense + comptoir : autorisé. Les points seront déduits à la caisse
+  //    à l'encaissement (la vente en_attente porte la ligne récompense + le client_id).
   const lignes = panier.map(l => ({
     produit_id: l.produit_id,
     nom: l.nom,
