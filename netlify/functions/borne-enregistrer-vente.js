@@ -90,6 +90,21 @@ exports.handler = async function (event) {
 
   const sb = createClient(SUPA_URL, SUPA_KEY);
 
+  // 🅱️ OPTION B — Comptoir : PAS de vente créée ici.
+  //    La borne écrira la commande dans commandes_en_cours (cuisine + impression),
+  //    et la VENTE (le CA) sera créée par la caisse à l'encaissement réel.
+  if (modePaiement === 'comptoir') {
+    // Numéro de commande simple pour l'affichage borne (Bxxx)
+    const numero = 'B' + Math.floor(100 + Math.random() * 900);
+    return jsonResp(200, {
+      ok: true,
+      vente_id: null,
+      numero: numero,
+      total: totalCalc,
+      statut: 'comptoir'
+    });
+  }
+
   try {
     const { data, error } = await sb.rpc('enregistrer_vente', {
       p_restaurant_id: restaurantId,
@@ -117,27 +132,13 @@ exports.handler = async function (event) {
       if (errNom) console.warn('client_prenom non enregistré :', errNom.message);
     }
 
-    // ✨ NOUVEAU : Si paiement comptoir, on passe la vente en "en_attente"
-    // pour que le caissier la voie sur pos.html et l'encaisse
-    if (modePaiement === 'comptoir' && venteId) {
-      const { error: errUpdate } = await sb
-        .from('ventes')
-        .update({ statut: 'en_attente' })
-        .eq('id', venteId);
-
-      if (errUpdate) {
-        console.error('Erreur update statut:', errUpdate);
-        // On continue quand même, la vente est créée
-      }
-    }
-
     return jsonResp(200, {
       ok: true,
       vente_id: venteId,
       numero: data?.numero,
       total: data?.total,
       hash_ticket: data?.hash_ticket,
-      statut: modePaiement === 'comptoir' ? 'en_attente' : 'validé'
+      statut: 'validé'
     });
 
   } catch (e) {
