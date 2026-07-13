@@ -3177,6 +3177,26 @@ html, body {
 }
 
 /* ===== RESPONSIVE TABLETTE ===== */
+
+/* 📱 Tablette 10-11" tactile en paysage (Blackview Active 8 Pro ≈ 1389×798 CSS)
+   Ciblé par pointer:coarse pour ne JAMAIS toucher un PC (souris). */
+@media (min-width: 1101px) and (max-width: 1600px) and (orientation: landscape) and (pointer: coarse) {
+  .caisse { grid-template-columns: 205px 1fr 385px; }
+  .topbar { padding: 10px 16px; }
+  .cats { padding: 10px 16px; gap: 8px; }
+  .sous-cats { padding: 0 16px 8px; }
+  .produits-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    padding: 4px 16px 16px;
+  }
+  .produit-card.has-image { min-height: auto; }
+  .produit-nom { font-size: 13px; }
+  .produit-prix { font-size: 17px; }
+  .ticket-head h2 { font-size: 19px; }
+  .total-row .val { font-size: 32px; }
+}
+
 @media (max-width: 1100px) {
   .caisse { grid-template-columns: 1fr 340px; }
   .produits-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 4px 18px 18px; }
@@ -4640,7 +4660,7 @@ html, body {
 /* ═══════════════════════════════════════════════════════════════
    📱 RESPONSIVE TABLETTE PAYSAGE (1024-1366px)
    ═══════════════════════════════════════════════════════════════ */
-@media (max-width: 1366px) and (orientation: landscape) {
+@media (max-width: 1366px) and (orientation: landscape), (max-width: 1600px) and (orientation: landscape) and (pointer: coarse) {
   .ep-head, .erl-head { padding: 12px 20px; }
   .ep-titre, .erl-titre { font-size: 22px; }
   .ep-sous, .erl-sous { font-size: 13px; }
