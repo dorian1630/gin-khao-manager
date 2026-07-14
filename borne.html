@@ -4763,6 +4763,141 @@ function fmt(n) {
 }
 
 // ============================================================
+//  🖨️ IMPRESSION — Ticket client borne (USB via APK) + bons cuisine/sushi (tablette)
+// ============================================================
+
+// Nettoie les caractères que l'imprimante ESC/POS ne gère pas (accents, ↳, emojis)
+function versAscii(str) {
+  return (str || '').toString()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/↳/g, '>')
+    .replace(/[^\x00-\x7F]/g, '');
+}
+
+// ---- Routage cuisine / sushi / comptoir (par catégorie) ----
+const CATS_SUSHI = ['sushi','sushis','maki','makis','california','californias','crispy','crispys','tiger','tigers','poke bowl','pokebowl','pokebowls','poke','pokes'];
+const CATS_SANS_BON = ['boisson','boissons','dessert','desserts'];
+function normNomCat(s) {
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+function stationPourLigne(l) {
+  const pid = l.lien_plat || l.produit_id;
+  const p = produits.find(x => x.id === pid);
+  if (!p) return 'cuisine';
+  const cat = categories.find(c => c.id === p.categorie_id);
+  const nomCat = normNomCat(cat ? cat.nom : '');
+  const parent = (cat && cat.parent_id) ? categories.find(c => c.id === cat.parent_id) : null;
+  const nomParent = normNomCat(parent ? parent.nom : '');
+  if (CATS_SUSHI.includes(nomCat) || CATS_SUSHI.includes(nomParent)) return 'sushi';
+  if (CATS_SANS_BON.includes(nomCat) || CATS_SANS_BON.includes(nomParent)) return 'comptoir';
+  return 'cuisine';
+}
+
+// ---- Ticket client sur l'imprimante de la borne (numéro géant) ----
+async function imprimerTicketBorneRawBT(numero, methode) {
+  try {
+    const escpos = versAscii(genererTicketBorneEscPos(numero, methode));
+    const base64 = btoa(escpos);
+    if (window.AndroidPrinter) {
+      AndroidPrinter.print(base64);   // impression native directe (APK)
+      return;
+    }
+    window.location.href = 'rawbt:base64,' + base64;  // fallback hors APK
+  } catch (e) {
+    console.error('Erreur impression borne:', e);
+  }
+}
+
+function genererTicketBorneEscPos(numero, methode) {
+  const ESC = '\x1B', GS = '\x1D', LF = '\x0A';
+  let s = ESC + '@';
+  s += ESC + 'a' + '\x01';
+  s += GS + '!' + '\x11' + ESC + 'E' + '\x01' + 'Gin Khao' + LF + ESC + 'E' + '\x00' + GS + '!' + '\x00';
+  s += 'Street Food Thai' + LF + LF;
+  const modeLabel = modeService === 'sur_place' ? 'SUR PLACE' : 'A EMPORTER';
+  s += ESC + 'E' + '\x01' + '[' + modeLabel + ']' + LF + ESC + 'E' + '\x00' + LF;
+  s += '========================================' + LF + LF;
+  s += 'VOTRE NUMERO' + LF + LF;
+  s += GS + '!' + '\x77' + ESC + 'E' + '\x01' + '#' + numero + LF + ESC + 'E' + '\x00' + GS + '!' + '\x00';
+  s += LF + '========================================' + LF + LF;
+  s += ESC + 'a' + '\x00';
+  s += 'Date : ' + new Date().toLocaleString('fr-FR') + LF;
+  if (clientFid && clientFid.nom) s += 'Client : ' + clientFid.nom + LF;
+  s += '----------------------------------------' + LF;
+  let total = 0;
+  panier.forEach(l => {
+    const qte = l.quantite || 1;
+    const prix = (Number(l.prix) || 0) * qte;
+    total += prix;
+    const debut = qte + 'x ' + (l.nom || '');
+    const prixStr = prix.toFixed(2).replace('.', ',') + ' EUR';
+    const espaces = 42 - debut.length - prixStr.length;
+    s += (espaces > 0 ? debut + ' '.repeat(espaces) + prixStr : debut + LF + '  ' + ' '.repeat(Math.max(0,38 - prixStr.length)) + prixStr) + LF;
+  });
+  s += '----------------------------------------' + LF;
+  s += ESC + 'E' + '\x01' + GS + '!' + '\x11';
+  s += 'TOTAL : ' + total.toFixed(2).replace('.', ',') + ' EUR' + LF;
+  s += GS + '!' + '\x00' + ESC + 'E' + '\x00' + LF;
+  s += ESC + 'a' + '\x01';
+  if (methode === 'comptoir') {
+    s += ESC + 'E' + '\x01' + '*** A REGLER AU COMPTOIR ***' + LF + ESC + 'E' + '\x00';
+    s += 'Presentez ce ticket au comptoir' + LF + 'pour regler votre commande' + LF;
+  } else {
+    s += ESC + 'E' + '\x01' + '*** PAIEMENT VALIDE ***' + LF + ESC + 'E' + '\x00';
+    s += 'Merci, patientez svp' + LF + 'Nous preparons votre commande' + LF;
+  }
+  s += LF + 'Vous serez appele(e) par votre numero' + LF + LF;
+  s += 'Merci pour votre commande !' + LF + LF + LF + LF;
+  s += GS + 'V' + '\x00';
+  return s;
+}
+
+// ---- Bons cuisine / sushi / comptoir via table Supabase (relais tablette) ----
+async function envoyerImpressionCuisine(numero, methode) {
+  try {
+    const items = panier.map(l => {
+      const details = [];
+      if (l.options) {
+        if (l.options.options_base) {
+          Object.entries(l.options.options_base).forEach(([g, c]) => details.push(g + ' : ' + c));
+        }
+        if (l.options.retirable && l.options.retirable.length > 0) {
+          details.push('SANS : ' + l.options.retirable.join(', '));
+        }
+        if (l.options.sauces && l.options.sauces.length > 0) {
+          const noms = l.options.sauces.map(sid => {
+            const sp = produits.find(p => p.id === sid);
+            return sp ? sp.nom.replace('Sauce ', '') : null;
+          }).filter(Boolean);
+          if (noms.length) details.push('Sauce : ' + noms.join(', '));
+        }
+      }
+      return {
+        nom: (l.nom || '').replace('↳', '>'),
+        quantite: l.quantite,
+        prix: l.prix,
+        station: stationPourLigne(l),
+        details
+      };
+    });
+    const total = items.reduce((s, it) => s + (Number(it.prix) || 0) * (it.quantite || 1), 0);
+    const { error } = await sb.from('impressions_borne').insert({
+      restaurant_id: RESTO_ID,
+      numero: String(numero),
+      mode_service: modeService,
+      mode_paiement: methode,
+      client_nom: clientFid ? clientFid.nom : null,
+      total: total,
+      lignes: items
+    });
+    if (error) console.error('Insert impressions_borne KO:', error.message);
+  } catch (e) {
+    console.error('Envoi impression cuisine KO (non bloquant):', e);
+  }
+}
+
+
+// ============================================================
 //  🎫 FIDÉLITÉ — Scan QR + attache client
 // ============================================================
 let qrScanner = null;
@@ -5604,7 +5739,13 @@ async function payer(methode) {
       console.warn('commandes_en_cours non créée :', eKds.message);
     }
 
+    // 🖨️ Ticket client sur l'imprimante de la borne (numéro géant) — les 2 modes
+    imprimerTicketBorneRawBT(data.numero, methode);
+
     if (methode === 'carte') {
+      // 🖨️ Bons cuisine/sushi/comptoir → tablette (uniquement si payé maintenant)
+      envoyerImpressionCuisine(data.numero, 'carte');
+
       derniereVente = { numero: data.numero, vente_id: data.vente_id };
       // 🎫 Crédit fidélité immédiat si un client est attaché (QR ou téléphone)
       let fidResultat = null;
@@ -5613,7 +5754,7 @@ async function payer(methode) {
       }
       afficherConfirmation(data.numero, 'paye', fidResultat);
     } else {
-      // Comptoir : vente 'en_attente' → encaissée à la caisse (points crédités là-bas)
+      // Comptoir : vente 'en_attente' → encaissée à la caisse (points + bons cuisine là-bas)
       derniereVente = null;
       afficherConfirmation(data.numero, 'comptoir');
     }
