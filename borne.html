@@ -5726,12 +5726,16 @@ async function payer(methode) {
       await sb.from('commandes_en_cours').insert({
         restaurant_id: RESTO_ID,
         numero: data.numero,
+        source: 'borne',
         lignes: lignes,
         total: totalCmd,
         mode_service: modeService,
-        statut: methode === 'comptoir' ? 'paiement_comptoir' : 'nouvelle',
+        canal: 'borne',
+        statut: methode === 'comptoir' ? 'paiement_comptoir' : 'a_preparer',
         client_id: clientFid ? clientFid.id : null,
+        client_nom: (clientFid && clientFid.nom) ? clientFid.nom : null,
         client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null,
+        client_telephone: (clientFid && clientFid.telephone) ? clientFid.telephone : null,
         vente_id: data.vente_id || null,
         cree_le: new Date().toISOString()
       });
