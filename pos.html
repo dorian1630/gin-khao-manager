@@ -6344,11 +6344,12 @@ function ajouterAvecParcours(produitId) {
       if (opt.choix && opt.choix.length > 0) ligne.options_base[opt.label] = opt.choix[0];
     });
   }
-  if (aVariantes) ligne.nom = p.nom + ' (' + p.variantes[0].label + ')';
+  if (aVariantes) ligne.nom = p.nom + ' (' + labelVariante(p.variantes[0]) + ')';
   ticket.push(ligne);
   reconstruireSousLignes(uid);
 
   editeurUid = uid;
+  editeurModeAjout = true;
   let modal = document.getElementById('modal-editeur-plat');
   if (!modal) {
     modal = document.createElement('div');
@@ -6472,7 +6473,7 @@ function finaliserParcours() {
   let nomFinal = p.nom;
   if (parcoursPlat.variante) {
     prixUnit = parseFloat(parcoursPlat.variante.prix);
-    nomFinal = p.nom + ' (' + parcoursPlat.variante.label + ')';
+    nomFinal = p.nom + ' (' + labelVariante(parcoursPlat.variante) + ')';
   }
 
   // Ajouter le plat principal (toute la sélection est mémorisée pour l'édition)
@@ -6604,6 +6605,7 @@ function annulerParcours() {
 //  Écran unique, toutes les options visibles, modif appliquée en direct.
 // ============================================
 let editeurUid = null;
+let editeurModeAjout = false;   // true = modale ouverte pour un AJOUT (boutons Annuler / Ajouter au ticket)
 
 function genUid() {
   return 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -6643,6 +6645,7 @@ function ouvrirEditeurLigne(idx) {
   }
 
   editeurUid = l.ligne_uid;
+  editeurModeAjout = false;   // édition d'une ligne déjà au ticket → bouton "Fermer"
   let modal = document.getElementById('modal-editeur-plat');
   if (!modal) {
     modal = document.createElement('div');
@@ -6651,7 +6654,7 @@ function ouvrirEditeurLigne(idx) {
     document.body.appendChild(modal);
   }
   modal.classList.add('actif');
-  rendreEditeur();
+  rendreEditeur(false);
 }
 
 function fermerEditeurPlat() {
@@ -6679,7 +6682,7 @@ function reconstruireSousLignes(uid) {
   if (p) {
     if (main.variante) {
       main.prix = parseFloat(main.variante.prix);
-      main.nom = p.nom + ' (' + main.variante.label + ')';
+      main.nom = p.nom + ' (' + labelVariante(main.variante) + ')';
     } else {
       main.prix = parseFloat(p.prix);
       main.nom = p.nom;
@@ -6725,6 +6728,12 @@ function reconstruireSousLignes(uid) {
   ticket.splice(j + 1, 0, ...subs);
 
   afficherTicket();
+
+  // 🔄 Rafraîchit la modale ouverte pour montrer la sélection (format, options…)
+  const modalEd = document.getElementById('modal-editeur-plat');
+  if (editeurUid === uid && modalEd && modalEd.classList.contains('actif')) {
+    rendreEditeur(editeurModeAjout);
+  }
   rendreEditeur();
 }
 
@@ -6779,6 +6788,18 @@ function edSetEntree(id, label) {
   reconstruireSousLignes(editeurUid);
 }
 
+// Libellé d'une variante — gère les 2 formats présents en base :
+//   {prix: 3.9, pieces: 2}          -> "2 pièces"
+//   {prix: 7.9, label: "4 pièces"}  -> "4 pièces"
+function labelVariante(v) {
+  if (!v) return '';
+  if (v.label) return v.label;
+  if (v.pieces !== undefined && v.pieces !== null) {
+    return v.pieces + ' pièce' + (v.pieces > 1 ? 's' : '');
+  }
+  return '';
+}
+
 // Rendu de l'écran d'édition (toutes les sections d'un coup)
 function rendreEditeur(modeAjout) {
   if (!editeurUid) return;
@@ -6798,8 +6819,8 @@ function rendreEditeur(modeAjout) {
   if (p.variantes && p.variantes.length > 0) {
     html += `<div class="mpp-bloc"><div class="mpp-lbl">Format</div><div class="mpp-options">`;
     p.variantes.forEach((v, i) => {
-      const act = (l.variante && l.variante.label === v.label) ? ' active' : '';
-      html += `<button class="mpp-option${act}" onclick="edSetVariante(${i})"><div class="mpp-opt-lbl">${escapeHtmlPos(v.label)}</div><div class="mpp-opt-prix">${fmt(v.prix)}</div></button>`;
+      const act = (l.variante && labelVariante(l.variante) === labelVariante(v)) ? ' active' : '';
+      html += `<button class="mpp-option${act}" onclick="edSetVariante(${i})"><div class="mpp-opt-lbl">${escapeHtmlPos(labelVariante(v))}</div><div class="mpp-opt-prix">${fmt(v.prix)}</div></button>`;
     });
     html += `</div></div>`;
   }
@@ -6885,7 +6906,7 @@ function rendreEditeur(modeAjout) {
         entrees.forEach(e => {
           let label = e.nom;
           if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
-            const v2 = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces' };
+            const v2 = e.variantes.find(v => labelVariante(v).includes('2 pi')) || { label: '2 pièces' };
             label = e.nom + ' (' + v2.label + ')';
           }
           const act = l.formule_entree_id === e.id ? ' active' : '';
@@ -6960,7 +6981,7 @@ function afficherModaleVariante() {
       <div class="mpp-options">
         ${variantes.map((v, i) => `
           <button class="mpp-option" onclick="choisirVariante(${i})">
-            <div class="mpp-opt-lbl">${v.label}</div>
+            <div class="mpp-opt-lbl">${labelVariante(v)}</div>
             <div class="mpp-opt-prix">${fmt(v.prix)}</div>
           </button>
         `).join('')}
@@ -7221,7 +7242,7 @@ function afficherModaleFormuleEntree() {
   
   const items = entrees.map(e => {
     if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
-      const variante2p = e.variantes.find(v => v.label && v.label.includes('2 pi')) || { label: '2 pièces', prix: 0 };
+      const variante2p = e.variantes.find(v => labelVariante(v).includes('2 pi')) || { label: '2 pièces', prix: 0 };
       return { id: e.id, label: e.nom + ' (' + variante2p.label + ')' };
     }
     return { id: e.id, label: e.nom };
