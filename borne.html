@@ -2843,7 +2843,7 @@ body {
       <div class="fid-icone">🎫</div>
       <div class="fid-info">
         <div class="fid-titre">Fidélité Gin Khao — 1 € = 1 point</div>
-        <div class="fid-sous">QR code ou numéro de téléphone · récompenses dès 50 pts</div>
+        <div class="fid-sous">Cumulez vos points avec votre numéro · récompenses dès 50 pts</div>
       </div>
       <div class="fid-arrow">→</div>
     </div>
@@ -4855,29 +4855,56 @@ function genererTicketBorneEscPos(numero, methode) {
 // ---- Bons cuisine / sushi / comptoir via table Supabase (relais tablette) ----
 async function envoyerImpressionCuisine(numero, methode) {
   try {
-    const items = panier.map(l => {
-      const details = [];
-      if (l.options) {
-        if (l.options.options_base) {
-          Object.entries(l.options.options_base).forEach(([g, c]) => details.push(g + ' : ' + c));
-        }
-        if (l.options.retirable && l.options.retirable.length > 0) {
-          details.push('SANS : ' + l.options.retirable.join(', '));
-        }
-        if (l.options.sauces && l.options.sauces.length > 0) {
-          const noms = l.options.sauces.map(sid => {
-            const sp = produits.find(p => p.id === sid);
-            return sp ? sp.nom.replace('Sauce ', '') : null;
-          }).filter(Boolean);
-          if (noms.length) details.push('Sauce : ' + noms.join(', '));
-        }
+    // Accompagnement choisi (Riz / Nouilles) → intégré au NOM sur le bon cuisine
+    const accompagnementDe = (l) => {
+      if (!l.options || !l.options.options_base) return null;
+      const v = Object.values(l.options.options_base)
+        .find(x => /^(riz|nouilles?)$/i.test(String(x || '').trim()));
+      return v ? String(v).trim() : null;
+    };
+    // Détails d'une ligne — même règle que la caisse :
+    //   'cuisine'  : tout, sauf l'accompagnement (déjà dans le nom)
+    //   'comptoir' : sans les suppléments/sauces payantes (déjà facturés en lignes séparées)
+    const detailsDe = (l, pour) => {
+      const d = [];
+      if (!l.options) return d;
+      const p = produits.find(x => x.id === l.produit_id);
+      const acc = accompagnementDe(l);
+      if (l.options.options_base) {
+        Object.values(l.options.options_base).forEach(v => {
+          if (!v) return;
+          if (pour === 'cuisine' && acc && String(v).trim() === acc) return;
+          d.push(String(v));
+        });
       }
+      (l.options.retirable || []).forEach(r => d.push('Sans ' + r));
+      if (pour === 'cuisine') {
+        (l.options.supplements || []).forEach(id => {
+          const sp = produits.find(x => x.id === id);
+          if (sp) d.push('+ ' + sp.nom.replace(/^Suppl\.\s*/i, ''));
+        });
+      }
+      (l.options.sauces || []).forEach(id => {
+        const sc = produits.find(x => x.id === id);
+        if (!sc) return;
+        const facturee = p && !p.sauces_incluses && parseFloat(sc.prix) > 0;
+        if (pour === 'comptoir' && facturee) return;
+        d.push(sc.nom.replace(/^Sauce\s+/i, 'Sauce '));
+      });
+      return d;
+    };
+
+    const items = panier.map(l => {
+      const nom = (l.nom || '').replace('↳', '>');
+      const acc = accompagnementDe(l);
       return {
-        nom: (l.nom || '').replace('↳', '>'),
+        nom: nom,                                              // ticket comptoir
+        nom_cuisine: (acc && !l.lien_plat) ? acc + ' ' + nom : nom,  // bon cuisine
         quantite: l.quantite,
         prix: l.prix,
         station: stationPourLigne(l),
-        details
+        details: detailsDe(l, 'cuisine'),
+        details_comptoir: detailsDe(l, 'comptoir')
       };
     });
     const total = items.reduce((s, it) => s + (Number(it.prix) || 0) * (it.quantite || 1), 0);
@@ -4992,7 +5019,9 @@ function majFidProgress() {
   }
 }
 
+// ⛔ Scan QR désactivé sur la borne : identification par téléphone uniquement.
 function ouvrirScanQR() {
+  ouvrirFidelite(); return;
   scanRetourEcran = 'ecran-panier';
   allerEcran('ecran-scan-qr');
   demarrerScanner();
@@ -5101,9 +5130,8 @@ function ouvrirFidelite() {
     <div class="fid-box">
       <h3>🎫 Fidélité Gin Khao</h3>
       <div class="fid-box-sous">1 € dépensé = 1 point · récompenses dès 50 points</div>
-      <div class="fid-choix2">
-        <button onclick="fermerFidelite(); ouvrirScanQR();"><span>📷</span>Scanner mon QR</button>
-        <button onclick="ouvrirClavierTel()"><span>📱</span>Mon numéro</button>
+      <div class="fid-choix2" style="grid-template-columns:1fr;">
+        <button onclick="ouvrirClavierTel()"><span>📱</span>Mon numéro de téléphone</button>
       </div>
       <div class="fid-actions">
         <button class="fid-btn-annuler" onclick="fermerFidelite()">Fermer</button>
@@ -5124,9 +5152,8 @@ function ouvrirFideliteAccueil() {
         <b>1 € = 1 point</b> · Dessert offert à 50 pts · Entrée à 100 pts · Plat à 200 pts · Formule à 300 pts<br>
         Vos points sont les mêmes ici, au comptoir et sur notre site !
       </div>
-      <div class="fid-choix2" style="margin-bottom:20px;">
-        <button style="padding:34px 12px;font-size:18px;" onclick="ouvrirClavierTel()"><span style="font-size:52px;">📱</span>Mon numéro<br><small style="font-weight:600;color:var(--text-soft);">Je me connecte ou je m'inscris</small></button>
-        <button style="padding:34px 12px;font-size:18px;" onclick="fermerFidelite(); ouvrirScanQRDepuisAccueil();"><span style="font-size:52px;">📷</span>Mon QR code<br><small style="font-weight:600;color:var(--text-soft);">Je scanne ma carte</small></button>
+      <div class="fid-choix2" style="margin-bottom:20px;grid-template-columns:1fr;">
+        <button style="padding:34px 12px;font-size:19px;" onclick="ouvrirClavierTel()"><span style="font-size:52px;">📱</span>Mon numéro de téléphone<br><small style="font-weight:600;color:var(--text-soft);">Je me connecte ou je m'inscris</small></button>
       </div>
       <div class="fid-actions">
         <button class="fid-btn-annuler" style="flex:1;padding:18px;font-size:16px;" onclick="fermerFidelite()">Continuer sans compte →</button>
@@ -5136,7 +5163,9 @@ function ouvrirFideliteAccueil() {
 
 // Scan QR lancé depuis l'accueil : retour vers les catégories après scan
 let scanRetourEcran = 'ecran-panier';
+// ⛔ Scan QR désactivé sur la borne : identification par téléphone uniquement.
 function ouvrirScanQRDepuisAccueil() {
+  ouvrirFideliteAccueil(); return;
   scanRetourEcran = 'ecran-accueil-cats';
   allerEcran('ecran-scan-qr');
   demarrerScanner();
@@ -5823,6 +5852,18 @@ function afficherConfirmation(numero, type, fidResultat) {
   // Retour à l'accueil (14 s — le temps de lire / taper son numéro)
   relancerTimerFin(14000);
 }
+
+// ============================================================
+//  🎠 CARROUSEL DE L'ÉCRAN D'ACCUEIL (rotation auto des images)
+// ============================================================
+let carrouselIndex = 0;
+setInterval(() => {
+  const slides = document.querySelectorAll('#ecran-accueil .carrousel-slide');
+  if (slides.length < 2) return;
+  slides[carrouselIndex].classList.remove('visible');
+  carrouselIndex = (carrouselIndex + 1) % slides.length;
+  slides[carrouselIndex].classList.add('visible');
+}, 5000);
 
 // ===== GO =====
 init();
