@@ -2998,6 +2998,20 @@ function labelVariante(v) {
   }
   return '';
 }
+// 📦 Composants fixes d'une box (formule_etapes) : [{produit_id,label,qte,type:'fixe'}]
+function composantsFixes(p) {
+  if (!p || !Array.isArray(p.formule_etapes)) return [];
+  return p.formule_etapes.filter(c => c && c.produit_id && (c.type === 'fixe' || c.fixe === true));
+}
+function estBox(p) { return composantsFixes(p).length > 0; }
+
+// Boisson de formule/box : les 33cl sont incluses, toute autre contenance = +1 €
+const SUPPLEMENT_BOISSON = 1;
+function prixBoissonFormule(b) {
+  if (!b) return 0;
+  return /33\s*cl/i.test(b.nom) ? 0 : SUPPLEMENT_BOISSON;
+}
+
 function aDesVariantes(p) {
   return p && Array.isArray(p.variantes) && p.variantes.length > 0;
 }
@@ -3171,8 +3185,10 @@ function filtrerCatEtAller(catId) {
   if (cat && cat.parent_id) {
     const parent = categories.find(p => p.id === cat.parent_id);
     if (parent && parent.nom === 'Formules') {
-      lancerParcoursFormule(cat);
-      return;
+      // 📦 Si la sous-catégorie contient des BOX (menus fixes), on affiche
+      //    simplement ses produits — pas le parcours Entrée → Plat → Boisson.
+      const aDesBox = produits.some(p => p.categorie_id === catId && p.actif !== false && estBox(p));
+      if (!aDesBox) { lancerParcoursFormule(cat); return; }
     }
   }
   
@@ -3920,10 +3936,11 @@ function finaliserParcoursPlat() {
     if (parcoursPlatEnCours.formule_boisson_id) {
       const boisson = produits.find(pp => pp.id === parcoursPlatEnCours.formule_boisson_id);
       if (boisson) {
+        const pB = prixBoissonFormule(boisson);   // 33cl incluse, autres +1 €
         panier.push({
           produit_id: boisson.id,
-          nom: '  ↳ ' + boisson.nom + ' (formule)',
-          prix: 0,  // OFFERT, prix dans la formule
+          nom: '  ↳ ' + boisson.nom + (pB > 0 ? ' (supplément)' : ' (formule)'),
+          prix: pB,
           quantite: 1,
           emoji: '🍹',
           lien_plat: p.id
@@ -3945,6 +3962,19 @@ function finaliserParcoursPlat() {
       }
     }
   }
+
+  // 📦 Composants d'une box (Riz Thaï Poulet, Dynamite, 2× Nems…) → inclus (0 €)
+  composantsFixes(p).forEach(comp => {
+    const prod = produits.find(pp => pp.id === comp.produit_id);
+    panier.push({
+      produit_id: comp.produit_id,
+      nom: '  ↳ ' + (comp.label || (prod ? prod.nom : 'Composant')) + ' (box)',
+      prix: 0,
+      quantite: comp.qte || 1,
+      emoji: '📦',
+      lien_plat: p.id
+    });
+  });
 
   majBarrePanier();
   fermerModaleParcours();
@@ -4197,11 +4227,14 @@ function afficherEcranFormuleBoisson() {
     finaliserFormule();
     return;
   }
-  const boissons = produits.filter(p => {
-    if (p.categorie_id !== catBoissons.id || p.actif === false) return false;
-    return p.nom.includes('33cl') || p.nom.toLowerCase().includes('cristalline');
-  });
+  // Toutes les boissons : 33cl incluses, les autres +1 €
+  const boissons = produits.filter(p => p.categorie_id === catBoissons.id && p.actif !== false);
   
+  // Titre : nom de la formule en cours, sinon nom de la box
+  const platBox = parcoursPlatEnCours ? parcoursPlatEnCours.produit : null;
+  const titreEcran = formuleEnCours ? formuleEnCours.sousCatFormule.nom : (platBox ? platBox.nom : 'Votre boisson');
+  const etapeLbl = formuleEnCours ? 'Étape 3/3' : 'Boisson incluse';
+
   // Fermer la modale parcours (Spicy/sauces/etc.) si encore ouverte
   const modal = document.getElementById('modal-parcours');
   if (modal) {
@@ -4221,14 +4254,14 @@ function afficherEcranFormuleBoisson() {
     <div class="formule-step-header">
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
-        <button class="btn-retour-cats" onclick="afficherEcranFormulePlat()">← Retour</button>
+        <button class="btn-retour-cats" onclick="${formuleEnCours ? 'afficherEcranFormulePlat()' : 'annulerParcoursPlat(); allerEcran(\'ecran-menu\')'}">← Retour</button>
       </div>
-      <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
-      <div class="formule-step-num">Étape 3/3</div>
+      <div class="logo">${titreEcran}</div>
+      <div class="formule-step-num">${etapeLbl}</div>
     </div>
     <div class="formule-step-titre">
       <h2>🍹 Choisissez votre boisson</h2>
-      <p>Incluse dans la formule</p>
+      <p>33cl incluse · autres +${fmt(SUPPLEMENT_BOISSON)}</p>
     </div>
     <div class="formule-grille">
       ${boissons.map(b => {
@@ -4238,7 +4271,8 @@ function afficherEcranFormuleBoisson() {
                ${hasImage?`style="background-image:url('${b.image_url}')"`:''}>
             ${!hasImage ? `<div class="formule-card-emoji">🍹</div>` : ''}
             <div class="formule-card-bandeau">
-              <div class="formule-card-nom">${b.nom.replace(' 33cl','').replace(' 50cl','')}</div>
+              <div class="formule-card-nom">${b.nom.replace(' 33cl','')}</div>
+              ${prixBoissonFormule(b) > 0 ? `<div class="formule-card-prix">+${fmt(prixBoissonFormule(b))}</div>` : ''}
             </div>
           </div>
         `;
@@ -4890,6 +4924,12 @@ async function envoyerImpressionCuisine(numero, methode) {
         const facturee = p && !p.sauces_incluses && parseFloat(sc.prix) > 0;
         if (pour === 'comptoir' && facturee) return;
         d.push(sc.nom.replace(/^Sauce\s+/i, 'Sauce '));
+      });
+      // 📦 Contenu d'une box : la cuisine doit voir le détail
+      composantsFixes(p).forEach(c => {
+        const prod = produits.find(x => x.id === c.produit_id);
+        const q = c.qte || 1;
+        d.push((q > 1 ? q + 'x ' : '') + (c.label || (prod ? prod.nom : 'Composant')));
       });
       return d;
     };
