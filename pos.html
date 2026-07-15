@@ -6788,6 +6788,26 @@ function edSetEntree(id, label) {
   reconstruireSousLignes(editeurUid);
 }
 
+// Détails d'une ligne du ticket — IDENTIQUES sur le bon cuisine et le ticket comptoir :
+// options de base (Riz/Nouilles, Normal/Spicy), "Sans X", suppléments, sauces.
+function detailsLigneTicket(l) {
+  const d = [];
+  if (!l) return d;
+  if (l.options_base) {
+    Object.values(l.options_base).forEach(v => { if (v) d.push(String(v)); });
+  }
+  (l.retirables || []).forEach(r => d.push('Sans ' + r));
+  (l.supplements_sel || []).forEach(id => {
+    const p = produits.find(x => x.id === id);
+    if (p) d.push('+ ' + p.nom.replace(/^Suppl\.\s*/i, ''));
+  });
+  (l.sauces_sel || []).forEach(id => {
+    const p = produits.find(x => x.id === id);
+    if (p) d.push(p.nom.replace(/^Sauce\s+/i, 'Sauce '));
+  });
+  return d;
+}
+
 // Libellé d'une variante — gère les 2 formats présents en base :
 //   {prix: 3.9, pieces: 2}          -> "2 pièces"
 //   {prix: 7.9, label: "4 pièces"}  -> "4 pièces"
@@ -8302,8 +8322,12 @@ async function validerVente() {
   const lignesPourCuisine = ticket.map(l => ({
     produit_id: l.produit_id,
     nom: l.nom,
+    prix: l.prix,
     quantite: l.quantite,
-    categorie_id: l.categorie_id
+    categorie_id: l.categorie_id,
+    lien_plat: l.lien_plat || null,
+    // ⚠️ Les options étaient perdues ici : sans elles, aucun détail sur les bons.
+    details: detailsLigneTicket(l)
   }));
 
   try {
@@ -8359,12 +8383,16 @@ async function validerVente() {
       statut: 'validee',
       canal: canalVente,
       cree_le: new Date().toISOString(),
-      lignes_vente: lignes.map(l => ({
-        nom_produit: l.nom,
-        prix_unitaire: l.prix,
-        quantite: l.quantite,
-        sous_total: l.prix * l.quantite
-      }))
+      lignes_vente: lignes.map(l => {
+        const src = ticket.find(t => t.produit_id === l.produit_id && t.nom === l.nom);
+        return {
+          nom_produit: l.nom,
+          prix_unitaire: l.prix,
+          quantite: l.quantite,
+          sous_total: l.prix * l.quantite,
+          details: detailsLigneTicket(src)
+        };
+      })
     };
 
     // 🎫 Crédit fidélité unifié (client scanné OU client téléphone)
@@ -9247,24 +9275,7 @@ function preparerImpression(lignesTicket, venteLocale) {
   const itemsAPreparer = lignesTicket
     .filter(l => l.produit_id && !l.lien_plat && !idsBoissons.includes(l.categorie_id));
 
-  // Détails d'un plat pour le bon de préparation (options, sans X, suppléments, sauces)
-  function detailsPourBon(l) {
-    const d = [];
-    if (l.options_base) {
-      Object.values(l.options_base).forEach(v => { if (v) d.push(v); });
-    }
-    (l.retirables || []).forEach(r => d.push('Sans ' + r));
-    (l.supplements_sel || []).forEach(id => {
-      const s = produits.find(p => p.id === id);
-      if (s) d.push('+ ' + s.nom.replace(/^Suppl\.\s*/i, ''));
-    });
-    (l.sauces_sel || []).forEach(id => {
-      const s = produits.find(p => p.id === id);
-      if (s) d.push(s.nom.replace(/^Sauce\s*/i, 'Sauce '));
-    });
-    return d;
-  }
-  const versItem = l => ({ quantite: l.quantite, nom: l.nom, details: detailsPourBon(l) });
+  const versItem = l => ({ quantite: l.quantite, nom: l.nom, details: l.details || [] });
 
   // Répartition par poste
   const itemsSushi = itemsAPreparer
@@ -9336,6 +9347,8 @@ function preparerImpression(lignesTicket, venteLocale) {
       tva: calculerTVA(venteLocale.total, RESTO_INFOS.tauxTVA),
       tvaNum: RESTO_INFOS.tva,
       naf: RESTO_INFOS.naf,
+      siret: RESTO_INFOS.siret,
+      tel: RESTO_INFOS.tel,
       annulee: venteLocale.statut === 'annulee'
     }
   };
