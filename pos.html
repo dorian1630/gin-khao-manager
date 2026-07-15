@@ -9221,34 +9221,67 @@ function preparerImpression(lignesTicket, venteLocale) {
     .filter(c => /boisson/i.test(c.nom))
     .map(c => c.id);
 
-  // Items "à préparer" = tout sauf boissons, remises, plats sans produit_id
+  // Items "à préparer" = tout sauf boissons, remises, sous-lignes et plats sans produit_id
+  // (les sous-lignes suppléments/sauces sont reprises dans les détails du plat parent)
   const itemsAPreparer = lignesTicket
-    .filter(l => l.produit_id && !idsBoissons.includes(l.categorie_id));
+    .filter(l => l.produit_id && !l.lien_plat && !idsBoissons.includes(l.categorie_id));
+
+  // Détails d'un plat pour le bon de préparation (options, sans X, suppléments, sauces)
+  function detailsPourBon(l) {
+    const d = [];
+    if (l.options_base) {
+      Object.values(l.options_base).forEach(v => { if (v) d.push(v); });
+    }
+    (l.retirables || []).forEach(r => d.push('Sans ' + r));
+    (l.supplements_sel || []).forEach(id => {
+      const s = produits.find(p => p.id === id);
+      if (s) d.push('+ ' + s.nom.replace(/^Suppl\.\s*/i, ''));
+    });
+    (l.sauces_sel || []).forEach(id => {
+      const s = produits.find(p => p.id === id);
+      if (s) d.push(s.nom.replace(/^Sauce\s*/i, 'Sauce '));
+    });
+    return d;
+  }
+  const versItem = l => ({ quantite: l.quantite, nom: l.nom, details: detailsPourBon(l) });
 
   // Répartition par poste
   const itemsSushi = itemsAPreparer
     .filter(l => estCategorieSushi(l.categorie_id))
-    .map(l => ({ quantite: l.quantite, nom: l.nom }));
+    .map(versItem);
 
   const itemsCuisine = itemsAPreparer
     .filter(l => !estCategorieSushi(l.categorie_id))
-    .map(l => ({ quantite: l.quantite, nom: l.nom }));
+    .map(versItem);
 
   const d = new Date(venteLocale.cree_le);
   const heure = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
   const dateStr = d.toLocaleDateString('fr-FR') + ' à ' + heure;
+  // Date courte façon "15 juil. 00:37:13" pour l'en-tête des bons
+  const dateBon = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ' +
+                  d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const caissierNom = (typeof caissierActif !== 'undefined' && caissierActif) ? caissierActif.nom : null;
+  const modeServiceBon = venteLocale.canal || null;
 
   derniereImpression = {
     // Bon CUISINE : uniquement s'il y a des plats chauds
     bonCuisine: itemsCuisine.length > 0 ? {
       numero: venteLocale.numero,
       heure: heure,
+      date: dateBon,
+      poste: 'cuisine',
+      caissier: caissierNom,
+      modeService: modeServiceBon,
       items: itemsCuisine
     } : null,
     // Bon SUSHI : uniquement s'il y a des sushis/pokébowls
     bonSushi: itemsSushi.length > 0 ? {
       numero: venteLocale.numero,
       heure: heure,
+      date: dateBon,
+      poste: 'sushi',
+      caissier: caissierNom,
+      modeService: modeServiceBon,
       items: itemsSushi
     } : null,
     // ✨ Bon LIVRAISON : uniquement si un client est lié à la commande
