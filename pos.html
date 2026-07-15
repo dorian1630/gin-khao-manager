@@ -6788,22 +6788,49 @@ function edSetEntree(id, label) {
   reconstruireSousLignes(editeurUid);
 }
 
-// Détails d'une ligne du ticket — IDENTIQUES sur le bon cuisine et le ticket comptoir :
-// options de base (Riz/Nouilles, Normal/Spicy), "Sans X", suppléments, sauces.
-function detailsLigneTicket(l) {
+// Accompagnement choisi (Riz / Nouilles) — passe dans le NOM du plat sur le bon cuisine.
+function accompagnementDe(l) {
+  if (!l || !l.options_base) return null;
+  const v = Object.values(l.options_base).find(x => /^(riz|nouilles?)$/i.test(String(x || '').trim()));
+  return v ? String(v).trim() : null;
+}
+
+// Détails d'une ligne du ticket.
+//   'cuisine'  : tout (options, "Sans X", suppléments, sauces) — sauf l'accompagnement,
+//                déjà intégré au nom du plat.
+//   'comptoir' : on NE répète PAS ce qui est déjà facturé sur une ligne à part
+//                (suppléments, sauces payantes) — sinon doublon sur le ticket client.
+function detailsLigneTicket(l, pour) {
   const d = [];
   if (!l) return d;
+  const p = produits.find(x => x.id === l.produit_id);
+  const acc = accompagnementDe(l);
+
   if (l.options_base) {
-    Object.values(l.options_base).forEach(v => { if (v) d.push(String(v)); });
+    Object.values(l.options_base).forEach(v => {
+      if (!v) return;
+      // En cuisine, l'accompagnement est dans le nom → on ne le répète pas
+      if (pour === 'cuisine' && acc && String(v).trim() === acc) return;
+      d.push(String(v));
+    });
   }
   (l.retirables || []).forEach(r => d.push('Sans ' + r));
-  (l.supplements_sel || []).forEach(id => {
-    const p = produits.find(x => x.id === id);
-    if (p) d.push('+ ' + p.nom.replace(/^Suppl\.\s*/i, ''));
-  });
+
+  // Suppléments : toujours facturés à part → uniquement en cuisine
+  if (pour === 'cuisine') {
+    (l.supplements_sel || []).forEach(id => {
+      const sp = produits.find(x => x.id === id);
+      if (sp) d.push('+ ' + sp.nom.replace(/^Suppl\.\s*/i, ''));
+    });
+  }
+
+  // Sauces : en cuisine toutes ; au comptoir seulement celles NON facturées (incluses/gratuites)
   (l.sauces_sel || []).forEach(id => {
-    const p = produits.find(x => x.id === id);
-    if (p) d.push(p.nom.replace(/^Sauce\s+/i, 'Sauce '));
+    const sc = produits.find(x => x.id === id);
+    if (!sc) return;
+    const facturee = p && !p.sauces_incluses && parseFloat(sc.prix) > 0;
+    if (pour === 'comptoir' && facturee) return;   // déjà une ligne avec son prix
+    d.push(sc.nom.replace(/^Sauce\s+/i, 'Sauce '));
   });
   return d;
 }
@@ -8327,8 +8354,13 @@ async function validerVente() {
     categorie_id: l.categorie_id,
     lien_plat: l.lien_plat || null,
     // ⚠️ Les options étaient perdues ici : sans elles, aucun détail sur les bons.
-    details: detailsLigneTicket(l)
+    details: detailsLigneTicket(l, 'cuisine')
   }));
+  // Bon cuisine : l'accompagnement passe dans le nom → "RIZ POULET LOC LAC"
+  lignesPourCuisine.forEach((lc, i) => {
+    const acc = accompagnementDe(ticket[i]);
+    if (acc && !lc.lien_plat) lc.nom = acc + ' ' + lc.nom;
+  });
 
   try {
     // Le canal "cc_enligne" et "cc_comptoir" sont tous deux du click&collect côté base.
@@ -8390,7 +8422,7 @@ async function validerVente() {
           prix_unitaire: l.prix,
           quantite: l.quantite,
           sous_total: l.prix * l.quantite,
-          details: detailsLigneTicket(src)
+          details: detailsLigneTicket(src, 'comptoir')
         };
       })
     };
