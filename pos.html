@@ -6708,7 +6708,10 @@ function reconstruireSousLignes(uid) {
   if (main.est_formule) {
     if (main.formule_boisson_id) {
       const b = produits.find(pp => pp.id === main.formule_boisson_id);
-      if (b) subs.push(sousLignePlat(b, '  ↳ ' + b.nom + ' (formule)', 0, uid));
+      if (b) {
+        const pB = prixBoissonFormule(b);
+        subs.push(sousLignePlat(b, '  ↳ ' + b.nom + (pB > 0 ? ' (supplément)' : ' (formule)'), pB, uid));
+      }
     }
     if (main.formule_entree_id) {
       const e = produits.find(pp => pp.id === main.formule_entree_id);
@@ -6789,6 +6792,13 @@ function edSetEntree(id, label) {
   reconstruireSousLignes(editeurUid);
 }
 
+// Boisson de formule/box : les 33cl sont incluses, toute autre contenance = +1 €.
+const SUPPLEMENT_BOISSON = 1;
+function prixBoissonFormule(b) {
+  if (!b) return 0;
+  return /33\s*cl/i.test(b.nom) ? 0 : SUPPLEMENT_BOISSON;
+}
+
 // Clé/titre d'un groupe d'options_base.
 // ⚠️ En base le champ s'appelle "groupe" (c'est ce qu'utilise la borne) ;
 // certains produits ont "label". Sans ça, tous les groupes partagent la clé
@@ -6843,7 +6853,20 @@ function detailsLigneTicket(l, pour) {
     if (pour === 'comptoir' && facturee) return;   // déjà une ligne avec son prix
     d.push(sc.nom.replace(/^Sauce\s+/i, 'Sauce '));
   });
-  return d;
+
+  // 📦 Contenu d'une box (composants fixes) + boisson/entrée de formule :
+  //    la cuisine doit voir le détail, pas juste "BOX COUPE DU MONDE".
+  composantsFixes(p).forEach(c => {
+    const prod = produits.find(x => x.id === c.produit_id);
+    const q = c.qte || 1;
+    d.push((q > 1 ? q + 'x ' : '') + (c.label || (prod ? prod.nom : 'Composant')));
+  });
+  // 🥤 La boisson n'apparaît PAS sur le bon cuisine (c'est le comptoir qui la sert)
+  //    — elle est déjà une ligne à part sur le ticket client.
+  if (l.formule_entree_id && pour === 'cuisine') {
+    d.push(l.formule_entree_label || '');
+  }
+  return d.filter(Boolean);
 }
 
 // Libellé d'une variante — gère les 2 formats présents en base :
@@ -6937,12 +6960,14 @@ function rendreEditeur(modeAjout) {
   if (l.est_formule) {
     const catBoissons = categories.find(c => /boisson/i.test(c.nom));
     if (catBoissons) {
-      const boissons = produits.filter(pp => pp.categorie_id === catBoissons.id && pp.actif !== false &&
-        (pp.nom.includes('33cl') || pp.nom.toLowerCase().includes('cristalline')));
-      html += `<div class="mpp-bloc"><div class="mpp-lbl">Boisson (incluse)</div><div class="mpp-options">`;
+      // Toutes les boissons : les 33cl sont incluses, les autres sont à +1 €
+      const boissons = produits.filter(pp => pp.categorie_id === catBoissons.id && pp.actif !== false);
+      html += `<div class="mpp-bloc"><div class="mpp-lbl">Boisson (33cl incluse · autres +${fmt(SUPPLEMENT_BOISSON)})</div><div class="mpp-options">`;
       boissons.forEach(b => {
         const act = l.formule_boisson_id === b.id ? ' active' : '';
-        html += `<button class="mpp-option${act}" onclick="edSetBoisson('${b.id}')">${escapeHtmlPos(b.nom.replace(' 33cl', '').replace(' 50cl', ''))}</button>`;
+        const pB = prixBoissonFormule(b);
+        const prixTxt = pB > 0 ? ` <span class="mpp-prix">+${fmt(pB)}</span>` : '';
+        html += `<button class="mpp-option${act}" onclick="edSetBoisson('${b.id}')">${escapeHtmlPos(b.nom.replace(' 33cl', ''))}${prixTxt}</button>`;
       });
       html += `</div></div>`;
     }
