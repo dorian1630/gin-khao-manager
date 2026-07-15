@@ -8452,11 +8452,14 @@ async function validerVente() {
       cree_le: new Date().toISOString(),
       lignes_vente: lignes.map(l => {
         const src = ticket.find(t => t.produit_id === l.produit_id && t.nom === l.nom);
+        const pu = Number(l.prix) || 0;            // garde anti-NaN
+        const qt = Number(l.quantite) || 1;
         return {
           nom_produit: l.nom,
-          prix_unitaire: l.prix,
-          quantite: l.quantite,
-          sous_total: l.prix * l.quantite,
+          prix_unitaire: pu,
+          quantite: qt,
+          sous_total: pu * qt,
+          lien_plat: src ? (src.lien_plat || null) : null,
           details: detailsLigneTicket(src, 'comptoir')
         };
       })
@@ -9405,7 +9408,9 @@ function preparerImpression(lignesTicket, venteLocale) {
     ticketClient: {
       numero: venteLocale.numero,
       date: dateStr,
-      lignes: venteLocale.lignes_vente,
+      // Les éléments inclus (composants de box, boisson/entrée de formule à 0 €)
+      // sont déjà listés en détails sous le plat → pas de ligne "0,00 EUR" en double.
+      lignes: (venteLocale.lignes_vente || []).filter(l => !(l.lien_plat && Number(l.prix_unitaire) === 0)),
       total: venteLocale.total,
       modePaiement: venteLocale.mode_paiement,
       restoNom: RESTO_INFOS.nom,
