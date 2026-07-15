@@ -6341,7 +6341,7 @@ function ajouterAvecParcours(produitId) {
   // Pré-sélection des options_base obligatoires (1er choix par défaut)
   if (aOptionsBase) {
     p.options_base.forEach(opt => {
-      if (opt.choix && opt.choix.length > 0) ligne.options_base[opt.label] = opt.choix[0];
+      if (opt.choix && opt.choix.length > 0) ligne.options_base[cleGroupeOption(opt, p.options_base.indexOf(opt))] = opt.choix[0];
     });
   }
   if (aVariantes) ligne.nom = p.nom + ' (' + labelVariante(p.variantes[0]) + ')';
@@ -6428,8 +6428,9 @@ function ajouterDirect() {
   // Options_base : 1er choix de chaque
   if (p.options_base && p.options_base.length > 0) {
     p.options_base.forEach(opt => {
-      if (!parcoursPlat.options_base[opt.label] && opt.choix && opt.choix.length > 0) {
-        parcoursPlat.options_base[opt.label] = opt.choix[0];
+      const cleP = cleGroupeOption(opt, idx);
+      if (!parcoursPlat.options_base[cleP] && opt.choix && opt.choix.length > 0) {
+        parcoursPlat.options_base[cleP] = opt.choix[0];
       }
     });
   }
@@ -6788,6 +6789,16 @@ function edSetEntree(id, label) {
   reconstruireSousLignes(editeurUid);
 }
 
+// Clé/titre d'un groupe d'options_base.
+// ⚠️ En base le champ s'appelle "groupe" (c'est ce qu'utilise la borne) ;
+// certains produits ont "label". Sans ça, tous les groupes partagent la clé
+// "undefined" et seремplacent entre eux (impossible d'avoir Riz ET Spicy).
+function cleGroupeOption(opt, idx) {
+  const g = opt && (opt.groupe || opt.label);
+  return (g && String(g).trim() && String(g).toLowerCase() !== 'undefined')
+    ? String(g).trim() : ('Choix ' + (idx + 1));
+}
+
 // Accompagnement choisi (Riz / Nouilles) — passe dans le NOM du plat sur le bon cuisine.
 function accompagnementDe(l) {
   if (!l || !l.options_base) return null;
@@ -6875,12 +6886,11 @@ function rendreEditeur(modeAjout) {
   // Options de base (ex. riz / nouilles)
   if (p.options_base && p.options_base.length > 0) {
     p.options_base.forEach((opt, idxOpt) => {
-      const titreOpt = (opt.label && String(opt.label).trim() && String(opt.label).toLowerCase() !== 'undefined')
-        ? opt.label : ('Choix ' + (idxOpt + 1));
-      const lblEsc = String(opt.label).replace(/'/g, "\\'");
+      const titreOpt = cleGroupeOption(opt, idxOpt);
+      const lblEsc = titreOpt.replace(/'/g, "\\'");
       html += `<div class="mpp-bloc"><div class="mpp-lbl">${escapeHtmlPos(titreOpt)}</div><div class="mpp-options">`;
       opt.choix.forEach(c => {
-        const act = (l.options_base && l.options_base[opt.label] === c) ? ' active' : '';
+        const act = (l.options_base && l.options_base[titreOpt] === c) ? ' active' : '';
         const cEsc = String(c).replace(/'/g, "\\'");
         html += `<button class="mpp-option${act}" onclick="edSetOption('${lblEsc}','${cEsc}')">${escapeHtmlPos(c)}</button>`;
       });
@@ -7061,7 +7071,7 @@ function afficherModaleOptionsBase() {
   p.options_base.forEach((opt, idx) => {
     html += `
       <div class="mpp-bloc">
-        <div class="mpp-lbl">${opt.label}</div>
+        <div class="mpp-lbl">${cleGroupeOption(opt, idx)}</div>
         <div class="mpp-options">
           ${opt.choix.map(c => `
             <button class="mpp-option" onclick="choisirOptionBase(${idx}, '${c.replace(/'/g, "\\'")}', this)">
@@ -7084,7 +7094,7 @@ function afficherModaleOptionsBase() {
 
 function choisirOptionBase(idx, choix, btn) {
   const opt = parcoursPlat.produit.options_base[idx];
-  parcoursPlat.options_base[opt.label] = choix;
+  parcoursPlat.options_base[cleGroupeOption(opt, idx)] = choix;
   // Visuel : marque le bouton actif dans son groupe
   btn.parentElement.querySelectorAll('.mpp-option').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -7093,7 +7103,7 @@ function choisirOptionBase(idx, choix, btn) {
 function validerOptionsBase() {
   // Vérif que toutes les options sont remplies
   const p = parcoursPlat.produit;
-  const tousChoisis = p.options_base.every(opt => parcoursPlat.options_base[opt.label]);
+  const tousChoisis = p.options_base.every((opt, i) => parcoursPlat.options_base[cleGroupeOption(opt, i)]);
   if (!tousChoisis) { posAlert('Veuillez sélectionner toutes les options'); return; }
   parcoursPlat.etape = 'retirables';
   passerEtapeParcours();
