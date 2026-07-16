@@ -52,7 +52,7 @@ exports.handler = async (event, context) => {
     }
 
     // Extraire le statut (réponse directe ou liste items)
-    const tx = data.items ? data.items[0] : data;
+    let tx = data.items ? data.items[0] : data;
     const statusBrut = (tx.status || '').toUpperCase();
 
     let statut = 'PENDING';
@@ -60,6 +60,42 @@ exports.handler = async (event, context) => {
       statut = 'PAID';
     } else if (statusBrut.includes('FAIL') || statusBrut.includes('CANCEL') || statusBrut.includes('REFUSED')) {
       statut = 'FAILED';
+    }
+
+    // 💳 Paiement accepté → on récupère le DÉTAIL de la transaction
+    //    (4 derniers chiffres, type de carte, mode de saisie, n° d'autorisation)
+    //    pour pouvoir imprimer un vrai reçu carte bancaire à la borne.
+    let recu = null;
+    if (statut === 'PAID') {
+      try {
+        // La liste ne donne qu'un résumé : on demande la fiche complète
+        if (tx.id) {
+          const urlDetail = 'https://api.sumup.com/v2.1/merchants/'
+            + encodeURIComponent(SUMUP_MERCHANT_CODE)
+            + '/transactions?id=' + encodeURIComponent(tx.id);
+          const rd = await fetch(urlDetail, { headers: { 'Authorization': 'Bearer ' + SUMUP_API_KEY } });
+          if (rd.ok) {
+            const detail = await rd.json();
+            tx = detail.items ? detail.items[0] : (detail || tx);
+          }
+        }
+        const carte = tx.card || (Array.isArray(tx.events) && tx.events[0] && tx.events[0].card) || {};
+        recu = {
+          transaction_code: tx.transaction_code || null,
+          horodatage: tx.timestamp || null,
+          montant: tx.amount != null ? tx.amount : null,
+          devise: tx.currency || 'EUR',
+          carte_type: carte.type || tx.card_type || null,       // VISA, MASTERCARD…
+          carte_last4: carte.last_4_digits || null,
+          entry_mode: tx.entry_mode || null,                    // CONTACTLESS, CHIP…
+          auth_code: tx.auth_code || tx.authorization_code || null,
+          merchant_code: SUMUP_MERCHANT_CODE,
+          payment_type: tx.payment_type || null
+        };
+        console.log('Détail transaction pour reçu :', JSON.stringify(recu));
+      } catch (e) {
+        console.warn('Détail transaction indisponible :', e.message);
+      }
     }
 
     // Mettre à jour Supabase si statut définitif
@@ -81,7 +117,7 @@ exports.handler = async (event, context) => {
       } catch (e) { console.error('Maj Supabase KO:', e); }
     }
 
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, statut: statut, statusBrut: statusBrut }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, statut: statut, statusBrut: statusBrut, recu: recu }) };
 
   } catch (e) {
     console.error('Erreur check status:', e);
