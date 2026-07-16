@@ -4285,8 +4285,12 @@ function afficherEcranFormuleBoisson() {
 }
 
 function choisirFormuleBoissonEcran(boissonId) {
-  formuleEnCours.boisson_id = boissonId;
-  formuleEnCours.boisson_obj = produits.find(p => p.id === boissonId);
+  // ⚠️ Pour une BOX, formuleEnCours est null (on n'est pas passé par le parcours
+  //    Entrée → Plat → Boisson) : sans ce garde, le clic plantait en silence.
+  if (formuleEnCours) {
+    formuleEnCours.boisson_id = boissonId;
+    formuleEnCours.boisson_obj = produits.find(p => p.id === boissonId);
+  }
   // Synchroniser avec parcoursPlatEnCours pour la finalisation
   if (parcoursPlatEnCours) {
     parcoursPlatEnCours.formule_boisson_id = boissonId;
