@@ -8566,6 +8566,10 @@ async function validerVente() {
 
     // ✨ Sauvegarder le client AVANT le reset pour le ticket livraison
     const clientPourTicket = clientActif ? { ...clientActif } : null;
+    // ⚠️ Idem pour les frais de livraison et l'appoint : ils sont remis à zéro
+    //    juste en dessous, alors que le bon du livreur en a besoin.
+    venteLocale.frais_livraison = fraisLivraison;
+    venteLocale.appoint = appointLivraison;
 
     // Réinitialise pour la commande suivante
     ticket = [];
@@ -9463,22 +9467,24 @@ function preparerImpression(lignesTicket, venteLocale) {
   derniereImpression = {
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
-    bonLivraison: (venteLocale.canal === 'livraison' && typeof clientActif !== 'undefined' && clientActif) ? {
+    // 📦 BON DE LIVRAISON (livreur). ⚠️ On lit venteLocale : les variables globales
+    //    (clientActif, fraisLivraison, appointLivraison) sont déjà réinitialisées ici.
+    bonLivraison: (venteLocale.canal === 'livraison' && venteLocale.client) ? {
       numero: venteLocale.numero,
       date: dateBon,
       client: {
-        nom: clientActif.nom || null,
-        telephone: clientActif.telephone || null,
-        adresse: clientActif.adresse || null,
-        code_postal: clientActif.code_postal || null,
-        ville: clientActif.ville || null,
-        notes: clientActif.notes || null
+        nom: venteLocale.client.nom || null,
+        telephone: venteLocale.client.telephone || null,
+        adresse: venteLocale.client.adresse || null,
+        code_postal: venteLocale.client.code_postal || null,
+        ville: venteLocale.client.ville || null,
+        notes: venteLocale.client.notes || null
       },
       items: itemsAPreparer.map(versItem),
       total: venteLocale.total,
       modePaiement: venteLocale.mode_paiement,
-      appoint: appointLivraison,
-      fraisLivraison: (typeof fraisLivraison !== 'undefined' ? fraisLivraison : 0)
+      appoint: (venteLocale.appoint !== undefined ? venteLocale.appoint : null),
+      fraisLivraison: venteLocale.frais_livraison || 0
     } : null,
 
     bonCuisine: itemsCuisine.length > 0 ? {
