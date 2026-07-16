@@ -9692,7 +9692,8 @@ async function _confirmerClotureConfirme() {
         <div class="cz-row"><span class="lbl">Ventes annulées</span><span class="val">${data.nb_annulees}</span></div>
         <div class="cz-paie">
           <div class="cz-paie-card"><div class="ic">💵</div><div class="lbl">Espèces</div><div class="val">${fmt(data.total_especes)}</div></div>
-          <div class="cz-paie-card"><div class="ic">💳</div><div class="lbl">Carte</div><div class="val">${fmt(data.total_carte)}</div></div>
+          <div class="cz-paie-card"><div class="ic">💳</div><div class="lbl">Carte comptoir</div><div class="val">${fmt(data.total_carte_caisse != null ? data.total_carte_caisse : data.total_carte)}</div></div>
+          <div class="cz-paie-card"><div class="ic">🖥️</div><div class="lbl">Carte borne</div><div class="val">${fmt(data.total_carte_borne || 0)}</div></div>
         </div>
         <div class="cz-row total"><span class="lbl">Total Z</span><span class="val">${fmt(data.total_ttc)}</span></div>
       </div>`;
