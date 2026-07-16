@@ -9467,25 +9467,6 @@ function preparerImpression(lignesTicket, venteLocale) {
   derniereImpression = {
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
-    // 📦 BON DE LIVRAISON (livreur). ⚠️ On lit venteLocale : les variables globales
-    //    (clientActif, fraisLivraison, appointLivraison) sont déjà réinitialisées ici.
-    bonLivraison: (venteLocale.canal === 'livraison' && venteLocale.client) ? {
-      numero: venteLocale.numero,
-      date: dateBon,
-      client: {
-        nom: venteLocale.client.nom || null,
-        telephone: venteLocale.client.telephone || null,
-        adresse: venteLocale.client.adresse || null,
-        code_postal: venteLocale.client.code_postal || null,
-        ville: venteLocale.client.ville || null,
-        notes: venteLocale.client.notes || null
-      },
-      items: itemsAPreparer.map(versItem),
-      total: venteLocale.total,
-      modePaiement: venteLocale.mode_paiement,
-      appoint: (venteLocale.appoint !== undefined ? venteLocale.appoint : null),
-      fraisLivraison: venteLocale.frais_livraison || 0
-    } : null,
 
     bonCuisine: itemsCuisine.length > 0 ? {
       numero: venteLocale.numero,
@@ -9506,11 +9487,13 @@ function preparerImpression(lignesTicket, venteLocale) {
       modeService: modeServiceBon,
       items: itemsSushi
     } : null,
-    // ✨ Bon LIVRAISON : uniquement si un client est lié à la commande
-    bonLivraison: venteLocale.client ? {
+    // 📦 Bon LIVRAISON (livreur) : uniquement en livraison, avec un client.
+    //    ⚠️ On lit venteLocale : clientActif / fraisLivraison / appointLivraison
+    //    sont déjà réinitialisés quand cette fonction est appelée.
+    bonLivraison: (venteLocale.canal === 'livraison' && venteLocale.client) ? {
       numero: venteLocale.numero,
       heure: heure,
-      date: dateStr,
+      date: dateBon,
       client: {
         nom: venteLocale.client.nom || '',
         telephone: venteLocale.client.telephone || '',
@@ -9519,11 +9502,14 @@ function preparerImpression(lignesTicket, venteLocale) {
         ville: venteLocale.client.ville || '',
         notes: venteLocale.client.notes || ''
       },
+      items: itemsAPreparer.map(versItem),
       lignes: lignesTicket.filter(l => l.produit_id).map(l => ({
         quantite: l.quantite, nom: l.nom, prix: l.prix
       })),
       total: venteLocale.total,
-      modePaiement: venteLocale.mode_paiement
+      modePaiement: venteLocale.mode_paiement,
+      appoint: (venteLocale.appoint !== undefined ? venteLocale.appoint : null),
+      fraisLivraison: venteLocale.frais_livraison || 0
     } : null,
     ticketClient: {
       numero: venteLocale.numero,
