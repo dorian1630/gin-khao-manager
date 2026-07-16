@@ -9465,6 +9465,7 @@ function preparerImpression(lignesTicket, venteLocale) {
   const modeServiceBon = venteLocale.canal || null;
 
   derniereImpression = {
+    version: 'APPOINT-2026-07-16',   // 🔎 permet de vérifier que la caisse est à jour
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
 
