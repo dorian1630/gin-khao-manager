@@ -11208,12 +11208,14 @@ async function sauverClient() {
       ville: ville || null,
       notes: notes || null,
       lat: null, lng: null,   // 🚗 invalide le cache GPS → re-géocodage à la prochaine livraison
-      restaurant_id: RESTO_ID,
       maj_le: new Date().toISOString()
     };
+    // ⚠️ restaurant_id ne figure QU'À la création : la clé anon n'a pas le droit
+    //    de le modifier (et un client ne change jamais de restaurant).
     
     let resultat;
     if (modeFormClient === 'creation') {
+      payload.restaurant_id = RESTO_ID;
       // 🎫 Entrée directe dans le programme fidélité (0 point de départ)
       payload.points = 0;
       payload.total_points_gagnes = 0;
