@@ -2733,7 +2733,7 @@ body {
     <img class="carrousel-slide visible" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698474/3_kicfgi.png" alt="Gin Khao 1" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/1_xkwuty.png" alt="Gin Khao 2" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/2_ggpz3e.png" alt="Gin Khao 3" />
-    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784204132/ChatGPT_Image_16_juil._2026_14_15_19_shqx6q.png" alt="Box Coupe du Monde" />
+    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784201063/ChatGPT_Image_16_juil._2026_13_24_02_quujov.png" alt="Box Coupe du Monde" />
   </div>
   <div class="accueil-bottom" onclick="allerMode()">
     <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander</div>
@@ -5696,7 +5696,9 @@ async function crediterApresVente() {
 // ============================================================
 //  💳 PAIEMENT
 // ============================================================
-let paiementEnCours = null;   // { checkoutId, clientTransactionId }
+// 💳 SUMUP SOLO — identifiant du lecteur physique de la borne
+const SUMUP_READER_ID = 'rdr_2SD5M6R7GJ9SJAKDEBV2TRQ5PW';
+let paiementEnCours = null;   // { clientTransactionId }
 let pollingInterval = null;
 let derniereVente = null;     // { numero, vente_id } après enregistrement
 
@@ -5714,13 +5716,15 @@ async function lancerPaiementSumUp() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        montant: Math.round(total * 100),  // en centimes
-        description: 'Borne Gin Khao'
+        reader_id: SUMUP_READER_ID,
+        montant: total.toFixed(2),
+        description: 'Gin Khao - Borne',
+        restaurant_id: RESTO_ID
       })
     });
     const data = await resp.json();
-    if (!resp.ok || !data.client_transaction_id) {
-      throw new Error(data.error || 'Erreur de connexion au terminal');
+    if (!data.ok || !data.client_transaction_id) {
+      throw new Error(data.erreur || data.error || 'Erreur création paiement');
     }
     paiementEnCours = {
       clientTransactionId: data.client_transaction_id
@@ -5745,10 +5749,10 @@ function demarrerPollingStatut() {
       return;
     }
     try {
-      const resp = await fetch('/.netlify/functions/sumup-check-status?client_transaction_id=' +
+      const resp = await fetch('/.netlify/functions/sumup-check-status?ctid=' +
         encodeURIComponent(paiementEnCours.clientTransactionId));
       const data = await resp.json();
-      if (data.statut === 'SUCCESSFUL') {
+      if (data.statut === 'PAID') {
         arreterPolling();
         await payer('carte');
       } else if (data.statut === 'FAILED' || data.statut === 'CANCELLED') {
@@ -5773,7 +5777,11 @@ function arreterPolling() {
 async function annulerPaiementSumUp() {
   arreterPolling();
   try {
-    await fetch('/.netlify/functions/sumup-cancel-reader', { method: 'POST' });
+    await fetch('/.netlify/functions/sumup-cancel-reader', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reader_id: SUMUP_READER_ID })
+    });
   } catch (e) {}
   allerEcran('ecran-paiement');
 }
