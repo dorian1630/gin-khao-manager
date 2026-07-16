@@ -5960,6 +5960,7 @@ let catActive = null;       // filtre catégorie actif (auto-sélection 1ère ca
 let catParente = null;      // si on a cliqué sur une cat avec sous-cats, ID du parent en mémoire
 let ticket = [];          // [{produit_id, nom, prix, quantite, stock_actif, stock}]
 let modePaiement = 'especes';
+let appointLivraison = null;   // 💵 livraison + espèces : true = le client a l'appoint, false = prévoir la monnaie
 let canalVente = 'sur_place';
 
 // ====== 🚗 FRAIS DE LIVRAISON (calcul par distance, à vol d'oiseau) ======
@@ -7840,6 +7841,7 @@ async function _viderCommandeConfirme(estCommandeBorne) {
   // Reset du ticket
   ticket = [];
   recompenseCaisse = null;
+  appointLivraison = null;
   remise = null;
   
   // Reset visuel ticket-num
@@ -8203,6 +8205,41 @@ function trEstValide() {
   
   return total > 0;
 }
+// 💵 Livraison + espèces : le client a-t-il l'appoint ?
+//    La réponse part sur le bon du livreur (il saura s'il doit prendre de la monnaie).
+function demanderAppointLivraison() {
+  posDialog({
+    ic: '💵',
+    msg: 'Livraison payée en <b>espèces</b>.<br><br>Le client a-t-il <b>l\'appoint</b> ?<br>' +
+         '<span style="font-size:14px;color:var(--text-mute);">(' + fmt(totalTicket()) + ')</span>',
+    boutons: [
+      { label: 'Non, prévoir la monnaie', classe: 'pd-cancel', action: () => { appointLivraison = false; majBandeauAppoint(); } },
+      { label: 'Oui, il a l\'appoint', classe: 'pd-ok', action: () => { appointLivraison = true; majBandeauAppoint(); } }
+    ]
+  });
+}
+// Rappel visible à l'écran + possibilité de changer d'avis
+function majBandeauAppoint() {
+  const zone = document.getElementById('cash-zone');
+  if (!zone) return;
+  let el = document.getElementById('appoint-info');
+  if (appointLivraison === null || canalVente !== 'livraison') { if (el) el.remove(); return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'appoint-info';
+    el.style.cssText = 'margin:10px 0;padding:12px 14px;border-radius:12px;font-weight:800;font-size:15px;text-align:center;cursor:pointer;';
+    zone.prepend(el);
+    el.onclick = demanderAppointLivraison;
+  }
+  if (appointLivraison) {
+    el.style.background = '#E8F8D5'; el.style.color = '#3E7418'; el.style.border = '2px solid #88C04F';
+    el.textContent = '✅ Le client a l\'appoint';
+  } else {
+    el.style.background = 'var(--bg-soft)'; el.style.color = 'var(--gold-soft)'; el.style.border = '2px solid var(--gold)';
+    el.textContent = '💰 Le livreur doit prendre de la monnaie';
+  }
+}
+
 function choisirMode(mode) {
   modePaiement = mode;
   document.querySelectorAll('.ep-mode').forEach(el => {
@@ -8217,6 +8254,8 @@ function choisirMode(mode) {
     document.getElementById('cash-input').value = '';
     genererQuickCash();
     calculerRendu();
+    // 💵 Livraison payée en espèces : le livreur doit-il emporter de la monnaie ?
+    if (canalVente === 'livraison') demanderAppointLivraison();
   } else if (mode === 'carte') {
     document.getElementById('carte-zone').classList.add('show');
     const carteAff = document.getElementById('carte-montant-aff');
@@ -8525,6 +8564,7 @@ async function validerVente() {
     paiementsMixtes = [];
     clientFid = null;
     recompenseCaisse = null;
+  appointLivraison = null;
     remise = null;
     clientActif = null;  // ✨ Reset client téléphone
     fraisLivraison = 0; infoLivraison = null; fraisLivraisonManuel = null;  // 🚗 Reset frais livraison
@@ -8711,6 +8751,7 @@ async function traiterCodeFid(texte, camera = false) {
 function detacherClientFid() {
   clientFid = null;
   recompenseCaisse = null;
+  appointLivraison = null;
   afficherClientFid();
   afficherTicket();
 }
@@ -8807,6 +8848,7 @@ function caisseAppliquerRecompense(palier) {
 
 function retirerRecompenseCaisse() {
   recompenseCaisse = null;
+  appointLivraison = null;
   afficherClientFid();
   afficherTicket();
 }
@@ -9422,6 +9464,7 @@ function preparerImpression(lignesTicket, venteLocale) {
       items: itemsAPreparer.map(versItem),
       total: venteLocale.total,
       modePaiement: venteLocale.mode_paiement,
+      appoint: appointLivraison,
       fraisLivraison: (typeof fraisLivraison !== 'undefined' ? fraisLivraison : 0)
     } : null,
 
@@ -11487,6 +11530,7 @@ async function chargerCommandeAttente(id) {
 
   // 🎁 Récompense fidélité appliquée à la borne → on la reconnaît pour la déduire à l'encaissement
   recompenseCaisse = null;
+  appointLivraison = null;
   const ligneReco = (cmd.lignes || []).find(l => l.recompense);
   if (ligneReco) {
     const reco = FID_PALIERS_CAISSE.find(r => r.palier === ligneReco.recompense);
