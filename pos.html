@@ -5961,6 +5961,7 @@ let catParente = null;      // si on a cliqué sur une cat avec sous-cats, ID du
 let ticket = [];          // [{produit_id, nom, prix, quantite, stock_actif, stock}]
 let modePaiement = 'especes';
 let appointLivraison = null;   // 💵 livraison + espèces : true = le client a l'appoint, false = prévoir la monnaie
+let modeClientTel = null;      // 📞 client au téléphone : 'livraison' (frais) ou 'cc' (retrait, sans frais)
 let canalVente = 'sur_place';
 
 // ====== 🚗 FRAIS DE LIVRAISON (calcul par distance, à vol d'oiseau) ======
@@ -7842,6 +7843,7 @@ async function _viderCommandeConfirme(estCommandeBorne) {
   ticket = [];
   recompenseCaisse = null;
   appointLivraison = null;
+  modeClientTel = null;
   remise = null;
   
   // Reset visuel ticket-num
@@ -8618,6 +8620,8 @@ async function validerVente() {
     // ⚠️ L'appoint n'est remis à zéro qu'APRÈS l'impression : le bon du livreur
     //    en a besoin (sinon la mention "PREVOIR LA MONNAIE" ne sort pas).
     appointLivraison = null;
+    modeClientTel = null;
+  modeClientTel = null;
   } catch (e) {
     posAlert('Erreur lors de l\'enregistrement : ' + e.message);
   } finally {
@@ -8769,6 +8773,7 @@ function detacherClientFid() {
   clientFid = null;
   recompenseCaisse = null;
   appointLivraison = null;
+  modeClientTel = null;
   afficherClientFid();
   afficherTicket();
 }
@@ -8866,6 +8871,7 @@ function caisseAppliquerRecompense(palier) {
 function retirerRecompenseCaisse() {
   recompenseCaisse = null;
   appointLivraison = null;
+  modeClientTel = null;
   afficherClientFid();
   afficherTicket();
 }
@@ -11005,9 +11011,35 @@ async function selectionnerClient(id) {
 function chargerClientCommande(client) {
   clientActif = client;
   fraisLivraisonManuel = null;
+  modeClientTel = null;
   afficherBandeauClient();
-  majFraisLivraison();
-  toast('✅ ' + (client.nom || 'Client') + ' chargé');
+  // 📞 Commande par téléphone : livraison (avec frais) ou retrait sur place ?
+  //    Dans les deux cas le client reste lié → ses points de fidélité sont crédités.
+  posDialog({
+    ic: '📞',
+    msg: '<b>' + escapeHtmlPos(client.nom || 'Client') + '</b><br><br>Type de commande ?',
+    boutons: [
+      { label: '🏪 Click & Collect', classe: 'pd-cancel', action: () => definirModeClientTel('cc') },
+      { label: '🛵 Livraison', classe: 'pd-ok', action: () => definirModeClientTel('livraison') }
+    ]
+  });
+}
+
+// Applique le choix : frais de livraison ou non, et canal de la vente
+function definirModeClientTel(mode) {
+  modeClientTel = mode;
+  if (mode === 'cc') {
+    canalVente = 'cc_comptoir';          // click & collect payé au comptoir
+    fraisLivraison = 0;
+    infoLivraison = null;
+    fraisLivraisonManuel = null;
+    majTotal(); afficherBandeauClient(); afficherTicket();
+    toast('🏪 ' + ((clientActif && clientActif.nom) || 'Client') + ' · Click & Collect (sans frais)');
+  } else {
+    canalVente = 'livraison';
+    majFraisLivraison();
+    toast('🛵 ' + ((clientActif && clientActif.nom) || 'Client') + ' · Livraison');
+  }
 }
 
 function afficherBandeauClient() {
@@ -11079,6 +11111,15 @@ function distanceKm(a, b) {
 
 // Recalcule les frais de livraison selon canal + client + adresse
 async function majFraisLivraison() {
+  // 🏪 Click & Collect : le client vient chercher → jamais de frais de livraison
+  if (modeClientTel === 'cc') {
+    fraisLivraisonManuel = null;
+    if (fraisLivraison !== 0 || infoLivraison) {
+      fraisLivraison = 0; infoLivraison = null;
+      majTotal(); afficherBandeauClient(); afficherTicket();
+    }
+    return;
+  }
   // Sans client → aucun frais (un client tél rattaché = commande livraison)
   if (!clientActif) {
     fraisLivraisonManuel = null;
@@ -11537,6 +11578,7 @@ async function chargerCommandeAttente(id) {
   // 🎁 Récompense fidélité appliquée à la borne → on la reconnaît pour la déduire à l'encaissement
   recompenseCaisse = null;
   appointLivraison = null;
+  modeClientTel = null;
   const ligneReco = (cmd.lignes || []).find(l => l.recompense);
   if (ligneReco) {
     const reco = FID_PALIERS_CAISSE.find(r => r.palier === ligneReco.recompense);
