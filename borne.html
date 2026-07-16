@@ -2733,7 +2733,7 @@ body {
     <img class="carrousel-slide visible" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698474/3_kicfgi.png" alt="Gin Khao 1" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/1_xkwuty.png" alt="Gin Khao 2" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/2_ggpz3e.png" alt="Gin Khao 3" />
-    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784201063/ChatGPT_Image_16_juil._2026_13_24_02_quujov.png" alt="Box Coupe du Monde" />
+    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784204132/ChatGPT_Image_16_juil._2026_14_15_19_shqx6q.png" alt="Box Coupe du Monde" />
   </div>
   <div class="accueil-bottom" onclick="allerMode()">
     <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander</div>
@@ -4833,6 +4833,46 @@ function stationPourLigne(l) {
 }
 
 // ---- Ticket client sur l'imprimante de la borne (numéro géant) ----
+// 💳 Reçu CARTE BANCAIRE — imprimé à la borne juste après le ticket de commande.
+function genererTicketCBEscPos(numero, montant, transactionId) {
+  const ESC = '\x1B', GS = '\x1D', LF = '\n';
+  const A = versAscii;
+  let s = ESC + '@' + ESC + 'a' + '\x01';           // init + centré
+  s += GS + '!' + '\x11' + ESC + 'E' + '\x01';      // x2 gras
+  s += 'GIN KHAO' + LF;
+  s += ESC + 'E' + '\x00' + GS + '!' + '\x00';
+  s += 'Street Food Thai' + LF;
+  s += 'Saint Just - Marseille' + LF + LF;
+  s += ESC + 'E' + '\x01' + 'TICKET CARTE BANCAIRE' + LF + ESC + 'E' + '\x00';
+  s += '----------------------------------------' + LF;
+  s += ESC + 'a' + '\x00';                          // aligné à gauche
+  s += 'Date       : ' + A(new Date().toLocaleString('fr-FR')) + LF;
+  s += 'Commande   : #' + numero + LF;
+  if (transactionId) s += 'Transaction: ' + A(String(transactionId).slice(0, 24)) + LF;
+  s += 'Mode       : CARTE BANCAIRE' + LF;
+  s += 'Terminal   : SumUp' + LF;
+  s += '----------------------------------------' + LF;
+  s += ESC + 'a' + '\x01' + GS + '!' + '\x11' + ESC + 'E' + '\x01';
+  s += 'MONTANT ' + Number(montant).toFixed(2).replace('.', ',') + ' EUR' + LF;
+  s += ESC + 'E' + '\x00' + GS + '!' + '\x00' + LF;
+  s += ESC + 'E' + '\x01' + '*** PAIEMENT ACCEPTE ***' + LF + ESC + 'E' + '\x00';
+  s += LF + 'Conservez ce ticket' + LF;
+  s += 'A conserver pour toute reclamation' + LF;
+  s += LF + LF + LF + GS + 'V' + '\x00';            // avance + coupe
+  return s;
+}
+
+async function imprimerTicketCB(numero, montant, transactionId) {
+  try {
+    const escpos = genererTicketCBEscPos(numero, montant, transactionId);
+    const base64 = btoa(escpos);
+    if (window.AndroidPrinter) { AndroidPrinter.print(base64); return; }
+    window.location.href = 'rawbt:base64,' + base64;
+  } catch (e) {
+    console.error('Impression ticket CB KO :', e);
+  }
+}
+
 async function imprimerTicketBorneRawBT(numero, methode) {
   try {
     const escpos = versAscii(genererTicketBorneEscPos(numero, methode));
@@ -5787,7 +5827,10 @@ async function annulerPaiementSumUp() {
 }
 
 // ===== ENREGISTREMENT DE LA COMMANDE =====
+let envoiEnCours = false;   // 🔒 empêche un double enregistrement/impression
 async function payer(methode) {
+  if (envoiEnCours) return;   // déjà en cours (ex. 2 réponses SumUp "PAID" à la suite)
+  envoiEnCours = true;
   // methode : 'carte' (payé sur borne) ou 'comptoir' (à encaisser à la caisse)
   // 🎁 Récompense + comptoir : autorisé. Les points seront déduits à la caisse
   //    à l'encaissement (la vente en_attente porte la ligne récompense + le client_id).
@@ -5842,7 +5885,15 @@ async function payer(methode) {
     }
 
     // 🖨️ Ticket client sur l'imprimante de la borne (numéro géant) — les 2 modes
+    const totalPaye = totalCmd;
     imprimerTicketBorneRawBT(data.numero, methode);
+    // 💳 Puis le reçu carte bancaire, juste en dessous (paiement carte uniquement)
+    if (methode === 'carte') {
+      setTimeout(() => {
+        imprimerTicketCB(data.numero, totalPaye,
+          paiementEnCours ? paiementEnCours.clientTransactionId : null);
+      }, 1200);   // laisse le 1er ticket finir de sortir
+    }
 
     if (methode === 'carte') {
       // 🖨️ Bons cuisine/sushi/comptoir → tablette (uniquement si payé maintenant)
@@ -5861,6 +5912,7 @@ async function payer(methode) {
       afficherConfirmation(data.numero, 'comptoir');
     }
   } catch (e) {
+    envoiEnCours = false;   // on relâche pour permettre une nouvelle tentative
     borneAlert('Erreur : ' + e.message, '⚠️');
   }
 }
@@ -5873,6 +5925,7 @@ function relancerTimerFin(delai) {
     clientFid = null;
     derniereVente = null;
     recompenseEnAttente = null;
+    envoiEnCours = false;
     fermerFidelite();
     majBarrePanier();
     afficherFidelite();
