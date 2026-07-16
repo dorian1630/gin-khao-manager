@@ -8574,7 +8574,6 @@ async function validerVente() {
     paiementsMixtes = [];
     clientFid = null;
     recompenseCaisse = null;
-  appointLivraison = null;
     remise = null;
     clientActif = null;  // ✨ Reset client téléphone
     fraisLivraison = 0; infoLivraison = null; fraisLivraisonManuel = null;  // 🚗 Reset frais livraison
@@ -8611,6 +8610,10 @@ async function validerVente() {
 
     // Prépare les données pour l'impression auto (le bouton "Imprimer" appellera le relais)
     preparerImpression(lignesPourCuisine, venteLocale);
+
+    // ⚠️ L'appoint n'est remis à zéro qu'APRÈS l'impression : le bon du livreur
+    //    en a besoin (sinon la mention "PREVOIR LA MONNAIE" ne sort pas).
+    appointLivraison = null;
   } catch (e) {
     posAlert('Erreur lors de l\'enregistrement : ' + e.message);
   } finally {
