@@ -2412,6 +2412,44 @@ html, body {
 .btn-nouveau-client:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
 
 /* ===== MODALE FORM CLIENT ===== */
+/* 📱 Formulaire client en PLEIN ÉCRAN (tablette) :
+   le clavier Android écrasait la modale et cachait les champs. */
+#overlay-form-client { padding: 0; align-items: stretch; justify-content: stretch; }
+#overlay-form-client .modal-form-client {
+  max-width: none;
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+#overlay-form-client .histo-head {
+  flex-shrink: 0;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
+}
+#overlay-form-client .form-client-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px 28px;
+  margin-bottom: 0;
+  max-width: 720px;      /* lisible même sur grand écran */
+  width: 100%;
+  align-self: center;
+}
+#overlay-form-client .form-row input,
+#overlay-form-client .form-row textarea {
+  padding: 15px 16px;
+  font-size: 16px;       /* ≥16px : évite le zoom auto sur mobile */
+}
+#overlay-form-client .form-client-actions {
+  flex-shrink: 0;
+  padding: 14px 22px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+}
 .modal-form-client {
   max-width: 520px;
 }
@@ -2451,9 +2489,11 @@ html, body {
 }
 .form-row-double {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: 140px 1fr;
   gap: 12px;
+  align-items: start;
 }
+.form-row-double > div { display: flex; flex-direction: column; }
 .form-client-actions {
   display: flex;
   gap: 10px;
@@ -11090,6 +11130,22 @@ function fermerFraisLivr() {
 // ============================================
 //  📝 CRÉATION / ÉDITION CLIENT
 // ============================================
+// 📱 Le clavier Android masque le bas de l'écran : on fait remonter le champ
+//    actif dans la zone visible dès qu'il reçoit le focus.
+let fcScrollBranche = false;
+function brancherScrollFormClient() {
+  if (fcScrollBranche) return;
+  fcScrollBranche = true;
+  document.querySelectorAll('#overlay-form-client input, #overlay-form-client textarea')
+    .forEach(el => {
+      el.addEventListener('focus', () => {
+        setTimeout(() => {
+          try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+        }, 350);   // laisse le clavier finir son animation
+      });
+    });
+}
+
 function ouvrirFormNouveauClient() {
   modeFormClient = 'creation';
   document.getElementById('form-client-titre').textContent = '➕ Nouveau client';
@@ -11105,6 +11161,7 @@ function ouvrirFormNouveauClient() {
   
   fermerRechercheClient();
   document.getElementById('overlay-form-client').classList.add('show');
+  brancherScrollFormClient();
   setTimeout(() => document.getElementById('fc-nom').focus(), 100);
 }
 
@@ -11121,6 +11178,7 @@ function ouvrirEditionClient() {
   document.getElementById('fc-notes').value = clientActif.notes || '';
   
   document.getElementById('overlay-form-client').classList.add('show');
+  brancherScrollFormClient();
 }
 
 function fermerFormClient() {
