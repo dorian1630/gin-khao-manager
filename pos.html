@@ -11386,8 +11386,26 @@ async function chargerCommandeAttente(id) {
     nom: l.nom || '?',
     prix: Number(l.prix || 0),
     quantite: Number(l.quantite || 1),
-    sous_total: Number(l.prix || 0) * Number(l.quantite || 1)
+    sous_total: Number(l.prix || 0) * Number(l.quantite || 1),
+    categorie_id: l.categorie_id || null,
+    _lien_borne: l.lien_plat || null   // la borne référence le produit_id du plat parent
   }));
+
+  // ⚠️ La borne lie ses sous-lignes (composants de box, boisson, suppléments) au
+  //    produit_id du plat ; la caisse, elle, travaille avec des ligne_uid.
+  //    Sans cette reconstruction, les sous-lignes deviennent des plats à part entière
+  //    (doublons sur le bon cuisine et le ticket comptoir).
+  const uidParProduit = {};
+  ticket.forEach(l => {
+    if (!l._lien_borne) {
+      l.ligne_uid = genUid();
+      if (l.produit_id) uidParProduit[l.produit_id] = l.ligne_uid;
+    }
+  });
+  ticket.forEach(l => {
+    if (l._lien_borne) l.lien_plat = uidParProduit[l._lien_borne] || null;
+    delete l._lien_borne;
+  });
 
   // 🎁 Récompense fidélité appliquée à la borne → on la reconnaît pour la déduire à l'encaissement
   recompenseCaisse = null;
