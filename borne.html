@@ -4855,8 +4855,24 @@ function genererTicketBorneEscPos(numero, methode) {
   const modeLabel = modeService === 'sur_place' ? 'SUR PLACE' : 'A EMPORTER';
   s += ESC + 'E' + '\x01' + '[' + modeLabel + ']' + LF + ESC + 'E' + '\x00' + LF;
   s += '========================================' + LF + LF;
-  s += 'VOTRE NUMERO' + LF + LF;
-  s += GS + '!' + '\x77' + ESC + 'E' + '\x01' + '#' + numero + LF + ESC + 'E' + '\x00' + GS + '!' + '\x00';
+  // 🎫 Client fidélité identifié → on affiche SON PRÉNOM en géant (le numéro passe en petit).
+  //    Sinon, le numéro reste l'identifiant affiché.
+  const prenomFid = (clientFid && clientFid.nom && !/^Client 0/.test(clientFid.nom))
+    ? versAscii(clientFid.nom.trim().split(/\s+/)[0]).toUpperCase()
+    : null;
+  if (prenomFid) {
+    // La taille s'adapte à la longueur du prénom (papier 42 caractères)
+    const taille = prenomFid.length <= 5 ? '\x77'    // x8
+                 : prenomFid.length <= 7 ? '\x55'    // x6
+                 : prenomFid.length <= 10 ? '\x33'   // x4
+                 : '\x22';                            // x3
+    s += 'VOTRE COMMANDE' + LF + LF;
+    s += GS + '!' + taille + ESC + 'E' + '\x01' + prenomFid + LF + ESC + 'E' + '\x00' + GS + '!' + '\x00';
+    s += LF + 'n° ' + numero + LF;
+  } else {
+    s += 'VOTRE NUMERO' + LF + LF;
+    s += GS + '!' + '\x77' + ESC + 'E' + '\x01' + '#' + numero + LF + ESC + 'E' + '\x00' + GS + '!' + '\x00';
+  }
   s += LF + '========================================' + LF + LF;
   s += ESC + 'a' + '\x00';
   s += 'Date : ' + new Date().toLocaleString('fr-FR') + LF;
