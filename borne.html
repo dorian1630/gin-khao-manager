@@ -4833,38 +4833,48 @@ function stationPourLigne(l) {
 }
 
 // ---- Ticket client sur l'imprimante de la borne (numéro géant) ----
-// 💳 Reçu CARTE BANCAIRE — imprimé à la borne juste après le ticket de commande.
-function genererTicketCBEscPos(numero, montant, transactionId) {
+// 💳 REÇU CARTE BANCAIRE — mise en page d'un ticket monétique.
+// ⚠️ Les données proviennent de l'API SumUp. Les champs purement EMV
+//    (AID, cryptogramme ARQC, codes terminal) ne sont pas exposés par l'API :
+//    ils ne figurent donc pas sur ce reçu.
+function genererTicketCBEscPos(numero, montant, recu) {
   const ESC = '\x1B', GS = '\x1D', LF = '\n';
   const A = versAscii;
-  let s = ESC + '@' + ESC + 'a' + '\x01';           // init + centré
-  s += GS + '!' + '\x11' + ESC + 'E' + '\x01';      // x2 gras
+  const r = recu || {};
+  const mnt = (r.montant != null ? Number(r.montant) : Number(montant)) || 0;
+  const dte = r.horodatage ? new Date(r.horodatage) : new Date();
+  const dateStr = dte.toLocaleDateString('fr-FR') + ' a ' + dte.toLocaleTimeString('fr-FR');
+  const mode = /CONTACTLESS|NFC/i.test(r.entry_mode || '') ? 'SANS CONTACT'
+             : /CHIP|ICC/i.test(r.entry_mode || '') ? 'PUCE'
+             : /SWIPE|MAGSTRIPE/i.test(r.entry_mode || '') ? 'PISTE' : '';
+
+  let s = ESC + '@' + ESC + 'a' + '\x01';        // init + centré
+  s += ESC + 'E' + '\x01' + 'CARTE BANCAIRE' + LF + ESC + 'E' + '\x00';
+  if (mode) s += mode + LF;
+  s += ESC + 'a' + '\x00';                       // à gauche, comme un TPE
+  if (r.carte_type) s += A(String(r.carte_type).toUpperCase()) + LF;
+  s += 'Le ' + A(dateStr) + LF;
   s += 'GIN KHAO' + LF;
-  s += ESC + 'E' + '\x00' + GS + '!' + '\x00';
-  s += 'Street Food Thai' + LF;
-  s += 'Saint Just - Marseille' + LF + LF;
-  s += ESC + 'E' + '\x01' + 'TICKET CARTE BANCAIRE' + LF + ESC + 'E' + '\x00';
-  s += '----------------------------------------' + LF;
-  s += ESC + 'a' + '\x00';                          // aligné à gauche
-  s += 'Date       : ' + A(new Date().toLocaleString('fr-FR')) + LF;
-  s += 'Commande   : #' + numero + LF;
-  if (transactionId) s += 'Transaction: ' + A(String(transactionId).slice(0, 24)) + LF;
-  s += 'Mode       : CARTE BANCAIRE' + LF;
-  s += 'Terminal   : SumUp' + LF;
-  s += '----------------------------------------' + LF;
-  s += ESC + 'a' + '\x01' + GS + '!' + '\x11' + ESC + 'E' + '\x01';
-  s += 'MONTANT ' + Number(montant).toFixed(2).replace('.', ',') + ' EUR' + LF;
-  s += ESC + 'E' + '\x00' + GS + '!' + '\x00' + LF;
-  s += ESC + 'E' + '\x01' + '*** PAIEMENT ACCEPTE ***' + LF + ESC + 'E' + '\x00';
-  s += LF + 'Conservez ce ticket' + LF;
-  s += 'A conserver pour toute reclamation' + LF;
-  s += LF + LF + LF + GS + 'V' + '\x00';            // avance + coupe
+  s += 'MARSEILLE' + LF;
+  s += '13013' + LF;
+  if (r.merchant_code) s += A(r.merchant_code) + LF;
+  if (r.carte_last4) s += '###########' + A(r.carte_last4) + LF;
+  if (r.transaction_code) s += A(r.transaction_code) + LF;
+  if (r.auth_code) s += 'NUM AUTO : ' + A(r.auth_code) + LF;
+  s += 'MONTANT REEL :' + LF;
+  s += ESC + 'a' + '\x01' + ESC + 'E' + '\x01' + GS + '!' + '\x01';
+  s += mnt.toFixed(2).replace('.', ',') + ' ' + (r.devise || 'EUR') + LF;
+  s += GS + '!' + '\x00' + ESC + 'E' + '\x00' + ESC + 'a' + '\x00';
+  s += 'DEBIT' + LF + LF;
+  s += 'TICKET CLIENT' + LF;
+  s += 'A CONSERVER' + LF;
+  s += LF + LF + LF + GS + 'V' + '\x00';
   return s;
 }
 
-async function imprimerTicketCB(numero, montant, transactionId) {
+async function imprimerTicketCB(numero, montant, recu) {
   try {
-    const escpos = genererTicketCBEscPos(numero, montant, transactionId);
+    const escpos = genererTicketCBEscPos(numero, montant, recu);
     const base64 = btoa(escpos);
     if (window.AndroidPrinter) { AndroidPrinter.print(base64); return; }
     window.location.href = 'rawbt:base64,' + base64;
@@ -5738,6 +5748,7 @@ async function crediterApresVente() {
 // ============================================================
 // 💳 SUMUP SOLO — identifiant du lecteur physique de la borne
 const SUMUP_READER_ID = 'rdr_2SD5M6R7GJ9SJAKDEBV2TRQ5PW';
+let recuCB = null;   // détails de la transaction carte (renvoyés par SumUp)
 let paiementEnCours = null;   // { clientTransactionId }
 let pollingInterval = null;
 let derniereVente = null;     // { numero, vente_id } après enregistrement
@@ -5794,6 +5805,7 @@ function demarrerPollingStatut() {
       const data = await resp.json();
       if (data.statut === 'PAID') {
         arreterPolling();
+        recuCB = data.recu || null;   // 💳 détails carte pour le reçu bancaire
         await payer('carte');
       } else if (data.statut === 'FAILED' || data.statut === 'CANCELLED') {
         arreterPolling();
@@ -5890,8 +5902,7 @@ async function payer(methode) {
     // 💳 Puis le reçu carte bancaire, juste en dessous (paiement carte uniquement)
     if (methode === 'carte') {
       setTimeout(() => {
-        imprimerTicketCB(data.numero, totalPaye,
-          paiementEnCours ? paiementEnCours.clientTransactionId : null);
+        imprimerTicketCB(data.numero, totalPaye, recuCB);
       }, 1200);   // laisse le 1er ticket finir de sortir
     }
 
