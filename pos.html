@@ -7892,6 +7892,31 @@ function ouvrirPaiement(canalEncaissement) {
   genererQuickCash();
   
   document.getElementById('overlay-paiement').classList.add('show');
+
+  // 🏪 Click & Collect : inutile de demander le moyen de paiement, le client
+  //    règle en arrivant. On enregistre "à régler au comptoir" et on valide.
+  if (canalEncaissement === 'cc_comptoir' && modeClientTel === 'cc') {
+    setTimeout(() => demanderEnvoiClickCollect(), 200);
+  }
+}
+
+// 🏪 Click & Collect : envoi en cuisine, encaissement à l'arrivée du client
+function demanderEnvoiClickCollect() {
+  posDialog({
+    ic: '🏪',
+    msg: '<b>Click & Collect</b> · ' + fmt(totalTicket()) + '<br><br>' +
+         'Envoyer la commande en cuisine ?<br>' +
+         '<span style="font-size:14px;color:var(--text-mute);">Le client réglera en venant la chercher.</span>',
+    boutons: [
+      { label: 'Annuler', classe: 'pd-cancel', action: () => fermerPaiement() },
+      { label: '👨‍🍳 Envoyer en cuisine', classe: 'pd-ok', action: () => {
+          // ⚠️ 'comptoir' n'est pas un bouton de la caisse : on force le mode
+          //    sans passer par choisirMode() (qui ne le connaît pas).
+          modePaiement = 'comptoir';
+          setTimeout(() => validerVente(), 150);
+        } }
+    ]
+  });
 }
 
 function fermerPaiement() {
@@ -7901,8 +7926,9 @@ function fermerPaiement() {
 // 👉 Clic sur "Encaisser" : commande livraison (client rattaché) → direct ;
 //    sinon on demande le canal via le pop-up.
 function lancerEncaissement() {
-  if (clientActif) {            // client tél rattaché = commande livraison
-    ouvrirPaiement('livraison');
+  if (clientActif) {
+    // 📞 Client au téléphone : le canal suit le choix fait au chargement du client
+    ouvrirPaiement(modeClientTel === 'cc' ? 'cc_comptoir' : 'livraison');
     return;
   }
   document.getElementById('overlay-canal').classList.add('show');
@@ -9529,6 +9555,9 @@ function preparerImpression(lignesTicket, venteLocale) {
       restoNom: RESTO_INFOS.nom,
       restoSousTitre: RESTO_INFOS.sousTitre,
       restoAdresse: RESTO_INFOS.adresse,
+      // 🛵 Livraison : le paiement se fait chez le client → pas de ligne "Règlement"
+      //    sur le ticket comptoir (ce serait faux : rien n'est encore encaissé).
+      masquerReglement: (venteLocale.canal === 'livraison'),
       tva: calculerTVA(venteLocale.total, RESTO_INFOS.tauxTVA),
       tvaNum: RESTO_INFOS.tva,
       naf: RESTO_INFOS.naf,
