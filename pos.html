@@ -8213,10 +8213,20 @@ function demanderAppointLivraison() {
     msg: 'Livraison payée en <b>espèces</b>.<br><br>Le client a-t-il <b>l\'appoint</b> ?<br>' +
          '<span style="font-size:14px;color:var(--text-mute);">(' + fmt(totalTicket()) + ')</span>',
     boutons: [
-      { label: 'Non, prévoir la monnaie', classe: 'pd-cancel', action: () => { appointLivraison = false; majBandeauAppoint(); } },
-      { label: 'Oui, il a l\'appoint', classe: 'pd-ok', action: () => { appointLivraison = true; majBandeauAppoint(); } }
+      { label: 'Non, prévoir la monnaie', classe: 'pd-cancel', action: () => validerLivraisonEspeces(false) },
+      { label: 'Oui, il a l\'appoint', classe: 'pd-ok', action: () => validerLivraisonEspeces(true) }
     ]
   });
+}
+
+// La réponse suffit : on valide et on imprime dans la foulée.
+// (Inutile de saisir le montant reçu : c'est le LIVREUR qui encaisse, pas la caisse.)
+function validerLivraisonEspeces(aLAppoint) {
+  appointLivraison = aLAppoint;
+  majBandeauAppoint();
+  const input = document.getElementById('cash-input');
+  if (input) { input.value = totalTicket().toFixed(2); calculerRendu(); }   // rendu = 0
+  setTimeout(() => validerVente(), 150);   // laisse la modale se fermer
 }
 // Rappel visible à l'écran + possibilité de changer d'avis
 function majBandeauAppoint() {
