@@ -2215,6 +2215,50 @@ html, body {
   font-style: italic;
   color: var(--text-soft);
 }
+/* ═══ 🎫 Fidélité dans le bandeau client (téléphone) ═══ */
+.fidc {
+  margin-top: 10px; padding: 12px 14px; border-radius: 12px;
+  background: var(--bg-soft); border: 1px solid var(--border);
+}
+.fidc-actif { border-color: var(--gold); background: linear-gradient(135deg, rgba(228,184,96,0.10), var(--bg-soft)); }
+.fidc-tete { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.fidc-pts { font-size: 17px; font-weight: 800; color: var(--gold-soft); }
+.fidc-visites { font-size: 12px; color: var(--text-mute); }
+.fidc-dispo {
+  margin-left: auto; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px;
+  background: #E8F8D5; color: #3E7418; border: 1px solid #88C04F;
+}
+.fidc-jauge-txt { font-size: 12px; color: var(--text-soft); margin-bottom: 5px; }
+.fidc-jauge-txt b { color: var(--gold-soft); }
+.fidc-jauge { height: 7px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.fidc-jauge-fill {
+  height: 100%; border-radius: 999px; transition: width .5s cubic-bezier(0.16,1,0.3,1);
+  background: linear-gradient(90deg, var(--gold), var(--gold-soft)); min-width: 4px;
+}
+.fidc-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fidc-btn {
+  flex: 1 1 auto; padding: 11px 12px; border: none; border-radius: 10px; cursor: pointer;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft)); color: #fff;
+  font-family: var(--body); font-size: 13px; font-weight: 800;
+  box-shadow: 0 3px 10px rgba(228,184,96,0.35);
+}
+.fidc-btn:active { transform: scale(0.97); }
+.fidc-badges { margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fidc-badge {
+  font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px;
+  background: rgba(228,184,96,0.15); color: var(--gold-soft); border: 1px solid var(--gold-soft);
+}
+.fidc-hint { font-size: 11px; color: var(--text-mute); font-style: italic; }
+.fidc-appliquee {
+  margin-top: 9px; padding: 9px 12px; border-radius: 10px; font-size: 13px; font-weight: 800;
+  background: #E8F8D5; color: #3E7418; border: 1px solid #88C04F;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.fidc-retirer {
+  border: none; background: transparent; color: var(--sriracha); cursor: pointer;
+  font-family: var(--body); font-size: 12px; font-weight: 700; text-decoration: underline;
+}
+
 .bandeau-client-fid {
   display: inline-block;
   background: var(--gold);
@@ -7633,6 +7677,9 @@ function afficherTicket() {
   // Rafraîchit le bloc fidélité pour afficher/masquer le bouton "Offrir le plat"
   // selon que le ticket contient des articles ou non.
   if (clientFid) majBoutonOffrir();
+  // 🎫 Idem pour le client attaché par téléphone : ses boutons récompense
+  //    n'apparaissent que si un article éligible est au ticket.
+  rafraichirFidBandeau();
 }
 
 // Met à jour seulement le bloc fidélité sans tout reconstruire (évite les boucles)
@@ -8950,6 +8997,12 @@ function ligneEligibleRecompense(reco) {
     if (ok && (best === null || l.prix < best.prix)) best = l;
   });
   return best;
+}
+
+// 🔄 Le bandeau client dépend du contenu du ticket (les boutons récompense
+//    n'apparaissent que si un article éligible est présent) → on le redessine.
+function rafraichirFidBandeau() {
+  if (typeof clientActif !== 'undefined' && clientActif) afficherBandeauClient();
 }
 
 function caisseAppliquerRecompense(palier) {
@@ -11166,8 +11219,50 @@ function afficherBandeauClient() {
   const c = clientActif;
   const adresseHtml = c.adresse ? `<div class="bandeau-client-info">📍 <b>${escapeHtmlPos(c.adresse)}</b>${c.code_postal ? ' · ' + escapeHtmlPos(c.code_postal) : ''}${c.ville ? ' ' + escapeHtmlPos(c.ville) : ''}</div>` : '';
   const notesHtml = c.notes ? `<div class="bandeau-client-notes">📝 ${escapeHtmlPos(c.notes)}</div>` : '';
-  const fidHtml = (c.points > 0 || c.nb_visites > 0) ? 
-    `<span class="bandeau-client-fid">⭐ ${c.points || 0} pts · ${c.nb_visites || 0} visites</span>` : '';
+  // ═══ 🎫 FIDÉLITÉ ═══
+  // Le client attaché par téléphone a droit aux mêmes récompenses que le client
+  // scanné par QR : sans ce bloc, le caissier ne voyait jamais qu'une récompense
+  // était disponible (les boutons n'existaient que pour le scan QR).
+  const pts = Number(c.points) || 0;
+  const prochain = FID_PALIERS_CAISSE.find(r => pts < r.palier);
+  const dispo = FID_PALIERS_CAISSE.filter(r => pts >= r.palier);
+
+  let fidHtml = '';
+  if (pts > 0 || c.nb_visites > 0) {
+    const jauge = prochain
+      ? `<div class="fidc-jauge-txt">Encore <b>${prochain.palier - pts} pts</b> pour ${prochain.emoji} ${prochain.libelle.toLowerCase()}</div>
+         <div class="fidc-jauge"><div class="fidc-jauge-fill" style="width:${Math.min(100, Math.round(pts / prochain.palier * 100))}%"></div></div>`
+      : `<div class="fidc-jauge-txt">🎉 Toutes les récompenses sont disponibles</div>`;
+
+    // Récompenses cliquables : solde suffisant + article éligible au ticket
+    let btns = '';
+    if (!recompenseCaisse && ticket.length > 0) {
+      btns = dispo
+        .filter(r => ligneEligibleRecompense(r) !== null)
+        .map(r => `<button class="fidc-btn" onclick="caisseAppliquerRecompense(${r.palier})">${r.emoji} ${r.libelle} · −${r.palier} pts</button>`)
+        .join('');
+    }
+    // Récompenses acquises mais pas encore utilisables (rien d'éligible au ticket)
+    let badges = '';
+    if (!recompenseCaisse && dispo.length > 0 && !btns) {
+      badges = `<div class="fidc-badges">${dispo.map(r => `<span class="fidc-badge">${r.emoji} ${r.libelle}</span>`).join('')}
+                <span class="fidc-hint">→ ajoutez l'article au ticket pour l'offrir</span></div>`;
+    }
+
+    fidHtml = `
+      <div class="fidc ${dispo.length ? 'fidc-actif' : ''}">
+        <div class="fidc-tete">
+          <span class="fidc-pts">⭐ ${pts} pts</span>
+          <span class="fidc-visites">${c.nb_visites || 0} visite${(c.nb_visites || 0) > 1 ? 's' : ''}</span>
+          ${dispo.length ? `<span class="fidc-dispo">${dispo.length} récompense${dispo.length > 1 ? 's' : ''} dispo</span>` : ''}
+        </div>
+        ${jauge}
+        ${btns ? `<div class="fidc-btns">${btns}</div>` : ''}
+        ${badges}
+        ${recompenseCaisse ? `<div class="fidc-appliquee">🎁 ${recompenseCaisse.libelle} appliquée · −${recompenseCaisse.palier} pts
+          <button class="fidc-retirer" onclick="retirerRecompenseCaisse()">retirer</button></div>` : ''}
+      </div>`;
+  }
 
   const livraisonHtml = (clientActif && infoLivraison)
     ? (infoLivraison.erreur
