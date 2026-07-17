@@ -5054,11 +5054,11 @@ async function envoyerImpressionCuisine(numero, methode) {
         if (pour === 'comptoir' && facturee) return;
         d.push(sc.nom.replace(/^Sauce\s+/i, 'Sauce '));
       });
-      // 📦 Contenu d'une box : la cuisine doit voir le détail
+      // 📦 Contenu d'une box : la cuisine doit voir le détail.
+      //    Pas de quantité : la composition est fixe et connue (nems par 2, etc.)
       composantsFixes(p).forEach(c => {
         const prod = produits.find(x => x.id === c.produit_id);
-        const q = c.qte || 1;
-        d.push((q > 1 ? q + 'x ' : '') + (c.label || (prod ? prod.nom : 'Composant')));
+        d.push(c.label || (prod ? prod.nom : 'Composant'));
       });
       return d;
     };
