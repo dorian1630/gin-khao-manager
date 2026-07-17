@@ -2733,7 +2733,7 @@ body {
     <img class="carrousel-slide visible" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698474/3_kicfgi.png" alt="Gin Khao 1" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/1_xkwuty.png" alt="Gin Khao 2" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/2_ggpz3e.png" alt="Gin Khao 3" />
-    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784204132/ChatGPT_Image_16_juil._2026_14_15_19_shqx6q.png" alt="Box Coupe du Monde" />
+    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784201063/ChatGPT_Image_16_juil._2026_13_24_02_quujov.png" alt="Box Coupe du Monde" />
   </div>
   <div class="accueil-bottom" onclick="allerMode()">
     <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander</div>
@@ -2999,6 +2999,12 @@ function labelVariante(v) {
   }
   return '';
 }
+// 🖥️ Un produit peut être masqué sur la borne (colonne visible_borne)
+//    tout en restant disponible à la caisse. Par défaut : visible.
+function visibleSurBorne(p) {
+  return !p || p.visible_borne !== false;
+}
+
 // 📦 Composants fixes d'une box (formule_etapes) : [{produit_id,label,qte,type:'fixe'}]
 function composantsFixes(p) {
   if (!p || !Array.isArray(p.formule_etapes)) return [];
@@ -3366,7 +3372,7 @@ function filtrerCat(id) { catActive = id; afficherCats(); afficherMenu(); }
 function afficherMenu() {
   const grille = document.getElementById('menu-grille');
   // ✨ Toujours filtrer par catégorie (plus de "Tout")
-  const liste = produits.filter(p => p.categorie_id === catActive);
+  const liste = produits.filter(p => p.categorie_id === catActive && visibleSurBorne(p));
 
   if (liste.length === 0) {
     grille.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-mute);">Aucun produit dans cette catégorie</div>';
@@ -3514,7 +3520,7 @@ function declencherUpsellEntrees() {
     declencherUpsellBoissons();
     return;
   }
-  const entrees = produits.filter(p => p.categorie_id === cat.id && p.actif !== false);
+  const entrees = produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p));
   if (entrees.length === 0) {
     declencherUpsellBoissons();
     return;
@@ -3538,7 +3544,7 @@ function declencherUpsellBoissons() {
     declencherUpsellDesserts();
     return;
   }
-  const boissons = produits.filter(p => p.categorie_id === cat.id && p.actif !== false);
+  const boissons = produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p));
   if (boissons.length === 0) {
     declencherUpsellDesserts();
     return;
@@ -3560,7 +3566,7 @@ function declencherUpsellDesserts() {
     ouvrirPanierFinal();
     return;
   }
-  const desserts = produits.filter(p => p.categorie_id === cat.id && p.actif !== false);
+  const desserts = produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p));
   if (desserts.length === 0) {
     ouvrirPanierFinal();
     return;
@@ -4013,7 +4019,7 @@ function declencherMiniUpsellBoisson(produitAjoute) {
   }
   
   if (!catBoisson) return;
-  const boissons = produits.filter(p => p.categorie_id === catBoisson.id && p.actif !== false);
+  const boissons = produits.filter(p => p.categorie_id === catBoisson.id && p.actif !== false && visibleSurBorne(p));
   if (boissons.length === 0) return;
   
   afficherUpsellGrille({
@@ -5590,10 +5596,10 @@ function ouvrirChoixRecompense(palier) {
   let items = [];
   if (palier === 50) {
     const cat = categories.find(c => c.nom === 'Desserts');
-    items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false) : [];
+    items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p)) : [];
   } else if (palier === 100) {
     const cat = categories.find(c => c.nom === 'Entrées');
-    items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false) : [];
+    items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p)) : [];
   } else if (palier === 200) {
     const exclus = ['Boissons', 'Desserts', 'Entrées', 'Sauces', 'Suppléments', 'Extras'];
     items = produits.filter(p => {
