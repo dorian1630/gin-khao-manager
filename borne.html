@@ -4816,10 +4816,16 @@ function fmt(n) {
 // ============================================================
 
 // Nettoie les caractères que l'imprimante ESC/POS ne gère pas (accents, ↳, emojis)
+// ⚠️ Les ligatures (œ, æ) ne sont PAS décomposées par normalize('NFD') :
+//    sans les traiter AVANT, "bœuf" devenait "buf" et "sans œuf" → "sans uf".
 function versAscii(str) {
   return (str || '').toString()
+    .replace(/œ/g, 'oe').replace(/Œ/g, 'OE')
+    .replace(/æ/g, 'ae').replace(/Æ/g, 'AE')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/↳/g, '>')
+    .replace(/↳/g, '>').replace(/[’‘]/g, "'").replace(/[“”«»]/g, '"')
+    .replace(/[·•]/g, '-').replace(/[–—]/g, '-').replace(/…/g, '...')
+    .replace(/€/g, 'EUR').replace(/°/g, 'o')
     .replace(/[^\x00-\x7F]/g, '');
 }
 
