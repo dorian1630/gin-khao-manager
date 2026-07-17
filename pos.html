@@ -2244,7 +2244,11 @@ html, body {
 /* ===== MODALE RECHERCHE CLIENT ===== */
 .modal-client {
   max-width: 620px;
-  max-height: 92vh;
+  /* ⚠️ Hauteur FIXE : la modale est centrée verticalement. Avec une hauteur
+     variable, elle se recentrait à chaque chiffre tapé (la liste de résultats
+     grandit/rétrécit) → l'écran "sautait". Hauteur figée = affichage stable. */
+  height: 88vh;
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
 }
@@ -2270,7 +2274,7 @@ html, body {
 .client-pave button:active { transform: scale(0.94); background: var(--gold); color: #fff; border-color: var(--gold); }
 .client-pave .pave-efface { background: var(--bg-soft); color: var(--gold-soft); }
 .client-pave .pave-clear { background: var(--bg-soft); color: var(--sriracha); }
-.client-resultats { flex: 1; overflow-y: auto; min-height: 90px; }
+.client-resultats { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
 
 /* 💬 Dialogue custom (remplace alert/confirm) */
 .pos-dialog-overlay {
