@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Gin Khao · Fidélité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0E0C0A;
+  --surface: #191512;
+  --surface-2: #221D18;
+  --border: #2E2620;
+  --or: #E4B860;
+  --or-fonce: #B8924E;
+  --vert: #7FBF3F;
+  --rouge: #E05C4B;
+  --bleu: #5B9BD5;
+  --texte: #F5EDE2;
+  --texte-doux: #B9AC9B;
+  --texte-mute: #7C7165;
+  --display: 'Fraunces', Georgia, serif;
+  --body: 'Manrope', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  min-height: 100dvh; background: var(--bg); color: var(--texte);
+  font-family: var(--body); -webkit-font-smoothing: antialiased;
+  padding: 20px 16px calc(30px + env(safe-area-inset-bottom, 0px));
+}
+.wrap { max-width: 1100px; margin: 0 auto; }
+
+/* En-tête */
+.entete { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+.titre { font-family: var(--display); font-size: 30px; font-weight: 600; }
+.titre span { color: var(--or); font-style: italic; }
+.sous-titre { font-size: 13px; color: var(--texte-mute); margin-top: 2px; }
+.btn {
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--texte-doux);
+  padding: 10px 16px; border-radius: 10px; font-family: var(--body); font-size: 13px;
+  font-weight: 700; cursor: pointer;
+}
+.btn:hover { border-color: var(--or-fonce); color: var(--texte); }
+.btn-or { background: linear-gradient(135deg, var(--or), var(--or-fonce)); color: #1a1410; border: none; }
+
+/* Écran code */
+#gate { display: flex; align-items: center; justify-content: center; min-height: 80dvh; }
+.gate-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 34px 28px; width: 100%; max-width: 380px; text-align: center;
+}
+.gate-box h1 { font-family: var(--display); font-size: 26px; margin-bottom: 6px; }
+.gate-box p { font-size: 13px; color: var(--texte-mute); margin-bottom: 20px; }
+.gate-box input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 15px; color: var(--texte); font-size: 22px; text-align: center; letter-spacing: 8px;
+  font-family: var(--body); outline: none; margin-bottom: 12px;
+}
+.gate-box input:focus { border-color: var(--or); }
+.gate-err { color: var(--rouge); font-size: 13px; font-weight: 700; min-height: 18px; margin-top: 8px; }
+
+/* KPI */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.kpi {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px;
+}
+.kpi .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--texte-mute); font-weight: 800; }
+.kpi .val { font-family: var(--display); font-size: 30px; font-weight: 700; margin-top: 6px; }
+.kpi .sub { font-size: 12px; color: var(--texte-mute); margin-top: 2px; }
+.kpi.or .val { color: var(--or); }
+.kpi.vert .val { color: var(--vert); }
+.kpi.bleu .val { color: var(--bleu); }
+
+/* Onglets */
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab {
+  padding: 10px 16px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--texte-doux); font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.tab.actif { background: var(--or); color: #1a1410; border-color: var(--or); }
+
+/* Recherche */
+.recherche { display: flex; gap: 10px; margin-bottom: 14px; }
+.recherche input {
+  flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; color: var(--texte); font-size: 14px; font-family: var(--body); outline: none;
+}
+.recherche input:focus { border-color: var(--or-fonce); }
+
+/* Tableau */
+.carte { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.carte-tete { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.carte-tete h2 { font-family: var(--display); font-size: 18px; font-weight: 600; }
+.carte-tete .aide { font-size: 12px; color: var(--texte-mute); }
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th {
+  text-align: left; padding: 10px 18px; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--texte-mute); font-weight: 800; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+td { padding: 12px 18px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-2); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.nom { font-weight: 700; }
+.tel { color: var(--texte-doux); font-variant-numeric: tabular-nums; }
+.pts { font-weight: 800; color: var(--or); font-variant-numeric: tabular-nums; }
+.badge {
+  display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800;
+}
+.badge.vert { background: rgba(127,191,63,0.15); color: var(--vert); }
+.badge.or { background: rgba(228,184,96,0.15); color: var(--or); }
+.badge.rouge { background: rgba(224,92,75,0.15); color: var(--rouge); }
+.vide { padding: 40px 18px; text-align: center; color: var(--texte-mute); font-size: 14px; }
+.spin { display: inline-block; animation: sp 1s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.hidden { display: none !important; }
+.note {
+  margin-top: 18px; font-size: 12px; color: var(--texte-mute); line-height: 1.6;
+  background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; padding: 14px 16px;
+}
+</style>
+</head>
+<body>
+
+<!-- ───────── CODE D'ACCÈS ───────── -->
+<div id="gate">
+  <div class="gate-box">
+    <h1>🎫 Fidélité</h1>
+    <p>Tableau de bord Gin Khao</p>
+    <input type="password" id="code" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+    <button class="btn btn-or" style="width:100%;padding:14px;" onclick="verifierCode()">Entrer</button>
+    <div class="gate-err" id="gate-err"></div>
+  </div>
+</div>
+
+<!-- ───────── TABLEAU DE BORD ───────── -->
+<div class="wrap hidden" id="board">
+  <div class="entete">
+    <div>
+      <div class="titre">Gin <span>Khao</span> · Fidélité</div>
+      <div class="sous-titre" id="maj">Chargement…</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="chargerTout()">↻ Actualiser</button>
+      <button class="btn" onclick="exporterCSV()">⬇ Export CSV</button>
+      <button class="btn" onclick="verrouiller()">🔒</button>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="tabs">
+    <div class="tab actif" data-vue="top" onclick="changerVue('top')">🏆 Top clients</div>
+    <div class="tab" data-vue="proches" onclick="changerVue('proches')">🎯 À relancer</div>
+    <div class="tab" data-vue="inactifs" onclick="changerVue('inactifs')">💤 Inactifs</div>
+    <div class="tab" data-vue="recherche" onclick="changerVue('recherche')">🔍 Rechercher</div>
+  </div>
+
+  <div class="recherche hidden" id="zone-recherche">
+    <input type="text" id="q" placeholder="Nom ou téléphone…" oninput="rechercher()">
+  </div>
+
+  <div class="carte">
+    <div class="carte-tete">
+      <h2 id="vue-titre">Top clients</h2>
+      <div class="aide" id="vue-aide"></div>
+    </div>
+    <div class="tbl-wrap"><div id="contenu"><div class="vide"><span class="spin">⏳</span> Chargement…</div></div></div>
+  </div>
+
+  <div class="note">
+    💡 <b>1 € dépensé = 1 point.</b> Récompenses : 🍮 dessert dès 50 pts · 🥟 entrée dès 100 pts ·
+    🍜 plat dès 200 pts · 🍱 formule dès 300 pts.<br>
+    ⚠️ Cette page contient des données personnelles (RGPD) : ne partagez pas son adresse.
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ============================================================
+//  CONFIG
+// ============================================================
+const SUPABASE_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
+const RESTO_ID = 'gin-khao';
+
+// 🔑 Code d'accès — À CHANGER (et à ne pas diffuser)
+const CODE_ACCES = '1313';
+
+const PALIERS = [
+  { s: 50,  l: 'Dessert',  e: '🍮' },
+  { s: 100, l: 'Entrée',   e: '🥟' },
+  { s: 200, l: 'Plat',     e: '🍜' },
+  { s: 300, l: 'Formule',  e: '🍱' }
+];
+const JOURS_INACTIF = 60;   // seuil "client endormi"
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let vueActive = 'top';
+let donnees = { top: [], proches: [], inactifs: [] };
+
+// ============================================================
+//  ACCÈS
+// ============================================================
+function verifierCode() {
+  const v = document.getElementById('code').value.trim();
+  if (v !== CODE_ACCES) {
+    document.getElementById('gate-err').textContent = 'Code incorrect';
+    document.getElementById('code').value = '';
+    return;
+  }
+  sessionStorage.setItem('fid_ok', '1');
+  ouvrirBoard();
+}
+function ouvrirBoard() {
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('board').classList.remove('hidden');
+  chargerTout();
+}
+function verrouiller() {
+  sessionStorage.removeItem('fid_ok');
+  location.reload();
+}
+document.getElementById('code').addEventListener('keydown', e => { if (e.key === 'Enter') verifierCode(); });
+if (sessionStorage.getItem('fid_ok') === '1') ouvrirBoard();
+
+// ============================================================
+//  OUTILS
+// ============================================================
+function fmtNb(n) { return (Number(n) || 0).toLocaleString('fr-FR'); }
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return isNaN(dt) ? '—' : dt.toLocaleDateString('fr-FR');
+}
+function joursDepuis(d) {
+  if (!d) return null;
+  const dt = new Date(d);
+  if (isNaN(dt)) return null;
+  return Math.floor((Date.now() - dt.getTime()) / 86400000);
+}
+function prochainPalier(pts) { return PALIERS.find(p => pts < p.s) || null; }
+function paliersDispo(pts) { return PALIERS.filter(p => pts >= p.s); }
+function tel(t) { return t ? String(t).replace(/(\d{2})(?=\d)/g, '$1 ') : '—'; }
+
+// ============================================================
+//  CHARGEMENT
+// ============================================================
+async function chargerTout() {
+  document.getElementById('contenu').innerHTML = '<div class="vide"><span class="spin">⏳</span> Chargement…</div>';
+  try {
+    await Promise.all([chargerKPIs(), chargerTop(), chargerProches(), chargerInactifs()]);
+    document.getElementById('maj').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR');
+    afficherVue();
+  } catch (e) {
+    document.getElementById('contenu').innerHTML = '<div class="vide">Erreur : ' + e.message + '</div>';
+  }
+}
+
+// ---- KPI globaux ----
+async function chargerKPIs() {
+  // Nombre de clients avec des points
+  const { count: nbAvecPoints } = await sb.from('clients')
+    .select('id', { count: 'exact', head: true })
+    .gt('points', 0);
+
+  // Total clients
+  const { count: nbTotal } = await sb.from('clients')
+    .select('id', { count: 'exact', head: true });
+
+  // Mouvements de fidélité (source + total)
+  const { data: mvts } = await sb.from('fidelite_mouvements')
+    .select('points_delta, source');
+
+  let gagnes = 0, utilises = 0, nbRecompenses = 0;
+  (mvts || []).forEach(m => {
+    const d = Number(m.points_delta) || 0;
+    if (d > 0) gagnes += d;
+    if (d < 0) { utilises += -d; nbRecompenses++; }
+  });
+
+  // Clients pouvant déjà réclamer une récompense
+  const { count: nbEligibles } = await sb.from('clients')
+    .select('id', { count: 'exact', head: true })
+    .gte('points', PALIERS[0].s);
+
+  const html = `
+    <div class="kpi or">
+      <div class="lbl">Clients fidélité</div>
+      <div class="val">${fmtNb(nbAvecPoints || 0)}</div>
+      <div class="sub">sur ${fmtNb(nbTotal || 0)} clients au total</div>
+    </div>
+    <div class="kpi vert">
+      <div class="lbl">Récompense disponible</div>
+      <div class="val">${fmtNb(nbEligibles || 0)}</div>
+      <div class="sub">clients à 50 pts ou plus</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Points distribués</div>
+      <div class="val">${fmtNb(gagnes)}</div>
+      <div class="sub">≈ ${fmtNb(gagnes)} € de CA fidélisé</div>
+    </div>
+    <div class="kpi bleu">
+      <div class="lbl">Récompenses utilisées</div>
+      <div class="val">${fmtNb(nbRecompenses)}</div>
+      <div class="sub">${fmtNb(utilises)} points échangés</div>
+    </div>`;
+  document.getElementById('kpis').innerHTML = html;
+}
+
+// ---- Top clients ----
+async function chargerTop() {
+  const { data } = await sb.from('clients')
+    .select('id, nom, telephone, points, total_points_gagnes, nb_visites, derniere_visite')
+    .gt('total_points_gagnes', 0)
+    .order('total_points_gagnes', { ascending: false })
+    .limit(50);
+  donnees.top = data || [];
+}
+
+// ---- Clients proches d'une récompense (à relancer) ----
+async function chargerProches() {
+  // On vise ceux qui approchent d'un palier : 30→49, 80→99, 170→199, 270→299
+  const { data } = await sb.from('clients')
+    .select('id, nom, telephone, points, nb_visites, derniere_visite')
+    .gt('points', 0)
+    .order('points', { ascending: false })
+    .limit(500);
+  const liste = (data || []).filter(c => {
+    const p = prochainPalier(c.points || 0);
+    if (!p) return false;
+    const reste = p.s - c.points;
+    return reste > 0 && reste <= 20;   // à 20 points ou moins du palier
+  });
+  liste.sort((a, b) => {
+    const ra = prochainPalier(a.points).s - a.points;
+    const rb = prochainPalier(b.points).s - b.points;
+    return ra - rb;
+  });
+  donnees.proches = liste.slice(0, 50);
+}
+
+// ---- Clients endormis ----
+async function chargerInactifs() {
+  const limite = new Date(Date.now() - JOURS_INACTIF * 86400000).toISOString().slice(0, 10);
+  const { data } = await sb.from('clients')
+    .select('id, nom, telephone, points, nb_visites, derniere_visite')
+    .gt('points', 0)
+    .not('derniere_visite', 'is', null)
+    .lt('derniere_visite', limite)
+    .order('points', { ascending: false })
+    .limit(50);
+  donnees.inactifs = data || [];
+}
+
+// ============================================================
+//  AFFICHAGE
+// ============================================================
+function changerVue(v) {
+  vueActive = v;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('actif', t.dataset.vue === v));
+  document.getElementById('zone-recherche').classList.toggle('hidden', v !== 'recherche');
+  afficherVue();
+}
+
+function afficherVue() {
+  const titres = {
+    top: ['🏆 Top clients', 'Classés par total de points gagnés'],
+    proches: ['🎯 À relancer', 'À 20 points ou moins d\'une récompense — un SMS et ils reviennent'],
+    inactifs: ['💤 Clients endormis', 'Ont des points mais ne sont pas venus depuis ' + JOURS_INACTIF + ' jours'],
+    recherche: ['🔍 Rechercher', 'Par nom ou téléphone']
+  };
+  document.getElementById('vue-titre').textContent = titres[vueActive][0];
+  document.getElementById('vue-aide').textContent = titres[vueActive][1];
+
+  if (vueActive === 'recherche') { rechercher(); return; }
+  rendreTable(donnees[vueActive] || [], vueActive);
+}
+
+function rendreTable(liste, vue) {
+  if (!liste.length) {
+    document.getElementById('contenu').innerHTML = '<div class="vide">Aucun client dans cette liste 🎉</div>';
+    return;
+  }
+  const colReste = (vue === 'proches');
+  const colInactif = (vue === 'inactifs');
+
+  let html = `<table><thead><tr>
+    <th>Client</th><th>Téléphone</th>
+    <th class="num">Points</th>
+    ${colReste ? '<th>Prochaine récompense</th>' : ''}
+    ${!colReste ? '<th>Récompenses dispo</th>' : ''}
+    <th class="num">Visites</th>
+    <th>Dernière visite</th>
+    ${colInactif ? '<th class="num">Absence</th>' : ''}
+  </tr></thead><tbody>`;
+
+  liste.forEach(c => {
+    const pts = c.points || 0;
+    const dispo = paliersDispo(pts);
+    const pp = prochainPalier(pts);
+    const j = joursDepuis(c.derniere_visite);
+    html += `<tr>
+      <td class="nom">${echapper(c.nom || '—')}</td>
+      <td class="tel">${tel(c.telephone)}</td>
+      <td class="num pts">${fmtNb(pts)}</td>
+      ${colReste ? `<td><span class="badge or">${pp.e} ${pp.l} dans ${pp.s - pts} pts</span></td>` : ''}
+      ${!colReste ? `<td>${dispo.length ? dispo.map(d => `<span class="badge vert">${d.e}</span>`).join(' ') : '<span style="color:var(--texte-mute)">—</span>'}</td>` : ''}
+      <td class="num">${fmtNb(c.nb_visites || 0)}</td>
+      <td>${fmtDate(c.derniere_visite)}</td>
+      ${colInactif ? `<td class="num"><span class="badge rouge">${j} j</span></td>` : ''}
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('contenu').innerHTML = html;
+}
+
+function echapper(s) {
+  return String(s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+// ---- Recherche ----
+let tRech = null;
+function rechercher() {
+  const q = document.getElementById('q').value.trim();
+  if (tRech) clearTimeout(tRech);
+  if (q.length < 2) {
+    document.getElementById('contenu').innerHTML = '<div class="vide">Tapez au moins 2 caractères…</div>';
+    return;
+  }
+  tRech = setTimeout(async () => {
+    const chiffres = q.replace(/\D/g, '');
+    let req = sb.from('clients').select('id, nom, telephone, points, nb_visites, derniere_visite').limit(50);
+    req = chiffres.length >= 2
+      ? req.ilike('telephone', '%' + chiffres + '%')
+      : req.ilike('nom', '%' + q + '%');
+    const { data } = await req;
+    rendreTable(data || [], 'recherche');
+  }, 300);
+}
+
+// ---- Export CSV ----
+function exporterCSV() {
+  const liste = vueActive === 'recherche' ? [] : (donnees[vueActive] || []);
+  if (!liste.length) { alert('Rien à exporter dans cette vue.'); return; }
+  const entetes = ['Nom', 'Telephone', 'Points', 'Visites', 'Derniere visite'];
+  const lignes = liste.map(c => [
+    (c.nom || '').replace(/;/g, ','),
+    c.telephone || '',
+    c.points || 0,
+    c.nb_visites || 0,
+    c.derniere_visite || ''
+  ].join(';'));
+  const csv = '\uFEFF' + [entetes.join(';')].concat(lignes).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fidelite-' + vueActive + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
