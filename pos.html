@@ -9554,7 +9554,7 @@ function preparerImpression(lignesTicket, venteLocale) {
   const modeServiceBon = venteLocale.canal || null;
 
   derniereImpression = {
-    version: 'APPOINT-2026-07-16',   // 🔎 permet de vérifier que la caisse est à jour
+    version: 'OPTIONS-BORNE-2026-07-17',   // 🔎 permet de vérifier que la caisse est à jour
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
 
@@ -11638,15 +11638,29 @@ async function chargerCommandeAttente(id) {
   }
   
   // Charger les articles dans le ticket
-  ticket = (cmd.lignes || []).map(l => ({
-    produit_id: l.produit_id || null,
-    nom: l.nom || '?',
-    prix: Number(l.prix || 0),
-    quantite: Number(l.quantite || 1),
-    sous_total: Number(l.prix || 0) * Number(l.quantite || 1),
-    categorie_id: l.categorie_id || null,
-    _lien_borne: l.lien_plat || null   // la borne référence le produit_id du plat parent
-  }));
+  ticket = (cmd.lignes || []).map(l => {
+    // ⚠️ La borne stocke ses options dans un format différent de la caisse :
+    //    borne  : { options_base:{}, retirable:[], supplements:[], sauces:[] }
+    //    caisse : options_base, retirables, supplements_sel, sauces_sel
+    //    Sans cette conversion, les options (féculent, spicy, sans X, sauces)
+    //    étaient perdues → absentes des bons cuisine et du ticket comptoir.
+    const o = l.options || {};
+    const prod = produits.find(pp => pp.id === l.produit_id);
+    return {
+      produit_id: l.produit_id || null,
+      nom: l.nom || '?',
+      prix: Number(l.prix || 0),
+      quantite: Number(l.quantite || 1),
+      sous_total: Number(l.prix || 0) * Number(l.quantite || 1),
+      categorie_id: l.categorie_id || (prod ? prod.categorie_id : null),
+      options_base: o.options_base || null,
+      retirables: o.retirable || [],
+      supplements_sel: o.supplements || [],
+      sauces_sel: o.sauces || [],
+      est_formule: prod ? (prod.est_formule === true) : false,
+      _lien_borne: l.lien_plat || null   // la borne référence le produit_id du plat parent
+    };
+  });
 
   // ⚠️ La borne lie ses sous-lignes (composants de box, boisson, suppléments) au
   //    produit_id du plat ; la caisse, elle, travaille avec des ligne_uid.
