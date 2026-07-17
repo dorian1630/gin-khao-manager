@@ -11818,6 +11818,21 @@ async function chargerCommandeAttente(id) {
     delete l._lien_borne;
   });
 
+  // 🥤 La boisson d'une formule/box arrive de la borne comme une sous-ligne à 0 €.
+  //    Or le ticket comptoir masque ces lignes (pour éviter les doublons) et
+  //    affiche la boisson dans les DÉTAILS du plat — via formule_boisson_id,
+  //    que la borne ne fournit pas. Sans ce rattachement, elle disparaissait.
+  const catBoi = categories.find(c => c.nom === 'Boissons');
+  if (catBoi) {
+    ticket.forEach(l => {
+      if (!l.lien_plat) return;
+      const p = produits.find(x => x.id === l.produit_id);
+      if (!p || p.categorie_id !== catBoi.id) return;
+      const parent = ticket.find(t => t.ligne_uid === l.lien_plat);
+      if (parent) parent.formule_boisson_id = l.produit_id;
+    });
+  }
+
   // 🎁 Récompense fidélité appliquée à la borne → on la reconnaît pour la déduire à l'encaissement
   recompenseCaisse = null;
   appointLivraison = null;
