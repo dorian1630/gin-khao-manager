@@ -4824,6 +4824,18 @@ function normNomCat(s) {
   return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 }
 function stationPourLigne(l) {
+  // 🥤 Une BOISSON (ou un dessert) reste toujours au comptoir, même rattachée à
+  //    une box/formule : la cuisine ne la prépare pas. Sans ce test, la ligne
+  //    suivait la station du plat parent (Box → cuisine) et sortait en cuisine.
+  const self = produits.find(x => x.id === l.produit_id);
+  if (self) {
+    const catSelf = categories.find(c => c.id === self.categorie_id);
+    const nomSelf = normNomCat(catSelf ? catSelf.nom : '');
+    const parSelf = (catSelf && catSelf.parent_id) ? categories.find(c => c.id === catSelf.parent_id) : null;
+    const nomParSelf = normNomCat(parSelf ? parSelf.nom : '');
+    if (CATS_SANS_BON.includes(nomSelf) || CATS_SANS_BON.includes(nomParSelf)) return 'comptoir';
+  }
+  // Les autres lignes liées (suppléments, sauces) suivent bien la station du plat
   const pid = l.lien_plat || l.produit_id;
   const p = produits.find(x => x.id === pid);
   if (!p) return 'cuisine';
