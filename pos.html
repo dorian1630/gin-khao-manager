@@ -6834,11 +6834,15 @@ function edSetEntree(id, label) {
   reconstruireSousLignes(editeurUid);
 }
 
-// Boisson de formule/box : les 33cl sont incluses, toute autre contenance = +1 €.
+// Boisson de formule/box : les boissons "standard" sont incluses, les autres à +1 €.
+// ⚠️ On se base sur le PRIX, pas sur "33cl" dans le nom : « 7up » (1,50 €) et
+//    « Cristalline 50cl » (1,00 €) sont incluses alors que leur nom ne contient
+//    pas 33cl, tandis que les Chill/Cristalline aromatisées (2,50 €) sont payantes.
 const SUPPLEMENT_BOISSON = 1;
+const PRIX_BOISSON_INCLUSE_MAX = 1.50;   // ≤ ce prix → comprise dans la formule
 function prixBoissonFormule(b) {
   if (!b) return 0;
-  return /33\s*cl/i.test(b.nom) ? 0 : SUPPLEMENT_BOISSON;
+  return (parseFloat(b.prix) || 0) <= PRIX_BOISSON_INCLUSE_MAX ? 0 : SUPPLEMENT_BOISSON;
 }
 
 // Clé/titre d'un groupe d'options_base.
@@ -6903,8 +6907,13 @@ function detailsLigneTicket(l, pour) {
     const q = c.qte || 1;
     d.push((q > 1 ? q + 'x ' : '') + (c.label || (prod ? prod.nom : 'Composant')));
   });
-  // 🥤 La boisson n'apparaît PAS sur le bon cuisine (c'est le comptoir qui la sert)
-  //    — elle est déjà une ligne à part sur le ticket client.
+  // 🥤 Boisson : pas sur le bon cuisine (c'est le comptoir qui la sert),
+  //    mais SUR le ticket comptoir — sinon elle n'apparaît nulle part quand
+  //    elle est incluse (ligne à 0 €, donc filtrée du ticket).
+  if (l.formule_boisson_id && pour === 'comptoir') {
+    const b = produits.find(x => x.id === l.formule_boisson_id);
+    if (b && prixBoissonFormule(b) === 0) d.push(b.nom);   // incluse → sinon elle a sa propre ligne
+  }
   if (l.formule_entree_id && pour === 'cuisine') {
     d.push(l.formule_entree_label || '');
   }
@@ -7004,7 +7013,7 @@ function rendreEditeur(modeAjout) {
     if (catBoissons) {
       // Toutes les boissons : les 33cl sont incluses, les autres sont à +1 €
       const boissons = produits.filter(pp => pp.categorie_id === catBoissons.id && pp.actif !== false);
-      html += `<div class="mpp-bloc"><div class="mpp-lbl">Boisson (33cl incluse · autres +${fmt(SUPPLEMENT_BOISSON)})</div><div class="mpp-options">`;
+      html += `<div class="mpp-bloc"><div class="mpp-lbl">Boisson (incluse · certaines +${fmt(SUPPLEMENT_BOISSON)})</div><div class="mpp-options">`;
       boissons.forEach(b => {
         const act = l.formule_boisson_id === b.id ? ' active' : '';
         const pB = prixBoissonFormule(b);
