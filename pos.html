@@ -2418,7 +2418,17 @@ html, body {
 /* ===== MODALE FORM CLIENT ===== */
 /* 📱 Formulaire client en PLEIN ÉCRAN (tablette) :
    le clavier Android écrasait la modale et cachait les champs. */
-#overlay-form-client { padding: 0; align-items: stretch; justify-content: stretch; }
+#overlay-form-client {
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  /* ⚡ Pas de backdrop-filter ici : le formulaire couvre TOUT l'écran, donc
+     flouter l'arrière-plan ne se voit pas — mais la tablette calculait quand
+     même le flou plein écran → ~2 s d'écran noir à l'ouverture. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--surface);
+}
 #overlay-form-client .modal-form-client {
   max-width: none;
   width: 100vw;
@@ -7042,7 +7052,9 @@ function rendreEditeur(modeAjout) {
     } else {
       const catEntrees = categories.find(c => c.nom === 'Entrées');
       if (catEntrees) {
-        const entrees = produits.filter(pp => pp.categorie_id === catEntrees.id && pp.actif !== false);
+        // 🍱 visible_formule = false → l'entrée n'est pas proposée dans les formules
+        const entrees = produits.filter(pp => pp.categorie_id === catEntrees.id
+          && pp.actif !== false && pp.visible_formule !== false);
         html += `<div class="mpp-bloc"><div class="mpp-lbl">Entrée (incluse)</div><div class="mpp-options">`;
         entrees.forEach(e => {
           let label = e.nom;
@@ -9607,7 +9619,15 @@ function preparerImpression(lignesTicket, venteLocale) {
       date: dateStr,
       // Les éléments inclus (composants de box, boisson/entrée de formule à 0 €)
       // sont déjà listés en détails sous le plat → pas de ligne "0,00 EUR" en double.
-      lignes: (venteLocale.lignes_vente || []).filter(l => !(l.lien_plat && Number(l.prix_unitaire) === 0)),
+      // 🥤 est_boisson : le relais n'écrit pas "1x" devant une boisson seule
+      lignes: (venteLocale.lignes_vente || [])
+        .filter(l => !(l.lien_plat && Number(l.prix_unitaire) === 0))
+        .map(lv => {
+          const src = lignesTicket.find(t => t.nom === lv.nom_produit);
+          return Object.assign({}, lv, {
+            est_boisson: src ? idsBoissons.includes(src.categorie_id) : false
+          });
+        }),
       total: venteLocale.total,
       modePaiement: venteLocale.mode_paiement,
       restoNom: RESTO_INFOS.nom,
