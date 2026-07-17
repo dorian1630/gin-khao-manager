@@ -6909,10 +6909,11 @@ function detailsLigneTicket(l, pour) {
 
   // 📦 Contenu d'une box (composants fixes) + boisson/entrée de formule :
   //    la cuisine doit voir le détail, pas juste "BOX COUPE DU MONDE".
+  // 📦 Contenu de la box : pas de quantité affichée — la composition est fixe
+  //    et connue de la cuisine (ex. les nems vont toujours par 2 dans la box).
   composantsFixes(p).forEach(c => {
     const prod = produits.find(x => x.id === c.produit_id);
-    const q = c.qte || 1;
-    d.push((q > 1 ? q + 'x ' : '') + (c.label || (prod ? prod.nom : 'Composant')));
+    d.push(c.label || (prod ? prod.nom : 'Composant'));
   });
   // 🥤 Boisson : pas sur le bon cuisine (c'est le comptoir qui la sert),
   //    mais SUR le ticket comptoir — sinon elle n'apparaît nulle part quand
