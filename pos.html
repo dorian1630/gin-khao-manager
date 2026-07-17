@@ -11413,6 +11413,24 @@ async function sauverClient() {
     
     let resultat;
     if (modeFormClient === 'creation') {
+      // 📞 Un numéro = un client (contrainte clients_tel_unique en base).
+      //    Plutôt que de laisser sortir une erreur technique, on prévient le
+      //    caissier et on lui propose de charger la fiche existante.
+      const { data: dejaLa } = await sb.from('clients')
+        .select('id, nom, adresse, ville')
+        .eq('telephone', tel)
+        .maybeSingle();
+      if (dejaLa) {
+        posConfirm(
+          'Le <b>' + escapeHtmlPos(tel) + '</b> est déjà enregistré au nom de <b>' +
+          escapeHtmlPos(dejaLa.nom || 'ce client') + '</b>' +
+          (dejaLa.adresse ? '<br><span style="font-size:14px;color:var(--text-mute);">' + escapeHtmlPos(dejaLa.adresse) + (dejaLa.ville ? ' · ' + escapeHtmlPos(dejaLa.ville) : '') + '</span>' : '') +
+          '<br><br>Charger cette fiche ?',
+          () => { fermerFormClient(); selectionnerClient(dejaLa.id); },
+          { ic: '📞', okLabel: 'Charger ce client', nonLabel: 'Annuler' }
+        );
+        return;
+      }
       payload.restaurant_id = RESTO_ID;
       // 🎫 Entrée directe dans le programme fidélité (0 point de départ)
       payload.points = 0;
@@ -11443,7 +11461,13 @@ async function sauverClient() {
     chargerClientCommande(resultat);
     fermerFormClient();
   } catch (e) {
-    posAlert('Erreur : ' + e.message);
+    // 📞 Filet de sécurité : si le numéro a été pris entre-temps (deux caissiers
+    //    en même temps), on affiche un message compréhensible plutôt que
+    //    l'erreur technique "duplicate key value violates unique constraint".
+    const msg = /clients_tel_unique|duplicate key/i.test(e.message || '')
+      ? 'Ce numéro de téléphone est déjà enregistré pour un autre client.<br><br>Recherchez-le avec la barre de recherche.'
+      : 'Erreur : ' + e.message;
+    posAlert(msg, '⚠️');
   } finally {
     btn.disabled = false;
     btn.textContent = '💾 Enregistrer';
