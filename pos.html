@@ -6878,6 +6878,9 @@ function detailsLigneTicket(l, pour) {
       if (!v) return;
       // En cuisine, l'accompagnement est dans le nom → on ne le répète pas
       if (pour === 'cuisine' && acc && String(v).trim() === acc) return;
+      // 🌶️ "Normal" = la préparation habituelle → inutile de l'écrire.
+      //    Seul un écart à la norme (Spicy…) mérite d'apparaître.
+      if (/^normal$/i.test(String(v).trim())) return;
       d.push(String(v));
     });
   }
@@ -7061,10 +7064,41 @@ function rendreEditeur(modeAjout) {
   modal.innerHTML = html;
 }
 
+// 🚦 Vérifie qu'une formule est complète avant l'ajout au ticket.
+//    Renvoie le message d'erreur, ou null si tout est choisi.
+function verifierChoixComplets(l, p) {
+  if (!l || !p) return null;
+
+  // Options de base marquées "obligatoire" (Féculent, Niveau épicé, Sauce…)
+  if (Array.isArray(p.options_base)) {
+    for (let i = 0; i < p.options_base.length; i++) {
+      const opt = p.options_base[i];
+      if (opt && opt.obligatoire === false) continue;
+      const cle = cleGroupeOption(opt, i);
+      if (!l.options_base || !l.options_base[cle]) {
+        return 'Veuillez choisir : ' + cle;
+      }
+    }
+  }
+
+  // Formule : boisson + entrée obligatoires
+  //   (une BOX a des composants fixes → pas d'entrée à choisir)
+  if (p.est_formule === true) {
+    if (!l.formule_boisson_id) return 'Veuillez choisir une boisson';
+    if (!estBoxCaisse(p) && !l.formule_entree_id) return 'Veuillez choisir une entrée';
+  }
+  return null;
+}
+function estBoxCaisse(p) { return composantsFixes(p).length > 0; }
+
 // Valider l'ajout depuis la grande modale
 function validerAjoutEditeur() {
   const l = ligneParUid(editeurUid);
-  if (l) delete l._nouveau;
+  if (!l) { fermerEditeurPlat(); return; }
+  const p = produits.find(pp => pp.id === l.produit_id);
+  const manque = verifierChoixComplets(l, p);
+  if (manque) { posAlert(manque, '⚠️'); return; }   // on garde la modale ouverte
+  delete l._nouveau;
   fermerEditeurPlat();
   afficherTicket();
 }
