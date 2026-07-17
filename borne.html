@@ -4854,6 +4854,31 @@ function stationPourLigne(l) {
   return 'cuisine';
 }
 
+// Détails d'une ligne pour le TICKET CLIENT de la borne
+// (mêmes infos que les bons, hors "Normal" qui est la préparation habituelle)
+function detailsTicketBorne(l) {
+  const d = [];
+  if (!l || !l.options) return d;
+  const o = l.options;
+  if (o.options_base) {
+    Object.values(o.options_base).forEach(v => {
+      if (!v) return;
+      if (/^normal$/i.test(String(v).trim())) return;
+      d.push(String(v));
+    });
+  }
+  (o.retirable || []).forEach(r => d.push('Sans ' + r));
+  (o.supplements || []).forEach(id => {
+    const p = produits.find(x => x.id === id);
+    if (p) d.push('+ ' + p.nom.replace(/^Suppl\.\s*/i, ''));
+  });
+  (o.sauces || []).forEach(id => {
+    const p = produits.find(x => x.id === id);
+    if (p) d.push(p.nom.replace(/^Sauce\s+/i, 'Sauce '));
+  });
+  return d;
+}
+
 // ---- Ticket client sur l'imprimante de la borne (numéro géant) ----
 // 💳 REÇU CARTE BANCAIRE — mise en page d'un ticket monétique.
 // ⚠️ Les données proviennent de l'API SumUp. Les champs purement EMV
@@ -4949,17 +4974,20 @@ function genererTicketBorneEscPos(numero, methode) {
   s += LF + '========================================' + LF + LF;
   s += ESC + 'a' + '\x00';
   s += 'Date : ' + new Date().toLocaleString('fr-FR') + LF;
-  if (clientFid && clientFid.nom) s += 'Client : ' + clientFid.nom + LF;
+  if (clientFid && clientFid.nom) s += 'Client : ' + versAscii(clientFid.nom) + LF;
   s += '----------------------------------------' + LF;
   let total = 0;
   panier.forEach(l => {
     const qte = l.quantite || 1;
     const prix = (Number(l.prix) || 0) * qte;
     total += prix;
-    const debut = qte + 'x ' + (l.nom || '');
+    const debut = versAscii(qte + 'x ' + (l.nom || ''));   // ⚠️ sans ça : 'Bœuf' → 'Buf'
     const prixStr = prix.toFixed(2).replace('.', ',') + ' EUR';
     const espaces = 42 - debut.length - prixStr.length;
     s += (espaces > 0 ? debut + ' '.repeat(espaces) + prixStr : debut + LF + '  ' + ' '.repeat(Math.max(0,38 - prixStr.length)) + prixStr) + LF;
+    // 🍚 Options du plat (féculent, épicé, sans X, sauces…) : le client doit
+    //    pouvoir vérifier sa commande sur son ticket.
+    detailsTicketBorne(l).forEach(d => { s += '   > ' + versAscii(d) + LF; });
   });
   s += '----------------------------------------' + LF;
   s += ESC + 'E' + '\x01' + GS + '!' + '\x11';
