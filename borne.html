@@ -2733,7 +2733,7 @@ body {
     <img class="carrousel-slide visible" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698474/3_kicfgi.png" alt="Gin Khao 1" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/1_xkwuty.png" alt="Gin Khao 2" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/2_ggpz3e.png" alt="Gin Khao 3" />
-    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784204132/ChatGPT_Image_16_juil._2026_14_15_19_shqx6q.png" alt="Box Coupe du Monde" />
+    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784201063/ChatGPT_Image_16_juil._2026_13_24_02_quujov.png" alt="Box Coupe du Monde" />
   </div>
   <div class="accueil-bottom" onclick="allerMode()">
     <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander</div>
@@ -3006,11 +3006,14 @@ function composantsFixes(p) {
 }
 function estBox(p) { return composantsFixes(p).length > 0; }
 
-// Boisson de formule/box : les 33cl sont incluses, toute autre contenance = +1 €
+// Boisson de formule/box : les boissons "standard" sont incluses, les autres à +1 €.
+// ⚠️ Basé sur le PRIX et non sur "33cl" : « 7up » (1,50 €) et « Cristalline 50cl »
+//    (1,00 €) sont incluses, les Chill / Cristalline aromatisées (2,50 €) non.
 const SUPPLEMENT_BOISSON = 1;
+const PRIX_BOISSON_INCLUSE_MAX = 1.50;
 function prixBoissonFormule(b) {
   if (!b) return 0;
-  return /33\s*cl/i.test(b.nom) ? 0 : SUPPLEMENT_BOISSON;
+  return (parseFloat(b.prix) || 0) <= PRIX_BOISSON_INCLUSE_MAX ? 0 : SUPPLEMENT_BOISSON;
 }
 
 function aDesVariantes(p) {
@@ -4263,7 +4266,7 @@ function afficherEcranFormuleBoisson() {
     </div>
     <div class="formule-step-titre">
       <h2>🍹 Choisissez votre boisson</h2>
-      <p>33cl incluse · autres +${fmt(SUPPLEMENT_BOISSON)}</p>
+      <p>Boisson incluse · certaines +${fmt(SUPPLEMENT_BOISSON)}</p>
     </div>
     <div class="formule-grille">
       ${boissons.map(b => {
