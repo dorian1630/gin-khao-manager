@@ -8242,6 +8242,13 @@ function trEstValide() {
   
   return total > 0;
 }
+// 💵 Espèces (hors livraison) : validation immédiate, sans saisie du montant reçu.
+function validerEspecesDirect() {
+  const input = document.getElementById('cash-input');
+  if (input) { input.value = totalTicket().toFixed(2); calculerRendu(); }
+  setTimeout(() => validerVente(), 120);
+}
+
 // 💵 Livraison + espèces : le client a-t-il l'appoint ?
 //    La réponse part sur le bon du livreur (il saura s'il doit prendre de la monnaie).
 function demanderAppointLivraison() {
@@ -8302,7 +8309,10 @@ function choisirMode(mode) {
     genererQuickCash();
     calculerRendu();
     // 💵 Livraison payée en espèces : le livreur doit-il emporter de la monnaie ?
-    if (canalVente === 'livraison') demanderAppointLivraison();
+    if (canalVente === 'livraison') { demanderAppointLivraison(); return; }
+    // 💵 Sur place / à emporter / C&C : pas besoin de la calculatrice —
+    //    on valide et on imprime directement (le caissier rend la monnaie de tête).
+    validerEspecesDirect();
   } else if (mode === 'carte') {
     document.getElementById('carte-zone').classList.add('show');
     const carteAff = document.getElementById('carte-montant-aff');
@@ -9567,6 +9577,8 @@ function preparerImpression(lignesTicket, venteLocale) {
       // 🛵 Livraison : le paiement se fait chez le client → pas de ligne "Règlement"
       //    sur le ticket comptoir (ce serait faux : rien n'est encore encaissé).
       masquerReglement: (venteLocale.canal === 'livraison'),
+      // 🍽️ Sur place / à emporter : indiqué en clair sur le ticket comptoir
+      modeService: venteLocale.canal,
       tva: calculerTVA(venteLocale.total, RESTO_INFOS.tauxTVA),
       tvaNum: RESTO_INFOS.tva,
       naf: RESTO_INFOS.naf,
