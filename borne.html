@@ -2999,6 +2999,23 @@ function labelVariante(v) {
   }
   return '';
 }
+// 🥤 La ligne est-elle une boisson (ou un dessert) ?
+function estLigneBoisson(l) {
+  const p = produits.find(x => x.id === (l && l.produit_id));
+  if (!p) return false;
+  const cat = categories.find(c => c.id === p.categorie_id);
+  const nom = normNomCat(cat ? cat.nom : '');
+  const par = (cat && cat.parent_id) ? categories.find(c => c.id === cat.parent_id) : null;
+  const nomPar = normNomCat(par ? par.nom : '');
+  return CATS_SANS_BON.includes(nom) || CATS_SANS_BON.includes(nomPar);
+}
+
+// 🍱 Un produit peut être exclu des ENTRÉES DE FORMULE (colonne visible_formule)
+//    tout en restant vendable seul. Par défaut : proposé.
+function visibleEnFormule(p) {
+  return !p || p.visible_formule !== false;
+}
+
 // 🖥️ Un produit peut être masqué sur la borne (colonne visible_borne)
 //    tout en restant disponible à la caisse. Par défaut : visible.
 function visibleSurBorne(p) {
@@ -3520,7 +3537,7 @@ function declencherUpsellEntrees() {
     declencherUpsellBoissons();
     return;
   }
-  const entrees = produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p));
+  const entrees = produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p) && visibleEnFormule(p));
   if (entrees.length === 0) {
     declencherUpsellBoissons();
     return;
@@ -4987,7 +5004,9 @@ function genererTicketBorneEscPos(numero, methode) {
     const qte = l.quantite || 1;
     const prix = (Number(l.prix) || 0) * qte;
     total += prix;
-    const debut = versAscii(qte + 'x ' + (l.nom || ''));   // ⚠️ sans ça : 'Bœuf' → 'Buf'
+    // 🥤 Boisson seule → pas de "1x", juste le nom
+    const estBoisson = estLigneBoisson(l);
+    const debut = versAscii(((estBoisson && qte === 1) ? '' : qte + 'x ') + (l.nom || ''));
     const prixStr = prix.toFixed(2).replace('.', ',') + ' EUR';
     const espaces = 42 - debut.length - prixStr.length;
     s += (espaces > 0 ? debut + ' '.repeat(espaces) + prixStr : debut + LF + '  ' + ' '.repeat(Math.max(0,38 - prixStr.length)) + prixStr) + LF;
@@ -5072,6 +5091,7 @@ async function envoyerImpressionCuisine(numero, methode) {
         quantite: l.quantite,
         prix: l.prix,
         station: stationPourLigne(l),
+        est_boisson: estLigneBoisson(l),
         details: detailsDe(l, 'cuisine'),
         details_comptoir: detailsDe(l, 'comptoir')
       };
