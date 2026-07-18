@@ -9400,6 +9400,22 @@ function voirTicket(venteId) {
   
   document.getElementById('ticket-contenu').innerHTML = genererTicketHTML(v);
   document.getElementById('overlay-ticket').classList.add('show');
+
+  // 🖨️ Réimpression depuis l'historique : reconstruire les données d'impression
+  //    de CE ticket. Sans ça, le bouton "Imprimer" réutilisait derniereImpression
+  //    (la dernière vente encaissée) → c'était toujours le même ticket qui sortait.
+  const lignesReimp = (v.lignes_vente || []).map(lv => {
+    const prod = produits.find(p => p.nom === lv.nom_produit);
+    return {
+      produit_id: prod ? prod.id : null,
+      nom: lv.nom_produit,
+      prix: Number(lv.prix_unitaire) || 0,
+      quantite: Number(lv.quantite) || 1,
+      sous_total: Number(lv.sous_total) || 0,
+      categorie_id: prod ? prod.categorie_id : null
+    };
+  });
+  preparerImpression(lignesReimp, v);
   
   // Reset visuel du bouton Ticket pro
   setTimeout(() => {
@@ -9412,10 +9428,11 @@ function fermerTicket() {
   document.getElementById('overlay-ticket').classList.remove('show');
 }
 
-// Détermine les ids de catégories considérées comme "Boissons" (exclues du bon cuisine)
+// Catégories qui ne vont PAS en cuisine (le comptoir s'en occupe) :
+// boissons ET desserts. Servaient jusqu'ici uniquement pour les boissons.
 function categoriesBoissons() {
   return categories
-    .filter(c => /boisson/i.test(c.nom))
+    .filter(c => /boisson|dessert/i.test(c.nom))
     .map(c => c.id);
 }
 
