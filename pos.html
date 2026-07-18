@@ -6976,8 +6976,9 @@ function detailsLigneTicket(l, pour) {
     const b = produits.find(x => x.id === l.formule_boisson_id);
     if (b && prixBoissonFormule(b) === 0) d.push(b.nom);   // incluse → sinon elle a sa propre ligne
   }
-  if (l.formule_entree_id && pour === 'cuisine') {
-    d.push(l.formule_entree_label || '');
+  if (l.formule_entree_id && (pour === 'cuisine' || pour === 'comptoir')) {
+    const e = produits.find(x => x.id === l.formule_entree_id);
+    d.push(l.formule_entree_label || (e ? e.nom : ''));
   }
   return d.filter(Boolean);
 }
@@ -9638,7 +9639,7 @@ function preparerImpression(lignesTicket, venteLocale) {
   const modeServiceBon = venteLocale.canal || null;
 
   derniereImpression = {
-    version: 'DESSERTS-FIX2-2026-07-18',   // 🔎 permet de vérifier que la caisse est à jour
+    version: 'ENTREE-FORMULE-2026-07-18',   // 🔎 permet de vérifier que la caisse est à jour
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
 
@@ -11848,6 +11849,24 @@ async function chargerCommandeAttente(id) {
       if (!p || p.categorie_id !== catBoi.id) return;
       const parent = ticket.find(t => t.ligne_uid === l.lien_plat);
       if (parent) parent.formule_boisson_id = l.produit_id;
+    });
+  }
+
+  // 🥟 Idem pour l'ENTRÉE de formule (Nems, etc.) : sous-ligne à 0 € rattachée au
+  //    plat, masquée du ticket comptoir → sans ce rattachement via formule_entree_id,
+  //    elle disparaissait des bons cuisine et comptoir (le nom contient "(formule)").
+  const catEnt = categories.find(c => c.nom === 'Entrées');
+  if (catEnt) {
+    ticket.forEach(l => {
+      if (!l.lien_plat) return;
+      const p = produits.find(x => x.id === l.produit_id);
+      if (!p || p.categorie_id !== catEnt.id) return;
+      const parent = ticket.find(t => t.ligne_uid === l.lien_plat);
+      if (parent) {
+        parent.formule_entree_id = l.produit_id;
+        // Le libellé "(formule)" / "(2 pièces)" vient du nom de la sous-ligne borne
+        parent.formule_entree_label = (l.nom || p.nom).replace(/^\s*[↳>]\s*/, '').replace(/\s*\(formule\)\s*$/i, '').trim();
+      }
     });
   }
 
