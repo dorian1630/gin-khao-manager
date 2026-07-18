@@ -3385,8 +3385,18 @@ function afficherCats() {
   zone.innerHTML = html;
 }
 
-function filtrerCat(id) { catActive = id; afficherCats(); afficherMenu(); }
-
+function filtrerCat(id) {
+  // 🍱 Une sous-catégorie "Formule X" cliquée depuis les onglets du menu doit
+  //    lancer le PARCOURS GUIDÉ (Entrée → Plat → Boisson). Sans ça, elle
+  //    affichait les produits (Formule) bruts → ajout SANS entrée
+  //    (bug "l'entrée manque une fois sur deux").
+  const cat = categories.find(c => c.id === id);
+  if (cat && cat.parent_id) {
+    const parent = categories.find(p => p.id === cat.parent_id);
+    if (parent && parent.nom === 'Formules') { filtrerCatEtAller(id); return; }
+  }
+  catActive = id; afficherCats(); afficherMenu();
+}
 function afficherMenu() {
   const grille = document.getElementById('menu-grille');
   // ✨ Toujours filtrer par catégorie (plus de "Tout")
@@ -3976,9 +3986,6 @@ function finaliserParcoursPlat() {
         });
       }
     }
-    console.log('🔎 FINALISATION formule — entree_id:', parcoursPlatEnCours.formule_entree_id,
-      '| boisson_id:', parcoursPlatEnCours.formule_boisson_id,
-      '| plat:', p.nom, '| formuleEnCours:', formuleEnCours ? formuleEnCours.entree_id : 'NULL');
     if (parcoursPlatEnCours.formule_entree_id) {
       const entree = produits.find(pp => pp.id === parcoursPlatEnCours.formule_entree_id);
       if (entree) {
