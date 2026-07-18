@@ -3976,6 +3976,9 @@ function finaliserParcoursPlat() {
         });
       }
     }
+    console.log('🔎 FINALISATION formule — entree_id:', parcoursPlatEnCours.formule_entree_id,
+      '| boisson_id:', parcoursPlatEnCours.formule_boisson_id,
+      '| plat:', p.nom, '| formuleEnCours:', formuleEnCours ? formuleEnCours.entree_id : 'NULL');
     if (parcoursPlatEnCours.formule_entree_id) {
       const entree = produits.find(pp => pp.id === parcoursPlatEnCours.formule_entree_id);
       if (entree) {
