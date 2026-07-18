@@ -7109,8 +7109,12 @@ function rendreEditeur(modeAjout) {
         entrees.forEach(e => {
           let label = e.nom;
           if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
-            const v2 = e.variantes.find(v => labelVariante(v).includes('2 pi')) || { label: '2 pièces' };
-            label = e.nom + ' (' + v2.label + ')';
+            // Les variantes de ces entrées sont { prix, pieces } → on prend la
+            // plus petite portion (2 pièces) pour la formule. "label" n'existe pas
+            // sur ces objets → il faut construire le texte depuis "pieces".
+            const v2 = e.variantes.find(v => Number(v.pieces) === 2) || e.variantes[0];
+            const nbPieces = v2 && v2.pieces != null ? v2.pieces : 2;
+            label = e.nom + ' (' + nbPieces + ' pièces)';
           }
           const act = l.formule_entree_id === e.id ? ' active' : '';
           const labelEsc = String(label).replace(/'/g, "\\'");
@@ -7476,8 +7480,9 @@ function afficherModaleFormuleEntree() {
   
   const items = entrees.map(e => {
     if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
-      const variante2p = e.variantes.find(v => labelVariante(v).includes('2 pi')) || { label: '2 pièces', prix: 0 };
-      return { id: e.id, label: e.nom + ' (' + variante2p.label + ')' };
+      const variante2p = e.variantes.find(v => Number(v.pieces) === 2) || e.variantes[0];
+      const nbP = variante2p && variante2p.pieces != null ? variante2p.pieces : 2;
+      return { id: e.id, label: e.nom + ' (' + nbP + ' pièces)' };
     }
     return { id: e.id, label: e.nom };
   });
