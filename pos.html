@@ -6047,6 +6047,7 @@ let clientFid = null;           // client attaché au ticket {id, nom, telephone
 let scannerFid = null;          // instance Html5Qrcode
 let scanEnCours = false;
 let recompenseCaisse = null;    // { palier, libelle, montant, nomArticle } remise fidélité sur le ticket
+let refBorneEnCours = null;     // 🔖 référence borne (ex. 'B625') pour la commande en cours
 
 // --- Remise manuelle ---
 let remise = null;  // { type: 'pct'|'montant', valeur: number }  ou null
@@ -7950,6 +7951,7 @@ async function _viderCommandeConfirme(estCommandeBorne) {
   // Reset du ticket
   ticket = [];
   recompenseCaisse = null;
+  refBorneEnCours = null;
   appointLivraison = null;
   modeClientTel = null;
   remise = null;
@@ -8765,6 +8767,7 @@ async function validerVente() {
     //    en a besoin (sinon la mention "PREVOIR LA MONNAIE" ne sort pas).
     appointLivraison = null;
     modeClientTel = null;
+    refBorneEnCours = null;   // 🔖 après impression (le ticket en a eu besoin)
   modeClientTel = null;
   } catch (e) {
     posAlert('Erreur lors de l\'enregistrement : ' + e.message);
@@ -9639,7 +9642,8 @@ function preparerImpression(lignesTicket, venteLocale) {
   const modeServiceBon = venteLocale.canal || null;
 
   derniereImpression = {
-    version: 'ENTREE-FORMULE-2026-07-18',   // 🔎 permet de vérifier que la caisse est à jour
+    version: 'REF-BORNE-2026-07-18',   // 🔎 permet de vérifier que la caisse est à jour
+    refBorne: (typeof refBorneEnCours !== 'undefined' ? refBorneEnCours : null),
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
 
@@ -11869,6 +11873,11 @@ async function chargerCommandeAttente(id) {
       }
     });
   }
+
+  // 🔖 Référence borne (ex. "B625") : à afficher sur les tickets à côté du
+  //    numéro séquentiel légal (#465), pour que le caissier fasse le lien avec
+  //    le ticket que le client présente. Le numéro NF525 reste celui de la caisse.
+  refBorneEnCours = (cmd.source === 'borne' && cmd.numero) ? String(cmd.numero) : null;
 
   // 🎁 Récompense fidélité appliquée à la borne → on la reconnaît pour la déduire à l'encaissement
   recompenseCaisse = null;
