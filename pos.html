@@ -9607,9 +9607,10 @@ function estCategorieSushi(categorieId) {
 }
 
 function preparerImpression(lignesTicket, venteLocale) {
-  const idsBoissons = categories
-    .filter(c => /boisson/i.test(c.nom))
-    .map(c => c.id);
+  // ⚠️ Boissons ET desserts : servis au comptoir, jamais préparés en cuisine.
+  //    (On réutilise categoriesBoissons() — un filtre recopié ici en dur avait
+  //     gardé l'ancienne règle "boisson seulement" → les desserts partaient en cuisine.)
+  const idsBoissons = categoriesBoissons();
 
   // Items "à préparer" = tout sauf boissons, remises, sous-lignes et plats sans produit_id
   // (les sous-lignes suppléments/sauces sont reprises dans les détails du plat parent)
@@ -9637,7 +9638,7 @@ function preparerImpression(lignesTicket, venteLocale) {
   const modeServiceBon = venteLocale.canal || null;
 
   derniereImpression = {
-    version: 'DESSERTS-COMPTOIR-2026-07-18',   // 🔎 permet de vérifier que la caisse est à jour
+    version: 'DESSERTS-FIX2-2026-07-18',   // 🔎 permet de vérifier que la caisse est à jour
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
 
