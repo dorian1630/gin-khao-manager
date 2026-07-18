@@ -4114,7 +4114,7 @@ function afficherEcranFormuleEntree() {
   if (!catEntrees) {
     borneAlert('Catégorie Entrées introuvable', '⚠️');
     return;
-  }const entrees = produits.filter(p => p.categorie_id === catEntrees.id && p.actif !== false);
+  }const entrees = produits.filter(p => p.categorie_id === catEntrees.id && p.actif !== false && p.visible_formule !== false);
   
   // Pour chaque entrée, prendre la variante 2 pièces ou label par défaut
   const items = entrees.map(e => {
