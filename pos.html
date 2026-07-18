@@ -6953,14 +6953,18 @@ function detailsLigneTicket(l, pour) {
     });
   }
 
-  // Sauces : en cuisine toutes ; au comptoir seulement celles NON facturées (incluses/gratuites)
-  (l.sauces_sel || []).forEach(id => {
-    const sc = produits.find(x => x.id === id);
-    if (!sc) return;
-    const facturee = p && !p.sauces_incluses && parseFloat(sc.prix) > 0;
-    if (pour === 'comptoir' && facturee) return;   // déjà une ligne avec son prix
-    d.push(sc.nom.replace(/^Sauce\s+/i, 'Sauce '));
-  });
+  // Sauces : JAMAIS sur le bon cuisine (le seul "assaisonnement" utile en cuisine
+  //   est le niveau épicé, déjà géré via options_base). Au comptoir : uniquement
+  //   les sauces NON facturées (les payantes ont déjà leur propre ligne).
+  if (pour !== 'cuisine') {
+    (l.sauces_sel || []).forEach(id => {
+      const sc = produits.find(x => x.id === id);
+      if (!sc) return;
+      const facturee = p && !p.sauces_incluses && parseFloat(sc.prix) > 0;
+      if (pour === 'comptoir' && facturee) return;   // déjà une ligne avec son prix
+      d.push(sc.nom.replace(/^Sauce\s+/i, 'Sauce '));
+    });
+  }
 
   // 📦 Contenu d'une box (composants fixes) + boisson/entrée de formule :
   //    la cuisine doit voir le détail, pas juste "BOX COUPE DU MONDE".
@@ -9621,7 +9625,7 @@ function preparerImpression(lignesTicket, venteLocale) {
   const itemsAPreparer = lignesTicket
     .filter(l => l.produit_id && !l.lien_plat && !idsBoissons.includes(l.categorie_id));
 
-  const versItem = l => ({ quantite: l.quantite, nom: l.nom, details: l.details || [] });
+  const versItem = l => ({ quantite: l.quantite, nom: (l.nom || '').replace(/\s*\((?:formule|box|supplément|supplement)\)\s*$/i, ''), details: l.details || [] });
 
   // Répartition par poste
   const itemsSushi = itemsAPreparer
