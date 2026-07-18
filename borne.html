@@ -4735,7 +4735,18 @@ function modifierQte(index, delta) {
     }
   }
   ligne.quantite += delta;
-  if (ligne.quantite <= 0) panier.splice(index, 1);
+  // 🍱 Formule : l'entrée et la boisson liées suivent la même quantité
+  //    (doubler la formule double aussi son entrée et sa boisson).
+  const prodQte = produits.find(x => x.id === ligne.produit_id);
+  if (!ligne.lien_plat && prodQte && prodQte.est_formule === true) {
+    if (ligne.quantite <= 0) {
+      panier = panier.filter(l => l !== ligne && l.lien_plat !== ligne.produit_id);
+    } else {
+      panier.forEach(l => { if (l.lien_plat === ligne.produit_id) l.quantite = ligne.quantite; });
+    }
+  } else if (ligne.quantite <= 0) {
+    panier.splice(index, 1);
+  }
   afficherPanier();
   majBarrePanier();
   if (panier.length === 0) allerEcran('ecran-menu');
@@ -4804,8 +4815,17 @@ function afficherPanier() {
         }
       }
     }
-    // Style spécial pour les lignes liées (supplément, sauce sous un plat)
+   // Style spécial pour les lignes liées (supplément, sauce sous un plat)
     const classe = l.lien_plat ? 'panier-ligne pl-lie' : 'panier-ligne';
+    // 🍱 Sous-lignes de formule (entrée, boisson) : leur quantité est pilotée
+    //    par la formule elle-même → pas de boutons +/- (elles suivent).
+    const prodParent = l.lien_plat ? produits.find(pp => pp.id === l.lien_plat) : null;
+    const sousLigneFormule = prodParent && prodParent.est_formule === true;
+    const qteHtml = sousLigneFormule
+      ? `<span class="pl-qval">${l.quantite}</span>`
+      : `<button class="pl-qbtn" onclick="modifierQte(${idx}, -1)">−</button>
+        <span class="pl-qval">${l.quantite}</span>
+        <button class="pl-qbtn" onclick="modifierQte(${idx}, 1)">+</button>`;
     return `
     <div class="${classe}">
       <div class="pl-emoji">${l.emoji}</div>
@@ -4815,9 +4835,7 @@ function afficherPanier() {
         <div class="pl-prix">${fmt(l.prix)} / unité</div>
       </div>
       <div class="pl-qte">
-        <button class="pl-qbtn" onclick="modifierQte(${idx}, -1)">−</button>
-        <span class="pl-qval">${l.quantite}</span>
-        <button class="pl-qbtn" onclick="modifierQte(${idx}, 1)">+</button>
+        ${qteHtml}
       </div>
       <div class="pl-st">${fmt(l.prix * l.quantite)}</div>
     </div>`;
