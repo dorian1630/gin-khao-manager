@@ -3992,18 +3992,10 @@ function finaliserParcoursPlat() {
     }
   }
 
-  // 📦 Composants d'une box (Riz Thaï Poulet, Dynamite, 2× Nems…) → inclus (0 €)
-  composantsFixes(p).forEach(comp => {
-    const prod = produits.find(pp => pp.id === comp.produit_id);
-    panier.push({
-      produit_id: comp.produit_id,
-      nom: '  ↳ ' + (comp.label || (prod ? prod.nom : 'Composant')) + ' (box)',
-      prix: 0,
-      quantite: comp.qte || 1,
-      emoji: '🎁',
-      lien_plat: p.id
-    });
-  });
+// 📦 Composants d'une box : PAS de sous-lignes dans le panier — ils sont déjà
+  //    affichés en détails indentés sous la box (via detailsDe/composantsFixes,
+  //    qui lit directement le produit). Les pousser ici créait un doublon
+  //    ("Nems" + "Nems (box)") sur le ticket client et le bon cuisine.
 
   majBarrePanier();
   fermerModaleParcours();
