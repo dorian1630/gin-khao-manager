@@ -6029,10 +6029,13 @@ let fraisLivraisonManuel = null; // si défini, force le montant (override du ca
 const RESTO_ADRESSE_LIVRAISON = '78 avenue de Saint-Just 13013 Marseille';
 let RESTO_COORDS = { lat: 43.31600, lng: 5.39560 }; // fallback, raffiné via géocodage au 1er calcul
 let restoGeocode = false;
-// Paliers : 0–2 km → 2€, 2–4 km → 4€, au-delà → 6€
 function fraisPourDistance(km) {
-  if (km <= 2) return 2;
-  if (km <= 4) return 4;
+  // Grille des frais de livraison par distance (à vol d'oiseau depuis le resto) :
+  //   0 à 3 km  → 2 €
+  //   3 à 6 km  → 4 €
+  //   au-delà   → 6 €
+  if (km <= 3) return 2;
+  if (km <= 6) return 4;
   return 6;
 }
 
