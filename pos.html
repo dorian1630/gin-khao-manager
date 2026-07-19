@@ -9574,8 +9574,29 @@ const RELAIS_URL = 'http://localhost:9100/imprimer';
 // Données préparées pour le relais après chaque vente validée
 let derniereImpression = null;
 
-async function imprimerTicket() {
-  if (!derniereImpression) {
+// 🔒 Impression du rapport Z (après clôture)
+let dernierZData = null;
+async function imprimerTicketZ() {
+  if (!dernierZData) { posAlert('Aucune clôture à imprimer.'); return; }
+  try {
+    const reponse = await fetch(RELAIS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticketZ: dernierZData })
+    });
+    const data = await reponse.json();
+    if (data.ok) {
+      afficherToast('Z n°' + dernierZData.numero_z, 'Rapport Z imprimé ✓', 'Comptoir');
+    } else {
+      const err = ((data.resultats || []).find(r => !r.ok) || {}).erreur || 'Imprimante injoignable';
+      posAlert('Impression du Z impossible : ' + err + '<br><br>Réessayez avec le bouton 🖨️.', '⚠️');
+    }
+  } catch (e) {
+    posAlert('Impression du Z impossible : ' + e.message + '<br><br>Vérifiez la tablette d\'impression puis réessayez.', '⚠️');
+  }
+}
+
+async function imprimerTicket() {  if (!derniereImpression) {
     posAlert('Aucun ticket à imprimer.');
     return;
   }
@@ -9865,9 +9886,13 @@ async function _confirmerClotureConfirme() {
         </div>
         <div class="cz-row total"><span class="lbl">Total Z</span><span class="val">${fmt(data.total_ttc)}</span></div>
       </div>`;
-    // Remplace les actions par un simple bouton fermer
+    // 🖨️ Mémorise le Z pour l'impression + boutons Imprimer / Terminé
+    dernierZData = data;
     document.getElementById('cloture-actions').innerHTML =
+      '<button class="btn-annuler" onclick="imprimerTicketZ()">🖨️ Imprimer le Z</button>' +
       '<button class="btn-valider" onclick="fermerCloture()">Terminé</button>';
+    // Impression automatique du rapport Z
+    imprimerTicketZ();
   } catch (e) {
     posAlert('Erreur lors de la clôture : ' + e.message);
     btn.disabled = false;
