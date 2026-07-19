@@ -12174,3 +12174,42 @@ document.getElementById('overlay-kds').addEventListener('click', e => {
 // ============================================
 function fmt(n) {
   return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+// Échappe le HTML pour éviter les injections
+function escapeHtmlPos(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+function flashStock() {
+  // petit retour visuel quand on dépasse le stock
+  const t = document.getElementById('clock');
+  // (placeholder discret ; on pourra ajouter un vrai feedback plus tard)
+}
+
+// Fermer la modale en cliquant à l'extérieur (sauf paiement et remise ligne = plein écran)
+document.getElementById('overlay-scan').addEventListener('click', e => {
+  if (e.target.id === 'overlay-scan') fermerScanFid();
+});
+document.getElementById('overlay-histo').addEventListener('click', e => {
+  if (e.target.id === 'overlay-histo') fermerHistorique();
+});
+document.getElementById('overlay-remise').addEventListener('click', e => {
+  if (e.target.id === 'overlay-remise') fermerRemise();
+});
+document.getElementById('overlay-ticket').addEventListener('click', e => {
+  if (e.target.id === 'overlay-ticket') fermerTicket();
+});
+document.getElementById('overlay-cloture').addEventListener('click', e => {
+  if (e.target.id === 'overlay-cloture') fermerCloture();
+});
+
+// Lancer
+init();
+</script>
+</body>
+</html>
+
+
