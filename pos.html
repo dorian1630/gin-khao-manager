@@ -9006,8 +9006,20 @@ function ligneEligibleRecompense(reco) {
         ok = !exclus.includes(catNom) && !(parent && exclus.includes(parent.nom)) && !estFormule;
       } else if (reco.cats[0] === 'FORMULE') {
         ok = estFormule;
-      } else {
+     } else {
         ok = reco.cats.includes(catNom) || (parent && reco.cats.includes(parent.nom));
+      }
+    }
+    // 🥟 Récompense "Entrée offerte" : seulement les entrées 2 pièces,
+    //    et jamais Dynamite (poulet/crevettes) ni Brochettes.
+    if (ok && reco.cats && reco.cats[0] === 'Entrées') {
+      const nom = (l.nom || '').toLowerCase();
+      if (/dynamite|brochette/.test(nom)) ok = false;
+      if (ok && l.variante) {
+        const lbl = (labelVariante(l.variante) || '').toLowerCase();
+        const nbP = (l.variante.pieces != null) ? Number(l.variante.pieces)
+                  : (/(\d+)\s*pi/.test(lbl) ? Number(RegExp.$1) : null);
+        if (nbP !== null && nbP !== 2) ok = false;
       }
     }
     if (ok && (best === null || l.prix < best.prix)) best = l;
