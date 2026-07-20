@@ -9102,8 +9102,7 @@ async function chargerHistorique() {
 
     // 1) Ventes (caisse + borne encaissées)
     const { data: ventes, error } = await sb.from('ventes')
-      .select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, lignes_vente(nom_produit, prix_unitaire, quantite, sous_total)')
-      .eq('restaurant_id', RESTO_ID)
+.select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, lignes_vente(nom_produit, prix_unitaire, quantite, sous_total, details)')      .eq('restaurant_id', RESTO_ID)
       .gte('cree_le', debut.toISOString())
       .order('numero', { ascending: false });
     if (error) throw error;
@@ -9428,9 +9427,11 @@ function voirTicket(venteId) {
       prix: Number(lv.prix_unitaire) || 0,
       quantite: Number(lv.quantite) || 1,
       sous_total: Number(lv.sous_total) || 0,
-      categorie_id: prod ? prod.categorie_id : null
+      categorie_id: prod ? prod.categorie_id : null,
+      details: Array.isArray(lv.details) ? lv.details : []
     };
   });
+  preparerImpression(lignesReimp, v);
   preparerImpression(lignesReimp, v);
   
   // Reset visuel du bouton Ticket pro
