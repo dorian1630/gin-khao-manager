@@ -9035,7 +9035,9 @@ function rafraichirFidBandeau() {
 
 function caisseAppliquerRecompense(palier) {
   if (recompenseCaisse) return;
-  const cli = clientFid;
+  // Le client peut être attaché par QR (clientFid) OU par téléphone (clientActif).
+  // Sans clientActif ici, le bouton récompense d'une commande téléphone ne faisait rien.
+  const cli = clientFid || clientActif;
   if (!cli || (cli.points || 0) < palier) return;
   const reco = FID_PALIERS_CAISSE.find(r => r.palier === palier);
   const ligne = ligneEligibleRecompense(reco);
