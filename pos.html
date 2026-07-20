@@ -9434,7 +9434,15 @@ function voirTicket(venteId) {
   });
   preparerImpression(lignesReimp, v);
   preparerImpression(lignesReimp, v);
-  
+
+  // 🚗 Réimpression d'une LIVRAISON : recharger la fiche client pour le bon livreur
+  if (v.canal === 'livraison' && v.client_id && !v.client) {
+    sb.from('clients').select('*').eq('id', v.client_id).single()
+      .then(({ data: cli }) => {
+        if (cli) { v.client = cli; preparerImpression(lignesReimp, v); }
+      });
+  }
+
   // Reset visuel du bouton Ticket pro
   setTimeout(() => {
     const btnPro = document.getElementById('btn-ticket-pro');
