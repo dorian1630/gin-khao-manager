@@ -9013,8 +9013,11 @@ function ligneEligibleRecompense(reco) {
     // 🥟 Récompense "Entrée offerte" : seulement les entrées 2 pièces,
     //    et jamais Dynamite (poulet/crevettes) ni Brochettes.
     if (ok && reco.cats && reco.cats[0] === 'Entrées') {
-      const nom = (l.nom || '').toLowerCase();
-      if (/dynamite|brochette/.test(nom)) ok = false;
+      const nom = (l.nom || '').trimStart().toLowerCase();
+      // Exclues : entrées dont le nom COMMENCE par "dynamite" ou "tempura"
+      // (Dynamite Poulet/Crevettes, Tempura Poulet/Crevettes). La brochette
+      // "Bœuf Fromage Tempura" reste offrable car elle commence par "brochette".
+      if (/^(dynamite|tempura)\b/.test(nom)) ok = false;
       if (ok && l.variante) {
         const lbl = (labelVariante(l.variante) || '').toLowerCase();
         const nbP = (l.variante.pieces != null) ? Number(l.variante.pieces)
