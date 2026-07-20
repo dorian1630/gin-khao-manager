@@ -5683,7 +5683,11 @@ function ouvrirChoixRecompense(palier) {
     items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p)) : [];
   } else if (palier === 100) {
     const cat = categories.find(c => c.nom === 'Entrées');
-    items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p)) : [];
+    // Entrée offerte : exclure Dynamite et Tempura (poulet/crevettes).
+    // Le filtre cible les noms COMMENÇANT par "dynamite"/"tempura", pour ne
+    // pas exclure la brochette "Bœuf Fromage Tempura".
+    items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p)
+      && !/^(dynamite|tempura)\b/.test((p.nom || '').trimStart().toLowerCase())) : [];
   } else if (palier === 200) {
     const exclus = ['Boissons', 'Desserts', 'Entrées', 'Sauces', 'Suppléments', 'Extras'];
     items = produits.filter(p => {
