@@ -8530,7 +8530,8 @@ async function validerVente() {
     produit_id: l.produit_id,
     nom: l.nom,
     prix: l.prix,
-    quantite: l.quantite
+    quantite: l.quantite,
+    details: detailsLigneTicket(l, 'comptoir')
   }));
 // ✨ Si paiement TR papier : ajouter une ligne de détail
   if (modePaiement === 'ticket_resto_papier') {
