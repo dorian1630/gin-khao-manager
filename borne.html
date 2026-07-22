@@ -5687,8 +5687,7 @@ function ouvrirChoixRecompense(palier) {
     // Le filtre cible les noms COMMENÇANT par "dynamite"/"tempura", pour ne
     // pas exclure la brochette "Bœuf Fromage Tempura".
     items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p)
-      && !/^(dynamite|tempura)\b/.test((p.nom || '').trimStart().toLowerCase())) : [];
-  } else if (palier === 200) {
+&& !/^\s*(dynamite|tempura)\b/.test((p.nom || '').toLowerCase())) : [];  } else if (palier === 200) {
     const exclus = ['Boissons', 'Desserts', 'Entrées', 'Sauces', 'Suppléments', 'Extras'];
     items = produits.filter(p => {
       if (p.actif === false || parseFloat(p.prix) <= 0) return false;
