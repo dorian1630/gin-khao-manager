@@ -6138,6 +6138,31 @@ setInterval(() => {
   slides[carrouselIndex].classList.add('visible');
 }, 5000);
 
+// 🔄 Synchro auto des disponibilités (coupures faites depuis la caisse).
+//    Toutes les 30 s, on relit uniquement les champs utiles et on rafraîchit
+//    l'affichage — sauf pendant un parcours en cours (pour ne rien casser).
+setInterval(async () => {
+  try {
+    const { data, error } = await sb.from('produits')
+      .select('id, indisponible, stock, actif')
+      .eq('restaurant_id', RESTO_ID);
+    if (error || !data) return;
+    let change = false;
+    data.forEach(d => {
+      const p = produits.find(x => x.id === d.id);
+      if (!p) return;
+      if (p.indisponible !== d.indisponible) { p.indisponible = d.indisponible; change = true; }
+      if (p.stock !== d.stock) { p.stock = d.stock; change = true; }
+      if (p.actif !== d.actif) { p.actif = d.actif; change = true; }
+    });
+    if (!change) return;
+    const modale = document.getElementById('modal-parcours');
+    const enParcours = (modale && modale.classList.contains('actif')) || parcoursPlatEnCours;
+    const surMenu = document.getElementById('ecran-menu').classList.contains('actif');
+    if (surMenu && !enParcours) afficherMenu();
+  } catch (e) { /* réseau : on réessaiera dans 30 s */ }
+}, 30000);
+
 // ===== GO =====
 init();
 </script>
