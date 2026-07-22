@@ -794,6 +794,35 @@ body {
   pointer-events: none;
   filter: grayscale(0.4);
 }
+/* 🚫 Produit coupé depuis la caisse (appui long) */
+.plat-card.indispo {
+  pointer-events: none;
+  filter: grayscale(0.85);
+}
+.plat-card.indispo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 5;
+}
+.plat-indispo-badge {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%) rotate(-8deg);
+  background: #1A1A1A;
+  color: #FFFFFF;
+  font-size: 26px;
+  font-weight: 800;
+  text-align: center;
+  padding: 14px 8px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  z-index: 6;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
 
 /* Tag prix orange en HAUT-droite quand on a une image */
 .plat-prix-tag {
@@ -3413,6 +3442,7 @@ function afficherMenu() {
     const cat = categories.find(c => c.id === p.categorie_id);
     const emoji = emojiCat(cat ? cat.nom : '');
     const rupture = p.stock_actif && p.stock <= 0;
+    const indispo = p.indisponible === true;
     const hasImage = p.image_url && p.image_url.trim() !== '';
     // ✨ Prix affiché : "dès X €" si le produit a plusieurs variantes (nombres de pièces)
     const multiVariantes = aDesVariantes(p) && p.variantes.length > 1;
@@ -3420,7 +3450,8 @@ function afficherMenu() {
     return `
       <div class="plat-wrapper">
         <div class="plat-prix-top">${prixAffiche}</div>
-        <div class="plat-card ${rupture?'rupture':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}')" ${hasImage?`style="background-image:url('${p.image_url}')"`:''}>
+        <div class="plat-card ${rupture?'rupture':''} ${indispo?'indispo':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}')" ${hasImage?`style="background-image:url('${p.image_url}')"`:''}>
+          ${indispo ? '<div class="plat-indispo-badge">VICTIME DE<br>SON SUCCÈS</div>' : ''}
           ${rupture ? '<div class="plat-rupture-badge">Épuisé</div>' : ''}
           ${!hasImage ? `
             <div class="plat-emoji-bg">${emoji}</div>
