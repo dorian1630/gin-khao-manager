@@ -296,6 +296,12 @@ html, body {
   cursor: not-allowed;
   pointer-events: none;
 }
+/* 🚫 Indisponible manuel : grisé MAIS cliquable (appui long = remettre en vente) */
+.produit-card.indispo {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+.produit-card.indispo .badge-rupture { background: #b45309; }
 .produit-card.has-image .produit-stock {
   background: rgba(255,255,255,0.9);
   color: var(--text);
@@ -6363,6 +6369,7 @@ function afficherProduits() {
 
   grid.innerHTML = liste.map(p => {
     const rupture = p.stock_actif && p.stock <= 0;
+    const indispo = p.indisponible === true;   // 🚫 coupé manuellement (borne + caisse)
     let stockHtml = '';
     if (p.stock_actif) {
       let cls = '';
@@ -6372,8 +6379,11 @@ function afficherProduits() {
     }
     const hasImage = p.image_url && p.image_url.trim() !== '';
     return `
-      <div class="produit-card ${rupture?'rupture':''} ${hasImage?'has-image':''}" onclick="ajouterAvecParcours('${p.id}')">
-        ${rupture ? '<div class="badge-rupture">Épuisé</div>' : ''}
+      <div class="produit-card ${rupture?'rupture':''} ${indispo?'indispo':''} ${hasImage?'has-image':''}"
+           onclick="${indispo ? `basculeSiLongProduit('${p.id}')` : `ajouterAvecParcours('${p.id}')`}"
+           ontouchstart="lpDownProduit('${p.id}')" ontouchend="lpUpProduit()"
+           onmousedown="lpDownProduit('${p.id}')" onmouseup="lpUpProduit()" onmouseleave="lpUpProduit()">
+        ${indispo ? '<div class="badge-rupture">Indisponible</div>' : (rupture ? '<div class="badge-rupture">Épuisé</div>' : '')}
         ${hasImage ? `<div class="pc-img" style="background-image:url('${p.image_url}')"></div>` : ''}
         <div class="produit-bandeau">
           <div class="produit-nom">${p.nom}</div>
@@ -7187,8 +7197,42 @@ function annulerAjoutEditeur() {
 
 // --- Appui long sur une ligne du ticket : long = éditer, court = remise ligne ---
 let _lpTimer = null, _lpFired = false;
-function lpDown(idx) {
-  _lpFired = false;
+// 🚫 Appui long sur une CARTE PRODUIT : bascule dispo <-> indisponible (borne + caisse)
+let _lpProdTimer = null, _lpProdFired = false;
+function lpDownProduit(id) {
+  _lpProdFired = false;
+  if (_lpProdTimer) clearTimeout(_lpProdTimer);
+  _lpProdTimer = setTimeout(() => {
+    _lpProdFired = true;
+    if (navigator.vibrate) navigator.vibrate(15);
+    basculerDispoProduit(id);
+  }, 700);
+}
+function lpUpProduit() {
+  if (_lpProdTimer) { clearTimeout(_lpProdTimer); _lpProdTimer = null; }
+}
+function basculeSiLongProduit(id) {
+  if (_lpProdFired) { _lpProdFired = false; return; }
+  posAlert('Ce produit est indisponible.<br><br>Appui long pour le remettre en vente.', '🚫');
+}
+async function basculerDispoProduit(id) {
+  const p = produits.find(x => x.id === id);
+  if (!p) return;
+  const nouvelEtat = !(p.indisponible === true);
+  p.indisponible = nouvelEtat;
+  afficherProduits();
+  try {
+    const { error } = await sb.from('produits').update({ indisponible: nouvelEtat }).eq('id', id);
+    if (error) throw error;
+    afficherToast(p.nom, nouvelEtat ? 'Mis en indisponible 🚫' : 'Remis en vente ✅', 'Borne + caisse');
+  } catch (e) {
+    p.indisponible = !nouvelEtat;
+    afficherProduits();
+    posAlert('Impossible de changer la disponibilité : ' + e.message, '⚠️');
+  }
+}
+
+function lpDown(idx) {  _lpFired = false;
   if (_lpTimer) clearTimeout(_lpTimer);
   _lpTimer = setTimeout(() => {
     _lpFired = true;
