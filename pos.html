@@ -11449,8 +11449,8 @@ const ORS_BASE = 'https://api.openrouteservice.org/v2/directions/driving-car';
 //    repli automatique sur le vol d'oiseau — la caisse n'est jamais bloquée.
 async function distanceRouteKm(a, b) {
   try {
-    if (!ORS_KEY || ORS_KEY === 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImRmZDQ0NTg4NzA0YjQ1Nzg4NGE0MDk3OTY4ZmNmMGZiIiwiaCI6Im11cm11cjY0In0=') return distanceKm(a, b);
-    const url = ORS_BASE
+if (!ORS_KEY) return distanceKm(a, b);
+       const url = ORS_BASE
       + '?api_key=' + encodeURIComponent(ORS_KEY)
       + '&start=' + a.lng + ',' + a.lat
       + '&end=' + b.lng + ',' + b.lat;
