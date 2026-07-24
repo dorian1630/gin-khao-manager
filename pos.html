@@ -11436,7 +11436,38 @@ async function geocoderAdresse(adresse) {
   } catch (e) { console.error('Géocodage échoué :', e); return null; }
 }
 
-// Distance à vol d'oiseau (Haversine) en km
+// 🔑 OpenRouteService (plan gratuit — 2000 requêtes/jour, 40/minute).
+//    ⚠️ Colle TA clé ci-dessous, entre les apostrophes.
+const ORS_KEY  = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImRmZDQ0NTg4NzA0YjQ1Nzg4NGE0MDk3OTY4ZmNmMGZiIiwiaCI6Im11cm11cjY0In0=';
+//    Adresse de l'API. L'ancienne (api.openrouteservice.org) est en cours de
+//    remplacement par api.heigit.org : si un jour ça ne répond plus,
+//    il suffit de changer CETTE ligne.
+const ORS_BASE = 'https://api.openrouteservice.org/v2/directions/driving-car';
+
+// 🚗 Distance ROUTIÈRE réelle (voiture).
+//    En cas d'échec (pas de clé, quota, réseau, adresse non routable) :
+//    repli automatique sur le vol d'oiseau — la caisse n'est jamais bloquée.
+async function distanceRouteKm(a, b) {
+  try {
+    if (!ORS_KEY || ORS_KEY === 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImRmZDQ0NTg4NzA0YjQ1Nzg4NGE0MDk3OTY4ZmNmMGZiIiwiaCI6Im11cm11cjY0In0=') return distanceKm(a, b);
+    const url = ORS_BASE
+      + '?api_key=' + encodeURIComponent(ORS_KEY)
+      + '&start=' + a.lng + ',' + a.lat
+      + '&end=' + b.lng + ',' + b.lat;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    const f = j.features && j.features[0];
+    const m = f && f.properties && f.properties.summary && f.properties.summary.distance;
+    if (!m && m !== 0) throw new Error('distance absente');
+    return m / 1000;
+  } catch (e) {
+    console.warn('Distance routière indisponible, vol d\'oiseau utilisé :', e.message);
+    return distanceKm(a, b);
+  }
+}
+
+// Distance à vol d'oiseau (Haversine) en km — utilisée en secours
 function distanceKm(a, b) {
   const R = 6371, toRad = d => d * Math.PI / 180;
   const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
@@ -11500,8 +11531,7 @@ async function majFraisLivraison() {
     majTotal(); afficherBandeauClient(); afficherTicket();
     return;
   }
-  const km = distanceKm(RESTO_COORDS, coords);
-  fraisLivraison = fraisPourDistance(km);
+const km = await distanceRouteKm(RESTO_COORDS, coords);  fraisLivraison = fraisPourDistance(km);
   infoLivraison = { km, frais: fraisLivraison };
   majTotal(); afficherBandeauClient(); afficherTicket();
 }
