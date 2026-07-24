@@ -3971,14 +3971,14 @@ function finaliserParcoursPlat() {
   ajouterDirect(p, options);
 
   // Ajouter chaque supplément comme ligne séparée
-  options.supplements.forEach(suppId => {
-    const supp = produits.find(pp => pp.id === suppId);
+  grouperIds(options.supplements).forEach(g => {
+    const supp = produits.find(pp => pp.id === g.id);
     if (supp) {
       panier.push({
         produit_id: supp.id,
         nom: '  ↳ ' + supp.nom,
         prix: parseFloat(supp.prix),
-        quantite: 1,
+        quantite: g.qte,
         emoji: '➕',
         lien_plat: p.id
       });
@@ -4496,11 +4496,15 @@ function afficherModaleSupplements() {
       ${headerParcours('➕ Suppléments ?', 'Suppléments', 'Ajoutez des protéines à votre ' + p.nom)}
       <div class="parcours-options">
         ${supps.map(s => `
-          <label class="parcours-option-pay" data-supp="${s.id}">
-            <input type="checkbox" onchange="toggleSupplement('${s.id}', this.checked)">
+          <div class="parcours-option-pay" data-supp="${s.id}">
             <span class="parcours-option-label">${s.nom.replace('Suppl. ', '')}</span>
             <span class="parcours-option-prix">+${parseFloat(s.prix).toFixed(2).replace('.', ',')} €</span>
-          </label>
+            <div class="pl-qte" style="margin-left:14px;">
+              <button class="pl-qbtn" onclick="majSupplementQte('${s.id}', -1)">−</button>
+              <span class="pl-qval" id="suppq-${s.id}">${qteSupplement(s.id)}</span>
+              <button class="pl-qbtn" onclick="majSupplementQte('${s.id}', 1)">+</button>
+            </div>
+          </div>
         `).join('')}
       </div>
       <div class="parcours-actions">
@@ -4512,14 +4516,43 @@ function afficherModaleSupplements() {
   modal.innerHTML = html;
 }
 
-function toggleSupplement(suppId, checked) {
-  if (checked) {
-    if (!parcoursPlatEnCours.supplements.includes(suppId)) {
-      parcoursPlatEnCours.supplements.push(suppId);
-    }
+// ➕ Suppléments EN PLUSIEURS EXEMPLAIRES.
+//    La liste "supplements" peut désormais contenir plusieurs fois le même id :
+//    ['crevettes','crevettes'] = 2x crevettes. Les affichages regroupent (x2).
+const SUPP_QTE_MAX = 10;
+
+function qteSupplement(id) {
+  const arr = (parcoursPlatEnCours && parcoursPlatEnCours.supplements) || [];
+  return arr.filter(x => x === id).length;
+}
+
+function majSupplementQte(id, delta) {
+  if (!parcoursPlatEnCours) return;
+  const arr = parcoursPlatEnCours.supplements;
+  if (delta > 0) {
+    if (qteSupplement(id) >= SUPP_QTE_MAX) return;
+    arr.push(id);
   } else {
-    parcoursPlatEnCours.supplements = parcoursPlatEnCours.supplements.filter(id => id !== suppId);
+    const i = arr.indexOf(id);
+    if (i >= 0) arr.splice(i, 1);
   }
+  const el = document.getElementById('suppq-' + id);
+  if (el) el.textContent = qteSupplement(id);
+}
+
+// Regroupe une liste d'ids en [{id, qte}] (conserve l'ordre d'apparition)
+function grouperIds(arr) {
+  const out = [];
+  (arr || []).forEach(id => {
+    const e = out.find(x => x.id === id);
+    if (e) e.qte++; else out.push({ id: id, qte: 1 });
+  });
+  return out;
+}
+
+// Compat : ancienne fonction (au cas où un appel traînerait)
+function toggleSupplement(suppId, checked) {
+  majSupplementQte(suppId, checked ? 1 : -1);
 }
 
 function afficherModaleSauces() {
@@ -4945,9 +4978,9 @@ function detailsTicketBorne(l) {
     });
   }
   (o.retirable || []).forEach(r => d.push('Sans ' + r));
-  (o.supplements || []).forEach(id => {
-    const p = produits.find(x => x.id === id);
-    if (p) d.push('+ ' + p.nom.replace(/^Suppl\.\s*/i, ''));
+  grouperIds(o.supplements).forEach(g => {
+    const p = produits.find(x => x.id === g.id);
+    if (p) d.push('+ ' + p.nom.replace(/^Suppl\.\s*/i, '') + (g.qte > 1 ? ' x' + g.qte : ''));
   });
   (o.sauces || []).forEach(id => {
     const p = produits.find(x => x.id === id);
@@ -5115,9 +5148,9 @@ async function envoyerImpressionCuisine(numero, methode) {
       }
       (l.options.retirable || []).forEach(r => d.push('Sans ' + r));
       if (pour === 'cuisine') {
-        (l.options.supplements || []).forEach(id => {
-          const sp = produits.find(x => x.id === id);
-          if (sp) d.push('+ ' + sp.nom.replace(/^Suppl\.\s*/i, ''));
+        grouperIds(l.options.supplements).forEach(g => {
+          const sp = produits.find(x => x.id === g.id);
+          if (sp) d.push('+ ' + sp.nom.replace(/^Suppl\.\s*/i, '') + (g.qte > 1 ? ' x' + g.qte : ''));
         });
       }
       (l.options.sauces || []).forEach(id => {
