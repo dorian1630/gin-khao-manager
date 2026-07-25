@@ -1613,6 +1613,37 @@ html, body {
 .toggle.on { background: var(--lime-soft); border-color: var(--lime-soft); }
 .toggle.on::after { left: 21px; background: var(--bg-deep); }
 
+/* ===== JEU À GRATTER (tableau) ===== */
+.jeu-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 12px 14px;
+  align-items: center;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 12px;
+}
+.jeu-row.head {
+  background: var(--surface-2);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 700;
+  padding: 10px 14px;
+}
+.jeu-row:last-child { border-bottom: none; }
+.jeu-lot {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gold);
+}
+.jeu-cell { color: var(--text-soft); font-family: var(--mono); }
+.jeu-cell .n { color: var(--text); font-weight: 600; }
+.jeu-cell .pct { font-size: 10px; color: var(--text-mute); margin-left: 4px; }
+.jeu-cell.cout { color: var(--sriracha); font-weight: 600; }
+
 /* ===== MOBILE OVERRIDE ===== */
 @media (max-width: 600px) {
   .desktop-stage {
@@ -3850,6 +3881,38 @@ html, body {
             </div>
             <div class="treso-bars-labels" id="compta-treso-labels">
               <!-- Rempli dynamiquement -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats du jeu à gratter -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">🎁 Jeu à gratter</h3>
+            <span class="section-link" style="color: var(--text-mute);">temps réel</span>
+          </div>
+
+          <div class="kpi-row" id="jeu-kpis">
+            <div class="kpi">
+              <div class="kpi-label">Distribuées</div>
+              <div class="kpi-value" id="jeu-total-distribues">—</div>
+              <div class="kpi-sub">cartes gagnées</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Utilisées</div>
+              <div class="kpi-value" id="jeu-total-utilises" style="color: var(--lime);">—</div>
+              <div class="kpi-sub" id="jeu-taux-conv">—</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Coût réel</div>
+              <div class="kpi-value" id="jeu-total-cout" style="color: var(--sriracha);">—</div>
+              <div class="kpi-sub">remises appliquées</div>
+            </div>
+          </div>
+
+          <div class="chart-card" style="padding: 0; overflow: hidden;">
+            <div id="jeu-table">
+              <p style="font-size:13px; color:var(--text-mute); text-align:center; padding:20px;">Chargement…</p>
             </div>
           </div>
         </div>
@@ -7406,10 +7469,60 @@ function fmtEur(n) {
 }
 
 // Rafraîchit toute la page Compta
+// ===== JEU À GRATTER : stats en direct via RPC =====
+async function chargerJeuStats() {
+  try {
+    const { data, error } = await sbClient.rpc('jeu_stats');
+    if (error) throw error;
+    const lignes = data || [];
+
+    const totDist = lignes.reduce((s, r) => s + Number(r.distribues || 0), 0);
+    const totUtil = lignes.reduce((s, r) => s + Number(r.utilises || 0), 0);
+    const totCout = lignes.reduce((s, r) => s + Number(r.cout || 0), 0);
+    const tauxConv = totDist > 0 ? Math.round(totUtil * 100 / totDist) : 0;
+
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('jeu-total-distribues', totDist);
+    set('jeu-total-utilises', totUtil);
+    set('jeu-total-cout', Math.round(totCout) + '€');
+    set('jeu-taux-conv', tauxConv + '% utilisés');
+
+    const zone = document.getElementById('jeu-table');
+    if (!zone) return;
+    if (lignes.length === 0) {
+      zone.innerHTML = '<p style="font-size:13px; color:var(--text-mute); text-align:center; padding:20px;">Aucune carte gagnée pour l\'instant.</p>';
+      return;
+    }
+    let html = '<div class="jeu-row head"><div>Lot</div><div>Distribuées</div><div>Utilisées</div><div>Coût</div></div>';
+    lignes.forEach(r => {
+      const dist = Number(r.distribues || 0);
+      const util = Number(r.utilises || 0);
+      const exp  = Number(r.expires || 0);
+      const cout = Number(r.cout || 0);
+      const pctUse = dist > 0 ? Math.round(util * 100 / dist) : 0;
+      html += `
+        <div class="jeu-row">
+          <div class="jeu-lot">−${r.pct}%</div>
+          <div class="jeu-cell"><span class="n">${dist}</span>${exp > 0 ? `<span class="pct">dont ${exp} expirés</span>` : ''}</div>
+          <div class="jeu-cell"><span class="n">${util}</span><span class="pct">${pctUse}%</span></div>
+          <div class="jeu-cell cout">${Math.round(cout)}€</div>
+        </div>`;
+    });
+    zone.innerHTML = html;
+  } catch (e) {
+    console.error('Erreur stats jeu:', e.message);
+    const zone = document.getElementById('jeu-table');
+    if (zone) zone.innerHTML = '<p style="font-size:13px; color:var(--sriracha); text-align:center; padding:20px;">Impossible de charger les stats du jeu.</p>';
+  }
+}
+
 async function rafraichirCompta() {
   try {
     const moisActuel = moisCourantStr();
     const moisPrec = moisPrecedentStr();
+
+    // Stats du jeu à gratter (en parallèle, sans bloquer le reste)
+    chargerJeuStats();
 
     // Sous-titre dynamique
     const sub = document.getElementById('compta-sub');
