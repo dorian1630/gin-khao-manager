@@ -6622,15 +6622,15 @@ function finaliserParcours() {
       lien_plat: p.id
     });
   }
-  // Ajouter les suppléments en lignes séparées
-  parcoursPlat.supplements.forEach(suppId => {
-    const supp = produits.find(pp => pp.id === suppId);
+  // Ajouter les suppléments en lignes séparées (regroupés : x2, x3…)
+  grouperIds(parcoursPlat.supplements).forEach(g => {
+    const supp = produits.find(pp => pp.id === g.id);
     if (supp) {
       ticket.push({
         produit_id: supp.id,
         nom: '  ↳ ' + supp.nom,
         prix: parseFloat(supp.prix),
-        quantite: 1,
+        quantite: g.qte,
         stock_actif: false,
         stock: 0,
         categorie_id: supp.categorie_id,
@@ -6819,9 +6819,13 @@ function reconstruireSousLignes(uid) {
 
   // Reconstruit
   const subs = [];
-  (main.supplements_sel || []).forEach(id => {
-    const s = produits.find(pp => pp.id === id);
-    if (s) subs.push(sousLignePlat(s, '  ↳ ' + s.nom, parseFloat(s.prix), uid));
+  grouperIds(main.supplements_sel).forEach(g => {
+    const s = produits.find(pp => pp.id === g.id);
+    if (s) {
+      const sl = sousLignePlat(s, '  ↳ ' + s.nom, parseFloat(s.prix), uid);
+      sl.quantite = g.qte;
+      subs.push(sl);
+    }
   });
   if (p && !p.sauces_incluses) {
     (main.sauces_sel || []).forEach(id => {
@@ -6894,13 +6898,21 @@ function edToggleRetirable(ing) {
   if (i >= 0) l.retirables.splice(i, 1); else l.retirables.push(ing);
   reconstruireSousLignes(editeurUid);
 }
-function edToggleSupp(id) {
+function edMajSuppQte(id, delta) {
   const l = ligneParUid(editeurUid); if (!l) return;
   l.supplements_sel = l.supplements_sel || [];
-  const i = l.supplements_sel.indexOf(id);
-  if (i >= 0) l.supplements_sel.splice(i, 1); else l.supplements_sel.push(id);
+  if (delta > 0) {
+    if (l.supplements_sel.filter(x => x === id).length >= POS_SUPP_MAX) return;
+    l.supplements_sel.push(id);
+  } else {
+    const i = l.supplements_sel.indexOf(id);
+    if (i >= 0) l.supplements_sel.splice(i, 1);
+  }
   reconstruireSousLignes(editeurUid);
+  rendreEditeur(editeurModeAjout);   // rafraîchit le compteur affiché
 }
+// Compat
+function edToggleSupp(id) { edMajSuppQte(id, 1); }
 function edToggleSauce(id, max) {
   const l = ligneParUid(editeurUid); if (!l) return;
   l.sauces_sel = l.sauces_sel || [];
@@ -6979,9 +6991,9 @@ function detailsLigneTicket(l, pour) {
 
   // Suppléments : toujours facturés à part → uniquement en cuisine
   if (pour === 'cuisine') {
-    (l.supplements_sel || []).forEach(id => {
-      const sp = produits.find(x => x.id === id);
-      if (sp) d.push('+ ' + sp.nom.replace(/^Suppl\.\s*/i, ''));
+    grouperIds(l.supplements_sel).forEach(g => {
+      const sp = produits.find(x => x.id === g.id);
+      if (sp) d.push('+ ' + sp.nom.replace(/^Suppl\.\s*/i, '') + (g.qte > 1 ? ' x' + g.qte : ''));
     });
   }
 
@@ -7092,8 +7104,14 @@ function rendreEditeur(modeAjout) {
     const supps = produits.filter(pp => p.supplements_ids.includes(pp.id));
     html += `<div class="mpp-bloc"><div class="mpp-lbl">Suppléments</div><div class="mpp-options">`;
     supps.forEach(s => {
-      const act = (l.supplements_sel || []).includes(s.id) ? ' active' : '';
-      html += `<button class="mpp-option${act}" onclick="edToggleSupp('${s.id}')">${escapeHtmlPos(s.nom)} <span class="mpp-prix">+${fmt(s.prix)}</span></button>`;
+      const q = ((l.supplements_sel || []).filter(x => x === s.id)).length;
+      const act = q > 0 ? ' active' : '';
+      html += `<div class="mpp-option${act}" style="display:flex;align-items:center;gap:8px;">
+        <span style="flex:1;">${escapeHtmlPos(s.nom)} <span class="mpp-prix">+${fmt(s.prix)}</span></span>
+        <button class="pl-qbtn" onclick="edMajSuppQte('${s.id}', -1)">−</button>
+        <span class="pl-qval">${q}</span>
+        <button class="pl-qbtn" onclick="edMajSuppQte('${s.id}', 1)">+</button>
+      </div>`;
     });
     html += `</div></div>`;
   }
@@ -7417,9 +7435,12 @@ function afficherModaleSupplements() {
       </div>
       <div class="mpp-options">
         ${supps.map(s => `
-          <button class="mpp-option" onclick="toggleSupplement('${s.id}', this)">
-            ${s.nom} <span class="mpp-prix">+${fmt(s.prix)}</span>
-          </button>
+          <div class="mpp-option" style="display:flex;align-items:center;gap:10px;">
+            <span style="flex:1;">${s.nom} <span class="mpp-prix">+${fmt(s.prix)}</span></span>
+            <button class="pl-qbtn" onclick="posMajSuppQte('${s.id}', -1)">−</button>
+            <span class="pl-qval" id="posq-${s.id}">${posQteSupp(s.id)}</span>
+            <button class="pl-qbtn" onclick="posMajSuppQte('${s.id}', 1)">+</button>
+          </div>
         `).join('')}
       </div>
       <div class="mpp-actions">
@@ -7429,16 +7450,39 @@ function afficherModaleSupplements() {
       </div>
     </div>`;
 }
-function toggleSupplement(suppId, btn) {
-  const idx = parcoursPlat.supplements.indexOf(suppId);
-  if (idx >= 0) {
-    parcoursPlat.supplements.splice(idx, 1);
-    btn.classList.remove('active');
-  } else {
-    parcoursPlat.supplements.push(suppId);
-    btn.classList.add('active');
-  }
+// ➕ Suppléments EN PLUSIEURS EXEMPLAIRES (comme la borne).
+const POS_SUPP_MAX = 10;
+
+function posQteSupp(id) {
+  return ((parcoursPlat && parcoursPlat.supplements) || []).filter(x => x === id).length;
 }
+
+function posMajSuppQte(id, delta) {
+  if (!parcoursPlat) return;
+  const arr = parcoursPlat.supplements;
+  if (delta > 0) {
+    if (posQteSupp(id) >= POS_SUPP_MAX) return;
+    arr.push(id);
+  } else {
+    const i = arr.indexOf(id);
+    if (i >= 0) arr.splice(i, 1);
+  }
+  const el = document.getElementById('posq-' + id);
+  if (el) el.textContent = posQteSupp(id);
+}
+
+// Regroupe une liste d'ids en [{id, qte}]
+function grouperIds(arr) {
+  const out = [];
+  (arr || []).forEach(id => {
+    const e = out.find(x => x.id === id);
+    if (e) e.qte++; else out.push({ id: id, qte: 1 });
+  });
+  return out;
+}
+
+// Compat (au cas où un ancien appel resterait)
+function toggleSupplement(suppId, btn) { posMajSuppQte(suppId, 1); }
 
 function validerSupplements() {
   parcoursPlat.etape = 'sauces';
