@@ -11501,6 +11501,9 @@ async function geocoderAdresse(adresse) {
     const j = await r.json();
     const f = j.features && j.features[0];
     if (!f || !f.geometry || !f.geometry.coordinates) return null;
+    // 🛡️ On ne livre qu'à Marseille : tout résultat dans une autre commune
+    //    (ex. Arles pour une rue homonyme) = adresse non localisée.
+    if (f.properties && f.properties.city && !/marseille/i.test(f.properties.city)) return null;
     const [lng, lat] = f.geometry.coordinates;
     return { lat, lng };
   } catch (e) { console.error('Géocodage échoué :', e); return null; }
