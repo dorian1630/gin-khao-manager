@@ -3970,6 +3970,20 @@ function finaliserParcoursPlat() {
   // Ajouter le plat au panier avec options
   ajouterDirect(p, options);
 
+  // 🌶️ "Sauce Piquante" (groupe Sauce Riz) est facturée +0,50 € :
+  //    les choix d'options n'ayant pas de prix, on ajoute une sous-ligne liée.
+  const choixSauceRiz = options.options_base && options.options_base['Sauce Riz'];
+  if (choixSauceRiz && /piquante/i.test(String(choixSauceRiz))) {
+    panier.push({
+      produit_id: null,
+      nom: '  ↳ Sauce Piquante',
+      prix: 0.50,
+      quantite: 1,
+      emoji: '🌶️',
+      lien_plat: p.id
+    });
+  }
+
   // Ajouter chaque supplément comme ligne séparée
   grouperIds(options.supplements).forEach(g => {
     const supp = produits.find(pp => pp.id === g.id);
