@@ -4435,6 +4435,7 @@ function afficherModaleOptionsBase() {
         ${groupeEnCours.choix.map(choix => `
           <div class="parcours-option-radio" onclick="selectionnerOptionBase('${groupeEnCours.groupe.replace(/'/g, "\\'")}', '${choix.replace(/'/g, "\\'")}', this)">
             <span class="parcours-option-label">${choix}</span>
+            ${/piquante/i.test(choix) ? '<span class="parcours-option-prix">+0,50 €</span>' : ''}
           </div>
         `).join('')}
       </div>
