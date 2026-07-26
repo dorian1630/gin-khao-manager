@@ -11493,8 +11493,10 @@ function retirerClientCommande() {
 // Géocodage via l'API Adresse du gouvernement français (gratuit, sans clé)
 async function geocoderAdresse(adresse) {
   try {
-    const url = 'https://api-adresse.data.gouv.fr/search/?limit=1&q=' + encodeURIComponent(adresse);
-    const r = await fetch(url);
+// 📍 lat/lon = biais géographique : privilégie les résultats proches de
+    //    Marseille. Sans ça, une rue homonyme d'une autre ville pouvait être
+    //    choisie (ex. 91 km affichés pour une adresse à 1,5 km).
+    const url = 'https://api-adresse.data.gouv.fr/search/?limit=1&lat=43.31&lon=5.40&q=' + encodeURIComponent(adresse);    const r = await fetch(url);
     if (!r.ok) return null;
     const j = await r.json();
     const f = j.features && j.features[0];
@@ -11599,8 +11601,16 @@ async function majFraisLivraison() {
     majTotal(); afficherBandeauClient(); afficherTicket();
     return;
   }
-const km = await distanceRouteKm(RESTO_COORDS, coords);  fraisLivraison = fraisPourDistance(km);
-  infoLivraison = { km, frais: fraisLivraison };
+const km = await distanceRouteKm(RESTO_COORDS, coords);
+  // 🛡️ Garde-fou : > 50 km = adresse mal localisée (homonyme d'une autre
+  //    ville). On n'applique pas un tarif absurde — frais à régler à la main.
+  if (km > 50) {
+    fraisLivraison = 0;
+    infoLivraison = { erreur: 'Adresse mal localisée — réglez les frais à la main' };
+    majTotal(); afficherBandeauClient(); afficherTicket();
+    return;
+  }
+  fraisLivraison = fraisPourDistance(km);  infoLivraison = { km, frais: fraisLivraison };
   majTotal(); afficherBandeauClient(); afficherTicket();
 }
 
