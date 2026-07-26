@@ -6968,7 +6968,11 @@ function detailsLigneTicket(l, pour) {
   // Sauces : JAMAIS sur le bon cuisine (le seul "assaisonnement" utile en cuisine
   //   est le niveau épicé, déjà géré via options_base). Au comptoir : uniquement
   //   les sauces NON facturées (les payantes ont déjà leur propre ligne).
-  if (pour !== 'cuisine') {
+  // 🍗 Exception CROUSTY KHAO : la cuisine doit voir les sauces choisies
+  //    (elles font partie de la préparation du plat). Pour tous les autres
+  //    plats, les sauces restent hors bon cuisine (préparées au comptoir).
+  const estCrousty = /crousty/i.test(l.nom || '');
+  if (pour !== 'cuisine' || estCrousty) {
     (l.sauces_sel || []).forEach(id => {
       const sc = produits.find(x => x.id === id);
       if (!sc) return;
