@@ -6622,22 +6622,6 @@ function finaliserParcours() {
       lien_plat: p.id
     });
   }
-
-  // 🌶️ "Sauce Piquante" (groupe Sauce Riz) facturée +0,50 € en sous-ligne liée
-  const choixSauceRiz = (parcoursPlat.options_base || {})['Sauce Riz'];
-  if (choixSauceRiz && /piquante/i.test(String(choixSauceRiz))) {
-    ticket.push({
-      produit_id: null,
-      nom: '  ↳ Sauce Piquante',
-      prix: 0.50,
-      quantite: 1,
-      stock_actif: false,
-      stock: 0,
-      categorie_id: null,
-      lien_plat: uid
-    });
-  }
-
   // Ajouter les suppléments en lignes séparées
   parcoursPlat.supplements.forEach(suppId => {
     const supp = produits.find(pp => pp.id === suppId);
