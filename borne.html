@@ -2999,6 +2999,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-a</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
@@ -3917,9 +3918,15 @@ function afficherModaleVariantes() {
 
   const dejaChoisie = parcoursPlatEnCours.variante_label;
 
+  // 🏷️ Le libellé s'adapte : "pièces" pour les entrées (Nems 2/4/6),
+  //    "Votre choix" pour les variantes de type protéine (Poulet/Bœuf/Crevettes).
+  const enPieces = p.variantes.some(v => /pi[eè]ce/i.test(labelVariante(v)));
+  const vEtape = enPieces ? 'Quantité' : 'Votre choix';
+  const vSous  = enPieces ? 'Combien de pièces ?' : 'Choisissez votre option';
+
   const html = `
     <div class="parcours-content">
-      ${headerParcours('🍽️ ' + p.nom, 'Quantité', 'Combien de pièces ?')}
+      ${headerParcours('🍽️ ' + p.nom, vEtape, vSous)}
       <div class="parcours-options">
         ${p.variantes.map((v, i) => {
           const vLabel = labelVariante(v);
