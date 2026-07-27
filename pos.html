@@ -5956,6 +5956,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">caisse v26.07-a</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ============================================
@@ -6619,7 +6620,10 @@ function finaliserParcours() {
       nom: '  ↳ Sauce Piquante',
       prix: 0.50,
       quantite: 1,
-      lien_plat: p.id
+      stock_actif: false,
+      stock: 0,
+      categorie_id: null,
+      lien_plat: uid
     });
   }
   // Ajouter les suppléments en lignes séparées (regroupés : x2, x3…)
