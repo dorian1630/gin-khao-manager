@@ -4973,7 +4973,18 @@ function stationPourLigne(l) {
     const nomParSelf = normNomCat(parSelf ? parSelf.nom : '');
     if (CATS_SANS_BON.includes(nomSelf) || CATS_SANS_BON.includes(nomParSelf)) return 'comptoir';
   }
-  // Les autres lignes liées (suppléments, sauces) suivent bien la station du plat
+  // ➕ Sous-lignes SUPPLÉMENTS et SAUCES liées à un plat : leur info figure
+  //    DÉJÀ dans les détails du plat sur le bon cuisine (+ OEUF, SAUCE…).
+  //    On ne les envoie donc pas en lignes séparées en cuisine (doublon barré
+  //    au stylo par la cuisine). Elles restent sur le ticket comptoir (prix).
+  //    Les entrées de formule, elles, continuent de sortir en cuisine.
+  if (l.lien_plat) {
+    if (!self) return 'comptoir';   // sous-ligne sans produit (ex. Sauce Piquante +0,50)
+    const catSelf2 = categories.find(c => c.id === self.categorie_id);
+    const nomSelf2 = normNomCat(catSelf2 ? catSelf2.nom : '');
+    if (nomSelf2 === 'supplements' || nomSelf2 === 'sauces') return 'comptoir';
+  }
+  // Les autres lignes liées suivent bien la station du plat
   const pid = l.lien_plat || l.produit_id;
   const p = produits.find(x => x.id === pid);
   if (!p) return 'cuisine';
