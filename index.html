@@ -8202,7 +8202,7 @@ async function chargerTopPlatsVentes() {
       agreg[nom].total += Number(l.sous_total || 0);
     });
 
-    const tous = Object.values(agreg).sort((a, b) => b.quantite - a.quantite);
+    const tous = Object.values(agreg).sort((a, b) => b.quantite - a.quantite).slice(0, 5);
 
     // Mettre à jour le titre de la section
     const elTitre = document.getElementById('ventes-plats-titre');
