@@ -1644,6 +1644,54 @@ html, body {
 .jeu-cell .pct { font-size: 10px; color: var(--text-mute); margin-left: 4px; }
 .jeu-cell.cout { color: var(--sriracha); font-weight: 600; }
 
+/* ===== TICKET REÇU (détail vente app) ===== */
+.ticket-app {
+  background: #FDFBF7;
+  color: #1a1a1a;
+  border-radius: 8px;
+  padding: 20px 18px;
+  font-family: var(--mono, 'Courier New', monospace);
+  font-size: 12.5px;
+  line-height: 1.5;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  max-width: 340px;
+  margin: 0 auto;
+}
+.ticket-app .ta-center { text-align: center; }
+.ticket-app .ta-logo { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: 0.02em; }
+.ticket-app .ta-sub { font-size: 10.5px; color: #666; }
+.ticket-app .ta-canal {
+  text-align: center; font-weight: 700; font-size: 13px;
+  border: 1.5px solid #1a1a1a; border-radius: 6px;
+  padding: 4px 8px; margin: 10px auto 0; max-width: 200px;
+}
+.ticket-app .ta-sep { border: none; border-top: 1.5px dashed #bbb; margin: 10px 0; }
+.ticket-app .ta-row { display: flex; justify-content: space-between; gap: 8px; }
+.ticket-app .ta-row.mute { color: #777; font-size: 11.5px; }
+.ticket-app .ta-art { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+.ticket-app .ta-art .q { color: #B8924E; }
+.ticket-app .ta-art.remise { color: #C42E3B; font-weight: 600; }
+.ticket-app .ta-pu { font-size: 10.5px; color: #999; margin: -2px 0 2px 14px; }
+.ticket-app .ta-details { font-size: 10.5px; color: #777; margin: -2px 0 3px 14px; }
+.ticket-app .ta-total {
+  display: flex; justify-content: space-between;
+  font-size: 17px; font-weight: 800; margin-top: 6px;
+}
+.ticket-app .ta-annulee {
+  text-align: center; color: #C42E3B; font-weight: 800;
+  border: 2px solid #C42E3B; border-radius: 6px;
+  padding: 5px; margin-bottom: 10px; letter-spacing: 0.06em;
+}
+.ticket-app .ta-tva { font-size: 10.5px; color: #666; }
+.ticket-app .ta-tva-head, .ticket-app .ta-tva-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; text-align: right;
+}
+.ticket-app .ta-tva-head span:first-child, .ticket-app .ta-tva-row span:first-child { text-align: left; }
+.ticket-app .ta-tva-head { font-weight: 700; margin-bottom: 2px; }
+.ticket-app .ta-foot { text-align: center; font-size: 10.5px; color: #888; margin-top: 12px; }
+.histo-app-vente { cursor: pointer; }
+.histo-app-vente:active { opacity: 0.75; }
+
 /* ===== MOBILE OVERRIDE ===== */
 @media (max-width: 600px) {
   .desktop-stage {
@@ -4712,6 +4760,20 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
       </div>
     </div>
 
+    <!-- ====== MODAL DÉTAIL TICKET ====== -->
+    <div class="modal-overlay" id="modal-ticket-app" onclick="if(event.target===this)fermerTicketApp()">
+      <div class="modal-sheet" style="padding-bottom: 40px;">
+        <div class="modal-handle"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h2 class="modal-title" style="margin:0;">Détail du ticket</h2>
+          <button onclick="fermerTicketApp()" style="background:var(--surface-2); border:1px solid var(--border); color:var(--text); width:36px; height:36px; border-radius:11px; font-size:16px; cursor:pointer; flex-shrink:0;">✕</button>
+        </div>
+        <div id="ticket-app-contenu">
+          <p style="text-align:center; color:var(--text-mute); padding:24px; font-size:13px;">Chargement…</p>
+        </div>
+      </div>
+    </div>
+
     <!-- ====== BOTTOM NAV ====== -->
     <nav class="bottom-nav">
       <button class="nav-btn active" data-screen="home">
@@ -5247,7 +5309,7 @@ async function chargerHistoriqueApp() {
       const annulee = v.statut === 'annulee';
       const totalFmt = Number(v.total).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
       return `
-        <div class="histo-app-vente ${annulee ? 'annulee' : ''}">
+        <div class="histo-app-vente ${annulee ? 'annulee' : ''}" onclick="ouvrirTicketApp('${v.id}')">
           <div class="hav-num">#${v.numero}</div>
           <div class="hav-info">
             <div class="hav-heure">${heure} · ${modeLbl}</div>
@@ -5256,12 +5318,115 @@ async function chargerHistoriqueApp() {
           <div class="hav-total">${totalFmt}</div>
           ${annulee
             ? '<div class="hav-badge">Annulée</div>'
-            : `<button class="hav-annuler" onclick="annulerVenteApp('${v.id}', ${v.numero})">Annuler</button>`}
+            : `<button class="hav-annuler" onclick="event.stopPropagation(); annulerVenteApp('${v.id}', ${v.numero})">Annuler</button>`}
         </div>`;
     }).join('');
   } catch (e) {
     liste.innerHTML = '<div style="text-align:center; padding:24px; color:#8B7E6F; font-size:13px;">Erreur : ' + e.message + '</div>';
   }
+}
+
+// ===== DÉTAIL DU TICKET (clic sur une vente) =====
+const MODE_PAIEMENT_LBL_APP = {
+  carte: 'Carte bancaire', especes: 'Espèces',
+  ticket_resto_papier: 'Ticket Resto (papier)', ticket_resto_carte: 'Ticket Resto (carte)',
+  plateforme: 'Payé en ligne', mixte: 'Paiement mixte'
+};
+const CANAL_LBL_APP = {
+  sur_place: 'Sur place', emporter: 'À emporter', a_emporter: 'À emporter',
+  livraison: 'Livraison', uber_eats: 'Uber Eats', deliveroo: 'Deliveroo',
+  just_eat: 'Just Eat', click_collect: 'Click & Collect',
+  cc_comptoir: 'Click & Collect', cc_enligne: 'Click & Collect'
+};
+
+function escapeHtmlApp(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtEuroApp(n) {
+  return Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
+}
+
+async function ouvrirTicketApp(venteId) {
+  const overlay = document.getElementById('modal-ticket-app');
+  const zone = document.getElementById('ticket-app-contenu');
+  if (!overlay || !zone) return;
+  overlay.classList.add('active');
+  zone.innerHTML = '<p style="text-align:center; color:var(--text-mute); padding:24px; font-size:13px;">Chargement…</p>';
+
+  try {
+    const { data: v, error } = await sbClient.from('ventes')
+      .select('id, numero, total, mode_paiement, statut, canal, cree_le, caissier_nom, lignes_vente(nom_produit, prix_unitaire, quantite, sous_total, details)')
+      .eq('id', venteId)
+      .single();
+    if (error || !v) throw new Error('Ticket introuvable');
+
+    const h = new Date(v.cree_le);
+    const date = h.toLocaleDateString('fr-FR') + ' à ' + String(h.getHours()).padStart(2,'0') + ':' + String(h.getMinutes()).padStart(2,'0');
+    const modeLbl = MODE_PAIEMENT_LBL_APP[v.mode_paiement] || v.mode_paiement || '—';
+    const canalLbl = CANAL_LBL_APP[v.canal] || '';
+    const annulee = v.statut === 'annulee';
+    const lignes = v.lignes_vente || [];
+
+    // Articles + sous-total (lignes positives)
+    let nbArticles = 0, sousTotal = 0, aRemise = false;
+    lignes.forEach(l => {
+      const st = Number(l.sous_total), pu = Number(l.prix_unitaire);
+      if (pu < 0 || st < 0) aRemise = true;
+      else { nbArticles += Number(l.quantite) || 0; sousTotal += st; }
+    });
+
+    const lignesHTML = lignes.map(l => {
+      const pu = Number(l.prix_unitaire);
+      const st = Number(l.sous_total);
+      const q  = Number(l.quantite) || 1;
+      if (pu < 0 || st < 0) {
+        return `<div class="ta-art remise"><span>${escapeHtmlApp(l.nom_produit)}</span><span>${fmtEuroApp(st)}</span></div>`;
+      }
+      const sousLigne = q > 1 ? `<div class="ta-pu">${fmtEuroApp(pu)} × ${q}</div>` : '';
+      const details = Array.isArray(l.details) && l.details.length
+        ? `<div class="ta-details">${l.details.map(escapeHtmlApp).join(' · ')}</div>` : '';
+      return `<div class="ta-art"><span><span class="q">${q}× </span>${escapeHtmlApp(l.nom_produit)}</span><span>${fmtEuroApp(st)}</span></div>${sousLigne}${details}`;
+    }).join('');
+
+    // TVA 10% (restauration) incluse dans le TTC
+    const ttc = Number(v.total || 0);
+    const ht = ttc / 1.10;
+    const tvaM = ttc - ht;
+
+    zone.innerHTML = `
+      <div class="ticket-app">
+        ${annulee ? '<div class="ta-annulee">★ TICKET ANNULÉ ★</div>' : ''}
+        <div class="ta-center">
+          <div class="ta-logo">Gin Khao</div>
+          <div class="ta-sub">Street Food Thaï · Saint Just, Marseille</div>
+        </div>
+        ${canalLbl ? `<div class="ta-canal">${canalLbl}</div>` : ''}
+        <hr class="ta-sep">
+        <div class="ta-row mute"><span>Ticket n°</span><span>#${v.numero}</span></div>
+        <div class="ta-row mute"><span>Date</span><span>${date}</span></div>
+        ${v.caissier_nom ? `<div class="ta-row mute"><span>Caissier</span><span>${escapeHtmlApp(v.caissier_nom)}</span></div>` : ''}
+        <hr class="ta-sep">
+        ${lignesHTML || '<div class="ta-row mute"><span>Aucun article</span><span></span></div>'}
+        <hr class="ta-sep">
+        <div class="ta-row mute"><span>Articles</span><span>${nbArticles}</span></div>
+        ${aRemise ? `<div class="ta-row mute"><span>Sous-total</span><span>${fmtEuroApp(sousTotal)}</span></div>` : ''}
+        <div class="ta-total"><span>TOTAL</span><span>${fmtEuroApp(ttc)}</span></div>
+        <div class="ta-row mute" style="margin-top:6px;"><span>Règlement</span><span>${modeLbl}</span></div>
+        <hr class="ta-sep">
+        <div class="ta-tva">
+          <div class="ta-tva-head"><span>Taux</span><span>HT</span><span>TVA</span><span>TTC</span></div>
+          <div class="ta-tva-row"><span>10 %</span><span>${fmtEuroApp(ht)}</span><span>${fmtEuroApp(tvaM)}</span><span>${fmtEuroApp(ttc)}</span></div>
+        </div>
+        <div class="ta-foot">Merci de votre visite !<br>À très bientôt chez Gin Khao 🍜</div>
+      </div>`;
+  } catch (e) {
+    zone.innerHTML = '<p style="text-align:center; color:var(--sriracha); padding:24px; font-size:13px;">Erreur : ' + e.message + '</p>';
+  }
+}
+
+function fermerTicketApp() {
+  const overlay = document.getElementById('modal-ticket-app');
+  if (overlay) overlay.classList.remove('active');
 }
 
 async function annulerVenteApp(venteId, numero) {
@@ -6925,7 +7090,7 @@ async function chargerTopPlatsHome() {
     debut.setHours(0, 0, 0, 0);
 
     // Récupère les lignes de vente du jour pour les ventes validées
-    const { data: lignes, error } = await sbClient.from('lignes_ventes')
+    const { data: lignes, error } = await sbClient.from('lignes_vente')
       .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
       .eq('ventes.restaurant_id', RESTO_ID)
       .eq('ventes.statut', 'validee')
@@ -8018,7 +8183,7 @@ async function chargerTopPlatsVentes() {
   try {
     const debut = dateDebutPeriode(ventesPeriode);
 
-    const { data: lignes, error } = await sbClient.from('lignes_ventes')
+    const { data: lignes, error } = await sbClient.from('lignes_vente')
       .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
       .eq('ventes.restaurant_id', RESTO_ID)
       .eq('ventes.statut', 'validee')
