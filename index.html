@@ -8206,7 +8206,7 @@ async function chargerTopPlatsVentes() {
 
     // Mettre à jour le titre de la section
     const elTitre = document.getElementById('ventes-plats-titre');
-    if (elTitre) elTitre.textContent = `Tous les plats · ${libellePeriode(ventesPeriode).toLowerCase()}`;
+    if (elTitre) elTitre.textContent = `Top 5 plats · ${libellePeriode(ventesPeriode).toLowerCase()}`;
 
     const zone = document.getElementById('ventes-plats-liste');
     if (!zone) return;
