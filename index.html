@@ -7089,21 +7089,34 @@ async function chargerTopPlatsHome() {
     const debut = new Date();
     debut.setHours(0, 0, 0, 0);
 
-    // Récupère les lignes de vente du jour pour les ventes validées
-    const { data: lignes, error } = await sbClient.from('lignes_vente')
-      .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
-      .eq('ventes.restaurant_id', RESTO_ID)
-      .eq('ventes.statut', 'validee')
-      .gte('ventes.cree_le', debut.toISOString());
+    // Récupère les lignes de vente du jour + les produits (pour filtrer sauces/suppléments)
+    const [{ data: lignes, error }, { data: prods }] = await Promise.all([
+      sbClient.from('lignes_vente')
+        .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
+        .eq('ventes.restaurant_id', RESTO_ID)
+        .eq('ventes.statut', 'validee')
+        .gte('ventes.cree_le', debut.toISOString()),
+      sbClient.from('produits')
+        .select('nom, categories(nom)')
+        .eq('restaurant_id', RESTO_ID)
+    ]);
 
     if (error) throw error;
 
-    // Agréger par produit (en excluant les remises = prix négatifs)
+    // Produits à exclure : catégories sauces & suppléments
+    const exclusHome = new Set();
+    (prods || []).forEach(p => {
+      const cat = (p.categories && p.categories.nom) ? p.categories.nom : '';
+      if (/sauce|suppl/i.test(cat)) exclusHome.add(p.nom);
+    });
+
+    // Agréger par produit (en excluant les remises = prix négatifs + sauces/suppléments)
     const agreg = {};
     (lignes || []).forEach(l => {
       const prix = Number(l.prix_unitaire);
       if (prix <= 0) return; // ignore remises et plats offerts
       const nom = l.nom_produit;
+      if (exclusHome.has(nom) || /^sauce\b|suppl[ée]ment/i.test(nom)) return;
       if (!agreg[nom]) agreg[nom] = { nom, prix_moyen: prix, quantite: 0, total: 0 };
       agreg[nom].quantite += Number(l.quantite);
       agreg[nom].total += Number(l.sous_total || 0);
@@ -8016,6 +8029,9 @@ let ventesPeriode = 'today';
 // Couleurs des canaux pour le donut (cohérent avec la caisse)
 const COULEURS_CANAL = {
   sur_place:     '#E63946',
+  emporter:      '#22C55E',
+  a_emporter:    '#22C55E',
+  borne:         '#FFD93D',
   uber_eats:     '#E4B860',
   deliveroo:     '#A8E10C',
   just_eat:      '#5BBF8A',
@@ -8024,6 +8040,9 @@ const COULEURS_CANAL = {
 };
 const LIBELLES_CANAL = {
   sur_place:     'Sur place',
+  emporter:      'À emporter',
+  a_emporter:    'À emporter',
+  borne:         'Borne',
   uber_eats:     'Uber Eats',
   deliveroo:     'Deliveroo',
   just_eat:      'Just Eat',
@@ -8183,20 +8202,33 @@ async function chargerTopPlatsVentes() {
   try {
     const debut = dateDebutPeriode(ventesPeriode);
 
-    const { data: lignes, error } = await sbClient.from('lignes_vente')
-      .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
-      .eq('ventes.restaurant_id', RESTO_ID)
-      .eq('ventes.statut', 'validee')
-      .gte('ventes.cree_le', debut.toISOString());
+    const [{ data: lignes, error }, { data: prods }] = await Promise.all([
+      sbClient.from('lignes_vente')
+        .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
+        .eq('ventes.restaurant_id', RESTO_ID)
+        .eq('ventes.statut', 'validee')
+        .gte('ventes.cree_le', debut.toISOString()),
+      sbClient.from('produits')
+        .select('nom, categories(nom)')
+        .eq('restaurant_id', RESTO_ID)
+    ]);
 
     if (error) throw error;
 
-    // Agréger
+    // Produits à exclure du top : catégories sauces & suppléments
+    const exclus = new Set();
+    (prods || []).forEach(p => {
+      const cat = (p.categories && p.categories.nom) ? p.categories.nom : '';
+      if (/sauce|suppl/i.test(cat)) exclus.add(p.nom);
+    });
+
+    // Agréger (sans les sauces / suppléments)
     const agreg = {};
     (lignes || []).forEach(l => {
       const prix = Number(l.prix_unitaire);
       if (prix <= 0) return;
       const nom = l.nom_produit;
+      if (exclus.has(nom) || /^sauce\b|suppl[ée]ment/i.test(nom)) return;
       if (!agreg[nom]) agreg[nom] = { nom, prix_moyen: prix, quantite: 0, total: 0 };
       agreg[nom].quantite += Number(l.quantite);
       agreg[nom].total += Number(l.sous_total || 0);
