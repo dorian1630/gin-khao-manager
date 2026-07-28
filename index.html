@@ -1692,6 +1692,84 @@ html, body {
 .histo-app-vente { cursor: pointer; }
 .histo-app-vente:active { opacity: 0.75; }
 
+/* ===== CALENDRIER DES VENTES ===== */
+.cal-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.cal-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cal-nav-btn {
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); width: 34px; height: 34px; border-radius: 10px;
+  font-size: 18px; cursor: pointer; line-height: 1;
+}
+.cal-titre {
+  font-family: var(--display); font-size: 16px; font-weight: 600;
+  color: var(--text); text-transform: capitalize;
+}
+.cal-jours-sem {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  margin-bottom: 6px;
+}
+.cal-jours-sem div {
+  text-align: center; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.06em; color: var(--text-mute);
+}
+.cal-grille {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+}
+.cal-case {
+  aspect-ratio: 1 / 1.1;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; cursor: default; padding: 2px;
+  min-width: 0;
+}
+.cal-case.vide { background: transparent; }
+.cal-case .cj { font-size: 11px; font-weight: 600; color: var(--text-mute); line-height: 1; }
+.cal-case .cca { font-size: 8.5px; font-weight: 700; color: var(--text-dim); line-height: 1; white-space: nowrap; overflow: hidden; max-width: 100%; }
+.cal-case.a-ventes { cursor: pointer; border-color: var(--border); }
+.cal-case.a-ventes .cj { color: var(--text); }
+.cal-case.a-ventes .cca { color: var(--gold); }
+.cal-case.a-ventes:active { opacity: 0.7; }
+.cal-case.aujourdhui { border-color: var(--sriracha); }
+.cal-case.futur .cj { color: var(--text-dim); opacity: 0.4; }
+.cal-total {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft);
+  font-size: 12px; color: var(--text-soft); text-align: center;
+}
+.cal-total strong { color: var(--gold); font-family: var(--mono); }
+/* Modal jour */
+.jc-hero {
+  background: linear-gradient(180deg, rgba(228,184,96,0.10) 0%, transparent 100%);
+  border: 1px solid var(--border-soft); border-radius: 16px;
+  padding: 18px; text-align: center; margin-bottom: 14px;
+}
+.jc-hero .jc-ca { font-family: var(--display); font-size: 34px; font-weight: 600; color: var(--text); line-height: 1.1; }
+.jc-hero .jc-ca .cur { font-size: 20px; color: var(--gold); }
+.jc-hero .jc-lbl { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; margin-bottom: 6px; }
+.jc-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.jc-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 13px; padding: 12px 8px; text-align: center; }
+.jc-kpi .v { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--text); }
+.jc-kpi .l { font-size: 9.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; margin-top: 3px; }
+.jc-sec-titre { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; margin: 14px 0 8px; }
+.jc-canal-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 12px; }
+.jc-canal-row .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.jc-canal-row .nom { color: var(--text-soft); flex: 1; }
+.jc-canal-row .val { font-family: var(--mono); color: var(--text); font-weight: 600; }
+.jc-plat-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 12.5px; }
+.jc-plat-row:last-child { border-bottom: none; }
+.jc-plat-row .rang { font-family: var(--mono); font-size: 11px; color: var(--gold); font-weight: 700; flex-shrink: 0; }
+.jc-plat-row .nom { color: var(--text); flex: 1; }
+.jc-plat-row .qte { font-family: var(--mono); color: var(--text-soft); font-weight: 600; }
+
 /* ===== MOBILE OVERRIDE ===== */
 @media (max-width: 600px) {
   .desktop-stage {
@@ -3557,6 +3635,27 @@ html, body {
           </div>
         </div>
 
+        <!-- Calendrier de suivi (CA par jour) -->
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">📅 Calendrier des ventes</h3>
+          </div>
+          <div class="cal-card">
+            <div class="cal-nav">
+              <button class="cal-nav-btn" onclick="calMoisPrecedent()">‹</button>
+              <div class="cal-titre" id="cal-titre">—</div>
+              <button class="cal-nav-btn" onclick="calMoisSuivant()">›</button>
+            </div>
+            <div class="cal-jours-sem">
+              <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+            </div>
+            <div class="cal-grille" id="cal-grille">
+              <div style="grid-column: 1 / -1; padding:20px; text-align:center; color:var(--text-mute); font-size:12px;">Chargement…</div>
+            </div>
+            <div class="cal-total" id="cal-total"></div>
+          </div>
+        </div>
+
         <div style="height: 40px;"></div>
       </section>
 
@@ -4769,6 +4868,21 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
           <button onclick="fermerTicketApp()" style="background:var(--surface-2); border:1px solid var(--border); color:var(--text); width:36px; height:36px; border-radius:11px; font-size:16px; cursor:pointer; flex-shrink:0;">✕</button>
         </div>
         <div id="ticket-app-contenu">
+          <p style="text-align:center; color:var(--text-mute); padding:24px; font-size:13px;">Chargement…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== MODAL STATS DU JOUR (calendrier) ====== -->
+    <div class="modal-overlay" id="modal-jour-cal" onclick="if(event.target===this)fermerJourCal()">
+      <div class="modal-sheet" style="padding-bottom: 40px;">
+        <div class="modal-handle"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <h2 class="modal-title" style="margin:0;" id="jour-cal-titre">—</h2>
+          <button onclick="fermerJourCal()" style="background:var(--surface-2); border:1px solid var(--border); color:var(--text); width:36px; height:36px; border-radius:11px; font-size:16px; cursor:pointer; flex-shrink:0;">✕</button>
+        </div>
+        <p class="modal-sub" id="jour-cal-sub" style="margin-bottom:18px;">—</p>
+        <div id="jour-cal-contenu">
           <p style="text-align:center; color:var(--text-mute); padding:24px; font-size:13px;">Chargement…</p>
         </div>
       </div>
@@ -8287,10 +8401,206 @@ async function rafraichirVentes() {
     chargerDonutCanaux(),
     chargerTopPlatsVentes()
   ]);
+  // Calendrier de suivi
+  if (typeof chargerCalendrierVentes === 'function') chargerCalendrierVentes();
   // Si la période = today, on charge aussi l'historique du jour
   if (ventesPeriode === 'today' && typeof chargerHistoriqueApp === 'function') {
     chargerHistoriqueApp();
   }
+}
+
+// ===== CALENDRIER DES VENTES (suivi jour par jour) =====
+let calAnnee = new Date().getFullYear();
+let calMois = new Date().getMonth(); // 0-11
+
+const NOMS_MOIS_CAL = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+function calMoisPrecedent() {
+  calMois--;
+  if (calMois < 0) { calMois = 11; calAnnee--; }
+  chargerCalendrierVentes();
+}
+function calMoisSuivant() {
+  const now = new Date();
+  // Ne pas dépasser le mois courant
+  if (calAnnee === now.getFullYear() && calMois === now.getMonth()) return;
+  calMois++;
+  if (calMois > 11) { calMois = 0; calAnnee++; }
+  chargerCalendrierVentes();
+}
+
+function fmtCaCourt(n) {
+  if (n >= 10000) return Math.round(n / 1000) + 'k';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.', ',').replace(',0', '') + 'k';
+  return Math.round(n) + '€';
+}
+
+async function chargerCalendrierVentes() {
+  const grille = document.getElementById('cal-grille');
+  const titre = document.getElementById('cal-titre');
+  const totalEl = document.getElementById('cal-total');
+  if (!grille || !titre) return;
+
+  titre.textContent = NOMS_MOIS_CAL[calMois] + ' ' + calAnnee;
+
+  try {
+    const debut = new Date(calAnnee, calMois, 1, 0, 0, 0);
+    const fin = new Date(calAnnee, calMois + 1, 1, 0, 0, 0);
+
+    const { data: ventes, error } = await sbClient.from('ventes')
+      .select('total, cree_le, statut')
+      .eq('restaurant_id', RESTO_ID)
+      .eq('statut', 'validee')
+      .gte('cree_le', debut.toISOString())
+      .lt('cree_le', fin.toISOString());
+
+    if (error) throw error;
+
+    // Agréger CA et nb par jour du mois
+    const parJour = {};
+    (ventes || []).forEach(v => {
+      const j = new Date(v.cree_le).getDate();
+      if (!parJour[j]) parJour[j] = { ca: 0, nb: 0 };
+      parJour[j].ca += Number(v.total || 0);
+      parJour[j].nb++;
+    });
+
+    const now = new Date();
+    const nbJours = new Date(calAnnee, calMois + 1, 0).getDate();
+    const offset = (new Date(calAnnee, calMois, 1).getDay() + 6) % 7; // lundi = 0
+
+    let html = '';
+    for (let i = 0; i < offset; i++) html += '<div class="cal-case vide"></div>';
+
+    for (let j = 1; j <= nbJours; j++) {
+      const dateJ = new Date(calAnnee, calMois, j);
+      const estAujourdhui = dateJ.toDateString() === now.toDateString();
+      const estFutur = dateJ > now && !estAujourdhui;
+      const d = parJour[j];
+
+      const classes = ['cal-case'];
+      if (estAujourdhui) classes.push('aujourdhui');
+      if (estFutur) classes.push('futur');
+      if (d && d.ca > 0) classes.push('a-ventes');
+
+      const caTxt = d && d.ca > 0 ? `<div class="cca">${fmtCaCourt(d.ca)}</div>` : '';
+      const clic = d && d.ca > 0 ? ` onclick="ouvrirJourCal(${calAnnee}, ${calMois}, ${j})"` : '';
+
+      html += `<div class="${classes.join(' ')}"${clic}><div class="cj">${j}</div>${caTxt}</div>`;
+    }
+    grille.innerHTML = html;
+
+    // Total du mois
+    const totalMois = Object.values(parJour).reduce((s, d) => s + d.ca, 0);
+    const nbVentesMois = Object.values(parJour).reduce((s, d) => s + d.nb, 0);
+    if (totalEl) {
+      totalEl.innerHTML = totalMois > 0
+        ? `Total du mois : <strong>${Math.round(totalMois).toLocaleString('fr-FR')}€</strong> · ${nbVentesMois} vente${nbVentesMois > 1 ? 's' : ''}`
+        : 'Aucune vente ce mois-ci';
+    }
+  } catch (e) {
+    console.error('Erreur calendrier:', e);
+    grille.innerHTML = '<div style="grid-column: 1 / -1; padding:16px; text-align:center; color:var(--sriracha); font-size:12px;">Erreur de chargement</div>';
+  }
+}
+
+// ===== MODAL STATS DU JOUR =====
+async function ouvrirJourCal(annee, mois, jour) {
+  const overlay = document.getElementById('modal-jour-cal');
+  const titre = document.getElementById('jour-cal-titre');
+  const sub = document.getElementById('jour-cal-sub');
+  const zone = document.getElementById('jour-cal-contenu');
+  if (!overlay || !zone) return;
+
+  const dateJ = new Date(annee, mois, jour);
+  const joursSem = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  titre.textContent = joursSem[dateJ.getDay()] + ' ' + jour + ' ' + NOMS_MOIS_CAL[mois].toLowerCase() + ' ' + annee;
+  sub.textContent = 'Statistiques du jour';
+  zone.innerHTML = '<p style="text-align:center; color:var(--text-mute); padding:24px; font-size:13px;">Chargement…</p>';
+  overlay.classList.add('active');
+
+  try {
+    const debut = new Date(annee, mois, jour, 0, 0, 0);
+    const fin = new Date(annee, mois, jour + 1, 0, 0, 0);
+
+    const [{ data: ventes, error }, { data: lignes }] = await Promise.all([
+      sbClient.from('ventes')
+        .select('total, canal, statut, mode_paiement')
+        .eq('restaurant_id', RESTO_ID)
+        .gte('cree_le', debut.toISOString())
+        .lt('cree_le', fin.toISOString()),
+      sbClient.from('lignes_vente')
+        .select('nom_produit, prix_unitaire, quantite, ventes!inner(restaurant_id, statut, cree_le)')
+        .eq('ventes.restaurant_id', RESTO_ID)
+        .eq('ventes.statut', 'validee')
+        .gte('ventes.cree_le', debut.toISOString())
+        .lt('ventes.cree_le', fin.toISOString())
+    ]);
+
+    if (error) throw error;
+
+    const toutes = ventes || [];
+    const valides = toutes.filter(v => v.statut === 'validee');
+    const annulees = toutes.filter(v => v.statut === 'annulee');
+    const ca = valides.reduce((s, v) => s + Number(v.total || 0), 0);
+    const nb = valides.length;
+    const panier = nb > 0 ? ca / nb : 0;
+
+    // Répartition canaux du jour
+    const parCanal = {};
+    valides.forEach(v => {
+      const c = v.canal || 'sur_place';
+      if (!parCanal[c]) parCanal[c] = 0;
+      parCanal[c] += Number(v.total || 0);
+    });
+    const canauxHTML = Object.entries(parCanal)
+      .sort((a, b) => b[1] - a[1])
+      .map(([canal, montant]) => {
+        const pct = ca > 0 ? Math.round(montant * 100 / ca) : 0;
+        const couleur = COULEURS_CANAL[canal] || '#8B7E6F';
+        const libelle = LIBELLES_CANAL[canal] || canal;
+        return `<div class="jc-canal-row"><span class="dot" style="background:${couleur}"></span><span class="nom">${libelle}</span><span class="val">${Math.round(montant)}€ · ${pct}%</span></div>`;
+      }).join('') || '<p style="font-size:12px; color:var(--text-mute);">—</p>';
+
+    // Top 3 plats du jour (sans sauces / suppléments / sous-lignes)
+    const agreg = {};
+    (lignes || []).forEach(l => {
+      const prix = Number(l.prix_unitaire);
+      if (prix <= 0) return;
+      const nom = l.nom_produit || '';
+      const nomNettoye = nom.replace(/^\s*↳\s*/, '').trim();
+      if (nom.trim().startsWith('↳')) return;
+      if (/^sauce\b|^suppl\.?(\s|$)|suppl[ée]ment/i.test(nomNettoye)) return;
+      if (!agreg[nom]) agreg[nom] = { nom, quantite: 0 };
+      agreg[nom].quantite += Number(l.quantite) || 0;
+    });
+    const top3 = Object.values(agreg).sort((a, b) => b.quantite - a.quantite).slice(0, 3);
+    const platsHTML = top3.length
+      ? top3.map((p, i) => `<div class="jc-plat-row"><span class="rang">0${i + 1}</span><span class="nom">${escapeHtmlApp(p.nom)}</span><span class="qte">${p.quantite}×</span></div>`).join('')
+      : '<p style="font-size:12px; color:var(--text-mute);">—</p>';
+
+    zone.innerHTML = `
+      <div class="jc-hero">
+        <div class="jc-lbl">Chiffre d'affaires</div>
+        <div class="jc-ca">${Math.round(ca).toLocaleString('fr-FR')}<span class="cur">€</span></div>
+      </div>
+      <div class="jc-kpis">
+        <div class="jc-kpi"><div class="v">${nb}</div><div class="l">Ventes</div></div>
+        <div class="jc-kpi"><div class="v">${panier.toFixed(2).replace('.', ',')}€</div><div class="l">Panier moyen</div></div>
+        <div class="jc-kpi"><div class="v">${annulees.length}</div><div class="l">Annulées</div></div>
+      </div>
+      <div class="jc-sec-titre">Répartition canaux</div>
+      ${canauxHTML}
+      <div class="jc-sec-titre">Top plats du jour</div>
+      ${platsHTML}`;
+  } catch (e) {
+    zone.innerHTML = '<p style="text-align:center; color:var(--sriracha); padding:24px; font-size:13px;">Erreur : ' + e.message + '</p>';
+  }
+}
+
+function fermerJourCal() {
+  const overlay = document.getElementById('modal-jour-cal');
+  if (overlay) overlay.classList.remove('active');
 }
 
 // Realtime : à chaque vente créée/modifiée, on rafraichit
