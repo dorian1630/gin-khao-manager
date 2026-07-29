@@ -5770,9 +5770,9 @@ function afficherPaliersStats() {
 
   zone.innerHTML = PALIERS_FID.map(p => {
     const nb = clientsCache.filter(c => pointsCumules(c) >= p.seuil).length;
-   const pctBrut = total > 0 ? (nb * 100 / total) : 0;
-    const pct = pctBrut >= 1 ? Math.round(pctBrut) + '% clients'
-              : (pctBrut > 0 ? pctBrut.toFixed(1).replace('.', ',') + '% clients' : 'aucun');
+    const brut = total > 0 ? (nb * 100 / total) : 0;
+    const pct = brut >= 1 ? Math.round(brut) + '%'
+              : (brut > 0 ? brut.toFixed(1).replace('.', ',') + '%' : '—');
     return `
       <div class="palier-row">
         <span class="pr-em">${p.emoji}</span>
@@ -5780,7 +5780,7 @@ function afficherPaliersStats() {
           <div class="pr-nom">${p.label}</div>
           <div class="pr-seuil">${p.seuil} points · ${p.seuil}€ d'achats</div>
         </div>
-        <div class="pr-nb">${nb}<small>${pct}</small></div>
+        <div class="pr-nb">${nb}<small>ont atteint · ${pct}</small></div>
       </div>`;
   }).join('');
 
