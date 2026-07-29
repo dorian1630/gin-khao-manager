@@ -5870,11 +5870,11 @@ function afficherPaliersStats() {
   // Note : combien approchent du 1er palier
   const proches = clientsCache.filter(c => {
     const pts = pointsCumules(c);
-    return pts > 0 && pts < PALIERS_FID[0].seuil && pts >= PALIERS_FID[0].seuil * 0.6;
+    return pts >= 35 && pts < PALIERS_FID[0].seuil;
   }).length;
   if (note) {
     note.innerHTML = proches > 0
-      ? `<strong style="color: var(--lime);">${proches} client${proches > 1 ? 's' : ''}</strong> approche${proches > 1 ? 'nt' : ''} du premier palier — un SMS peut les faire revenir.`
+      ? `<strong style="color: var(--lime);">${proches} client${proches > 1 ? 's' : ''}</strong> à moins de 15€ du dessert offert — un SMS peut les faire revenir.`
       : `<strong style="color: var(--gold);">${total}</strong> client${total > 1 ? 's' : ''} inscrit${total > 1 ? 's' : ''} au programme.`;
   }
 }
