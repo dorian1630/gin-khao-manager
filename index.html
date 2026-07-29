@@ -4257,7 +4257,35 @@ html, body {
           </div>
           <p style="font-size: 11px; color: var(--text-mute); margin-top: 10px; line-height: 1.5;" id="paliers-note"></p>
         </div>
-
+<div class="section">
+          <div class="section-head">
+            <h3 class="section-title">💰 Rentabilité du programme</h3>
+            <span class="section-link" style="color: var(--text-mute);">depuis le lancement</span>
+          </div>
+          <div class="kpi-row">
+            <div class="kpi">
+              <div class="kpi-label">Récompenses</div>
+              <div class="kpi-value" id="roi-nb-recomp">—</div>
+              <div class="kpi-sub">utilisées</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Coût</div>
+              <div class="kpi-value" id="roi-cout" style="color: var(--sriracha);">—</div>
+              <div class="kpi-sub">manque à gagner</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">CA membres</div>
+              <div class="kpi-value" id="roi-ca-membres" style="color: var(--lime);">—</div>
+              <div class="kpi-sub">clients fidélité</div>
+            </div>
+          </div>
+          <div class="chart-card" style="padding: 16px;">
+            <div id="roi-fid-contenu">
+              <p style="font-size:13px; color:var(--text-mute); text-align:center; padding:12px;">Chargement…</p>
+            </div>
+          </div>
+          <p style="font-size: 11px; color: var(--text-mute); margin-top: 10px; line-height: 1.5;" id="roi-fid-note"></p>
+        </div>
         <div class="section">
           <div class="section-head"><h3 class="section-title">Automatisations clients</h3></div>
           <div class="activate-row">
@@ -5687,10 +5715,10 @@ function joursDepuis(dateStr) {
 
 // ===== PROGRAMME FIDÉLITÉ (aligné sur fidelite.html : 1€ = 1 point) =====
 const PALIERS_FID = [
-  { seuil: 50,  label: 'Dessert offert',  emoji: '🍮' },
-  { seuil: 100, label: 'Entrée offerte',  emoji: '🥟' },
-  { seuil: 200, label: 'Plat offert',     emoji: '🍜' },
-  { seuil: 300, label: 'Formule offerte', emoji: '🍱' }
+  { seuil: 50,  label: 'Dessert offert',  emoji: '🍮', valeur: 6 },
+  { seuil: 100, label: 'Entrée offerte',  emoji: '🥟', valeur: 6 },
+  { seuil: 200, label: 'Plat offert',     emoji: '🍜', valeur: 14 },
+  { seuil: 300, label: 'Formule offerte', emoji: '🍱', valeur: 18 }
 ];
 // Seuils de segmentation (basés sur les points cumulés = € dépensés)
 const SEUIL_FIDELE = 50;   // a atteint le 1er palier (50€ dépensés)
@@ -5750,11 +5778,66 @@ async function chargerClients() {
     afficherARelancer();
     afficherVIP();
     afficherPaliersStats();
+    chargerRoiFidelite();
   } catch (e) {
     console.log('Erreur chargement clients:', e.message);
   }
 }
-
+async function chargerRoiFidelite() {
+  const zone = document.getElementById('roi-fid-contenu');
+  if (!zone) return;
+  try {
+    const [{ data: mvts, error: e1 }, { data: ventesMembres, error: e2 }] = await Promise.all([
+      sbClient.from('fidelite_mouvements').select('points_delta, palier, created_at').lt('points_delta', 0),
+      sbClient.from('ventes').select('total, client_id').eq('restaurant_id', RESTO_ID).eq('statut', 'validee').not('client_id', 'is', null)
+    ]);
+    if (e1) throw e1;
+    if (e2) throw e2;
+    const utilisations = mvts || [];
+    const parPalier = {};
+    let coutTotal = 0;
+    utilisations.forEach(m => {
+      let p = PALIERS_FID.find(x => x.seuil === m.palier);
+      if (!p) p = PALIERS_FID.find(x => x.seuil === Math.abs(m.points_delta));
+      if (!p) return;
+      if (!parPalier[p.seuil]) parPalier[p.seuil] = { ...p, nb: 0 };
+      parPalier[p.seuil].nb++;
+      coutTotal += p.valeur;
+    });
+    const nbUtil = utilisations.length;
+    const caMembres = (ventesMembres || []).reduce((s, v) => s + Number(v.total || 0), 0);
+    const roi = coutTotal > 0 ? (caMembres / coutTotal) : 0;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('roi-nb-recomp', nbUtil);
+    set('roi-cout', Math.round(coutTotal) + '€');
+    set('roi-ca-membres', Math.round(caMembres).toLocaleString('fr-FR') + '€');
+    const lignes = Object.values(parPalier).sort((a, b) => a.seuil - b.seuil);
+    let html = '';
+    if (nbUtil === 0) {
+      html = '<p style="font-size:12.5px; color:var(--text-mute); text-align:center; padding:14px;">Aucune récompense utilisée pour l\'instant.</p>';
+    } else {
+      html = lignes.map(p => `
+        <div class="palier-row">
+          <span class="pr-em">${p.emoji}</span>
+          <div class="pr-info">
+            <div class="pr-nom">${p.label}</div>
+            <div class="pr-seuil">${p.nb} × ${p.valeur}€ de manque à gagner</div>
+          </div>
+          <div class="pr-nb" style="color:var(--sriracha);">${p.nb * p.valeur}€<small>offert</small></div>
+        </div>`).join('');
+    }
+    zone.innerHTML = html;
+    const note = document.getElementById('roi-fid-note');
+    if (note) {
+      note.innerHTML = coutTotal > 0
+        ? `📈 Pour <strong style="color:var(--sriracha);">1€ offert</strong>, tes membres génèrent <strong style="color:var(--lime);">${roi.toFixed(0)}€</strong> de chiffre d'affaires.`
+        : `Les membres fidélité ont généré <strong style="color:var(--gold);">${Math.round(caMembres).toLocaleString('fr-FR')}€</strong> de CA jusqu'ici.`;
+    }
+  } catch (e) {
+    console.error('Erreur ROI fidélité:', e);
+    zone.innerHTML = '<p style="font-size:12.5px; color:var(--sriracha); text-align:center; padding:14px;">Impossible de charger la rentabilité.</p>';
+  }
+}
 // Répartition réelle des clients par palier atteint
 function afficherPaliersStats() {
   const zone = document.getElementById('paliers-stats');
