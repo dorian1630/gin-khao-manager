@@ -1771,7 +1771,7 @@ html, body {
 .jc-plat-row .qte { font-family: var(--mono); color: var(--text-soft); font-weight: 600; }
 
 /* ===== MOBILE OVERRIDE ===== */
-@media (max-width: 600px) {
+@media (max-width: 600px), (hover: none) and (pointer: coarse) {
   .desktop-stage {
     display: block;
     height: auto;
@@ -1796,12 +1796,12 @@ html, body {
   /* On masque la fausse barre : la vraie barre iPhone affiche déjà l'heure */
   .status-bar { display: none; }
   /* On décale le contenu sous l'encoche / Dynamic Island */
-  .app-content { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .app-content { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
   .screen { padding-top: calc(env(safe-area-inset-top, 0px) + 14px); }
   #screen-ai { padding-top: 0; }
   .chat-header { padding-top: calc(env(safe-area-inset-top, 0px) + 16px); }
   /* La barre du bas respecte la barre d'accueil iPhone */
-  .bottom-nav { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .bottom-nav { padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
 }/* ===== BANDEAU ANNIVERSAIRES ===== */
 .anniv-banner {
   background: linear-gradient(135deg, rgba(228,184,96,0.12) 0%, rgba(168,225,12,0.08) 100%);
@@ -3553,7 +3553,7 @@ html, body {
           </div>
         </div>
 
-        <div style="height: 40px;"></div>
+        <div style="height: 12px;"></div>
       </section>
 
       <!-- ====== SCREEN: SALES ====== -->
@@ -3659,7 +3659,7 @@ html, body {
           </div>
         </div>
 
-        <div style="height: 40px;"></div>
+        <div style="height: 12px;"></div>
       </section>
 
       <!-- ====== SCREEN: REVIEWS ====== -->
@@ -3797,7 +3797,7 @@ html, body {
           </div>
         </div>
 
-        <div style="height: 40px;"></div>
+        <div style="height: 12px;"></div>
       </section>
 
       <!-- ====== SCREEN: STOCKS ====== -->
@@ -3912,7 +3912,7 @@ html, body {
           </div>
         </div>
 
-        <div style="height: 40px;"></div>
+        <div style="height: 12px;"></div>
       </section>
 
       <!-- ====== SCREEN: COMPTA ====== -->
@@ -4081,7 +4081,7 @@ html, body {
           </p>
         </div>
 
-        <div style="height: 40px;"></div>
+        <div style="height: 12px;"></div>
       </section>
 
       <!-- ====== SCREEN: CLIENTS / FIDÉLITÉ ====== -->
@@ -4223,7 +4223,7 @@ html, body {
           </div>
         </div>
 
-        <div style="height: 40px;"></div>
+        <div style="height: 12px;"></div>
       </section>
 
       <!-- ====== MODALE LISTE COMPLÈTE DES CLIENTS ====== -->
@@ -4530,7 +4530,7 @@ html, body {
             <div class="oc-apercu" id="oc-apercu"></div>
           </div>
 
-          <div style="height: 40px;"></div>
+          <div style="height: 12px;"></div>
         </div>
       </div>
 
