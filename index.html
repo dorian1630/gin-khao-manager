@@ -1770,6 +1770,53 @@ html, body {
 .jc-plat-row .nom { color: var(--text); flex: 1; }
 .jc-plat-row .qte { font-family: var(--mono); color: var(--text-soft); font-weight: 600; }
 
+/* Champs de période (filtre ventes) */
+.periode-champ {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 4px 16px;
+  margin-bottom: 10px;
+  min-height: 54px;
+}
+.periode-champ .pc-label {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.periode-champ .pc-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--body);
+  font-weight: 600;
+  text-align: right;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+/* iOS : forcer l'alignement à droite du sélecteur natif */
+.periode-champ .pc-input::-webkit-date-and-time-value {
+  text-align: right;
+  margin: 0;
+}
+.periode-champ .pc-input::-webkit-calendar-picker-indicator {
+  filter: invert(70%);
+  margin-left: 8px;
+  opacity: 0.6;
+}
+
 /* Bouton filtre actif */
 .bell.filtre-actif {
   border-color: var(--gold);
@@ -4917,13 +4964,13 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
         </div>
         <p class="modal-sub" style="margin-bottom:18px;">Choisis les dates à analyser.</p>
 
-        <div style="margin-bottom:14px;">
-          <label style="display:block; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-mute); font-weight:700; margin-bottom:7px;">Du</label>
-          <input type="date" id="periode-debut" style="width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:13px; padding:13px 15px; color:var(--text); font-size:15px; font-family:var(--body); outline:none;">
+        <div class="periode-champ">
+          <span class="pc-label">Du</span>
+          <input type="date" id="periode-debut" class="pc-input">
         </div>
-        <div style="margin-bottom:6px;">
-          <label style="display:block; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-mute); font-weight:700; margin-bottom:7px;">Au</label>
-          <input type="date" id="periode-fin" style="width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:13px; padding:13px 15px; color:var(--text); font-size:15px; font-family:var(--body); outline:none;">
+        <div class="periode-champ">
+          <span class="pc-label">Au</span>
+          <input type="date" id="periode-fin" class="pc-input">
         </div>
 
         <div id="periode-erreur" style="font-size:13px; color:var(--sriracha); min-height:18px; margin:8px 0 4px;"></div>
