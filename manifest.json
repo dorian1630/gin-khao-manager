@@ -1,10 +1,10 @@
 {
-  "name": "Gin Khao Caisse",
-  "short_name": "Caisse",
-  "start_url": "/pos",
+  "name": "Gin Khao Manager",
+  "short_name": "Gin Khao",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "landscape",
-  "background_color": "#FAF7F2",
+  "background_color": "#0A0908",
   "theme_color": "#0A0908",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
