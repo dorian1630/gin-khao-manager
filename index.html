@@ -5673,18 +5673,39 @@ function joursDepuis(dateStr) {
   return Math.floor((Date.now() - d.getTime()) / 86400000);
 }
 
+// ===== PROGRAMME FIDÉLITÉ (aligné sur fidelite.html : 1€ = 1 point) =====
+const PALIERS_FID = [
+  { seuil: 50,  label: 'Dessert offert',  emoji: '🍮' },
+  { seuil: 100, label: 'Entrée offerte',  emoji: '🥟' },
+  { seuil: 200, label: 'Plat offert',     emoji: '🍜' },
+  { seuil: 300, label: 'Formule offerte', emoji: '🍱' }
+];
+// Seuils de segmentation (basés sur les points cumulés = € dépensés)
+const SEUIL_FIDELE = 50;   // a atteint le 1er palier (50€ dépensés)
+const SEUIL_VIP    = 200;  // palier "Plat offert" (200€ dépensés)
+
+// Points cumulés depuis l'inscription (le solde 'points' baisse à chaque récompense)
+function pointsCumules(c) {
+  return Number(c.total_points_gagnes || c.points || 0);
+}
+
+// Prochain palier à atteindre
+function prochainPalier(pts) {
+  return PALIERS_FID.find(p => pts < p.seuil) || null;
+}
+
 // Détermine le segment d'un client
 function segmentClient(c) {
   const v = c.nb_visites || 0;
 
-  // Nouveau client (jamais venu) → catégorie "occasionnel" par défaut
-  // (pas endormi car il n'a pas eu le temps de l'être)
+  // Nouveau client (jamais venu) → "occasionnel" par défaut
   if (!c.derniere_visite || v === 0) return 'occasionnel';
 
   const j = joursDepuis(c.derniere_visite);
   if (j > 50) return 'endormi';
   if (j > 18) return 'part';          // en train de partir
-  if (v >= 20) return 'fidele';
+  // Fidèle : a franchi le 1er palier de récompense, ou vient régulièrement
+  if (pointsCumules(c) >= SEUIL_FIDELE || v >= 5) return 'fidele';
   return 'occasionnel';
 }
 
@@ -5780,8 +5801,8 @@ function afficherVIP() {
   const zone = document.getElementById('liste-vip');
   if (!zone) return;
   const vips = clientsCache
-    .filter(c => (c.nb_visites || 0) >= 20 && joursDepuis(c.derniere_visite) <= 50)
-    .sort((a, b) => (b.nb_visites || 0) - (a.nb_visites || 0))
+    .filter(c => pointsCumules(c) >= SEUIL_VIP && joursDepuis(c.derniere_visite) <= 50)
+    .sort((a, b) => pointsCumules(b) - pointsCumules(a))
     .slice(0, 5);
 
   if (vips.length === 0) {
@@ -5794,7 +5815,7 @@ function afficherVIP() {
       <div class="client-avatar gold">${initiales(c.nom)}</div>
       <div class="client-info">
         <div class="client-name">${c.nom} <span class="client-tag vip">VIP</span></div>
-        <div class="client-meta"><strong>${c.nb_visites} visite${(c.nb_visites || 0) > 1 ? 's' : ''}</strong> · ${c.points || 0}/10 tampons</div>
+        <div class="client-meta"><strong>${c.nb_visites} visite${(c.nb_visites || 0) > 1 ? 's' : ''}</strong> · ${pointsCumules(c)} pts cumulés</div>
       </div>
       <button class="client-cta ghost" onclick="event.stopPropagation(); envoyerSMS('${c.nom.replace(/'/g, "\\'")}', this, '${c.id}')">Récompenser</button>
     </div>`).join('');
@@ -6279,7 +6300,7 @@ function filtrerClientsModal() {
         </div>
         <div class="client-list-tampons-block">
           <span class="client-list-tampons-val">${c.points || 0}</span>
-          <span class="client-list-tampons-lbl">tampons</span>
+          <span class="client-list-tampons-lbl">points</span>
         </div>
       </div>`;
   }).join('');
@@ -6359,7 +6380,7 @@ function afficherFicheClient(c) {
 
     <div class="cd-grid">
       <div class="cd-stat"><div class="cd-stat-val">${c.nb_visites || 0}</div><div class="cd-stat-lbl">Visites</div></div>
-      <div class="cd-stat"><div class="cd-stat-val">${c.points || 0}/10</div><div class="cd-stat-lbl">Tampons</div></div>
+      <div class="cd-stat"><div class="cd-stat-val">${c.points || 0}</div><div class="cd-stat-lbl">Points dispo</div></div>
     </div>
 
     <div class="cd-info-block">
@@ -6368,6 +6389,17 @@ function afficherFicheClient(c) {
       <div class="cd-info-row"><span class="lbl">Anniversaire</span><span class="val">${annivAffichage} ${prochainAnniv}</span></div>
       <div class="cd-info-row"><span class="lbl">Dernière visite</span><span class="val">${derniereVisite}</span></div>
       <div class="cd-info-row"><span class="lbl">Total points gagnés</span><span class="val">${c.total_points_gagnes || 0}</span></div>
+      <div class="cd-info-row" style="display:block; border:none; padding-top:10px;">
+        ${(() => {
+          const pts = pointsCumules(c);
+          const next = prochainPalier(pts);
+          if (!next) return '<span style="font-size:12px; color:var(--lime);">🎉 Tous les paliers atteints</span>';
+          const pct = Math.min(100, Math.round(pts / next.seuil * 100));
+          return `<div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-mute); margin-bottom:6px;"><span>Prochaine récompense</span><span style="color:var(--gold);">${next.emoji} ${next.label} · ${next.seuil} pts</span></div>
+          <div style="height:8px; background:var(--surface-2); border-radius:999px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:linear-gradient(90deg, var(--gold), var(--sriracha)); border-radius:999px;"></div></div>
+          <div style="font-size:11.5px; color:var(--text-soft); margin-top:6px;">Plus que <strong style="color:var(--gold);">${next.seuil - pts} pts</strong> (${next.seuil - pts}€ d'achats)</div>`;
+        })()}
+      </div>
       <div class="cd-info-row"><span class="lbl">Inscription</span><span class="val">${dateInscription}</span></div>
     </div>
 
