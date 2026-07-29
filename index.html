@@ -1770,6 +1770,22 @@ html, body {
 .jc-plat-row .nom { color: var(--text); flex: 1; }
 .jc-plat-row .qte { font-family: var(--mono); color: var(--text-soft); font-weight: 600; }
 
+/* Paliers du programme fidélité */
+.palier-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid var(--border-soft);
+}
+.palier-row:last-child { border-bottom: none; }
+.palier-row .pr-em { font-size: 20px; flex-shrink: 0; }
+.palier-row .pr-info { flex: 1; min-width: 0; }
+.palier-row .pr-nom { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.palier-row .pr-seuil { font-size: 11px; color: var(--text-mute); margin-top: 1px; }
+.palier-row .pr-nb {
+  font-family: var(--mono); font-size: 15px; font-weight: 700;
+  color: var(--gold); text-align: right; flex-shrink: 0;
+}
+.palier-row .pr-nb small { display: block; font-size: 9.5px; color: var(--text-mute); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+
 /* Champs de période (filtre ventes) */
 .periode-champ {
   display: flex;
@@ -4231,19 +4247,15 @@ html, body {
 
         <div class="section">
           <div class="section-head">
-            <h3 class="section-title">Carte de fidélité</h3>
-            <span class="section-link" style="color: var(--lime);">active</span>
+            <h3 class="section-title">Programme fidélité</h3>
+            <span class="section-link" style="color: var(--lime);">1 € = 1 point</span>
           </div>
-          <div class="loyalty-card">
-            <div class="lc-brand">Gin Khao · Fidélité</div>
-            <div class="lc-sub">Le 10ᵉ plat offert · automatique</div>
-            <div class="loyalty-stamps">
-              <div class="stamp filled">🍜</div><div class="stamp filled">🍜</div><div class="stamp filled">🍜</div>
-              <div class="stamp filled">🍜</div><div class="stamp filled">🍜</div><div class="stamp filled">🍜</div>
-              <div class="stamp filled">🍜</div><div class="stamp">8</div><div class="stamp">9</div><div class="stamp reward">🎁</div>
+          <div class="chart-card" style="padding: 16px;">
+            <div id="paliers-stats">
+              <p style="font-size:13px; color:var(--text-mute); text-align:center; padding:12px;">Chargement…</p>
             </div>
           </div>
-          <p style="font-size: 11px; color: var(--text-mute); margin-top: 10px; line-height: 1.5;"><strong style="color: var(--lime);">+23% de fréquence de visite</strong> en moyenne avec une carte de fidélité.</p>
+          <p style="font-size: 11px; color: var(--text-mute); margin-top: 10px; line-height: 1.5;" id="paliers-note"></p>
         </div>
 
         <div class="section">
@@ -5737,8 +5749,48 @@ async function chargerClients() {
     afficherSegments();
     afficherARelancer();
     afficherVIP();
+    afficherPaliersStats();
   } catch (e) {
     console.log('Erreur chargement clients:', e.message);
+  }
+}
+
+// Répartition réelle des clients par palier atteint
+function afficherPaliersStats() {
+  const zone = document.getElementById('paliers-stats');
+  const note = document.getElementById('paliers-note');
+  if (!zone) return;
+
+  const total = clientsCache.length;
+  if (total === 0) {
+    zone.innerHTML = '<p style="font-size:13px; color:var(--text-mute); text-align:center; padding:12px;">Aucun client inscrit pour l\'instant.</p>';
+    if (note) note.textContent = '';
+    return;
+  }
+
+  zone.innerHTML = PALIERS_FID.map(p => {
+    const nb = clientsCache.filter(c => pointsCumules(c) >= p.seuil).length;
+    const pct = Math.round(nb * 100 / total);
+    return `
+      <div class="palier-row">
+        <span class="pr-em">${p.emoji}</span>
+        <div class="pr-info">
+          <div class="pr-nom">${p.label}</div>
+          <div class="pr-seuil">${p.seuil} points · ${p.seuil}€ d'achats</div>
+        </div>
+        <div class="pr-nb">${nb}<small>${pct}% clients</small></div>
+      </div>`;
+  }).join('');
+
+  // Note : combien approchent du 1er palier
+  const proches = clientsCache.filter(c => {
+    const pts = pointsCumules(c);
+    return pts > 0 && pts < PALIERS_FID[0].seuil && pts >= PALIERS_FID[0].seuil * 0.6;
+  }).length;
+  if (note) {
+    note.innerHTML = proches > 0
+      ? `<strong style="color: var(--lime);">${proches} client${proches > 1 ? 's' : ''}</strong> approche${proches > 1 ? 'nt' : ''} du premier palier — un SMS peut les faire revenir.`
+      : `<strong style="color: var(--gold);">${total}</strong> client${total > 1 ? 's' : ''} inscrit${total > 1 ? 's' : ''} au programme.`;
   }
 }
 
