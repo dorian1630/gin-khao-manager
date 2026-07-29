@@ -7207,25 +7207,16 @@ async function chargerTopPlatsHome() {
     debut.setHours(0, 0, 0, 0);
 
     // Récupère les lignes de vente du jour + les produits (pour filtrer sauces/suppléments)
-    const [{ data: lignes, error }, { data: prods }] = await Promise.all([
+    const [{ data: lignes, error }, exclusHome] = await Promise.all([
       sbClient.from('lignes_vente')
         .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
         .eq('ventes.restaurant_id', RESTO_ID)
         .eq('ventes.statut', 'validee')
         .gte('ventes.cree_le', debut.toISOString()),
-      sbClient.from('produits')
-        .select('nom, categories(nom)')
-        .eq('restaurant_id', RESTO_ID)
+      getProduitsExclusTop()
     ]);
 
     if (error) throw error;
-
-    // Produits à exclure : catégories sauces & suppléments
-    const exclusHome = new Set();
-    (prods || []).forEach(p => {
-      const cat = (p.categories && p.categories.nom) ? p.categories.nom : '';
-      if (/sauce|suppl/i.test(cat)) exclusHome.add(p.nom);
-    });
 
     // Agréger par produit (en excluant les remises = prix négatifs + sauces/suppléments)
     const agreg = {};
@@ -8322,29 +8313,40 @@ async function chargerDonutCanaux() {
 }
 
 // Charge le top des plats vendus sur la période
+// ===== Cache des produits exclus du top plats (sauces, suppléments, boissons, desserts) =====
+let _exclusTopPromise = null;
+function getProduitsExclusTop() {
+  if (!_exclusTopPromise) {
+    _exclusTopPromise = sbClient.from('produits')
+      .select('nom, categories(nom)')
+      .eq('restaurant_id', RESTO_ID)
+      .then(({ data }) => {
+        const s = new Set();
+        (data || []).forEach(p => {
+          const cat = (p.categories && p.categories.nom) ? p.categories.nom : '';
+          if (/sauce|suppl|boisson|dessert/i.test(cat)) s.add(p.nom);
+        });
+        return s;
+      })
+      .catch(() => new Set());
+  }
+  return _exclusTopPromise;
+}
+
 async function chargerTopPlatsVentes() {
   try {
     const debut = dateDebutPeriode(ventesPeriode);
 
-    const [{ data: lignes, error }, { data: prods }] = await Promise.all([
+    const [{ data: lignes, error }, exclus] = await Promise.all([
       sbClient.from('lignes_vente')
         .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
         .eq('ventes.restaurant_id', RESTO_ID)
         .eq('ventes.statut', 'validee')
         .gte('ventes.cree_le', debut.toISOString()),
-      sbClient.from('produits')
-        .select('nom, categories(nom)')
-        .eq('restaurant_id', RESTO_ID)
+      getProduitsExclusTop()
     ]);
 
     if (error) throw error;
-
-    // Produits à exclure du top : catégories sauces & suppléments
-    const exclus = new Set();
-    (prods || []).forEach(p => {
-      const cat = (p.categories && p.categories.nom) ? p.categories.nom : '';
-      if (/sauce|suppl/i.test(cat)) exclus.add(p.nom);
-    });
 
     // Agréger (sans les sauces / suppléments)
     const agreg = {};
@@ -8569,7 +8571,8 @@ async function ouvrirJourCal(annee, mois, jour) {
         return `<div class="jc-canal-row"><span class="dot" style="background:${couleur}"></span><span class="nom">${libelle}</span><span class="val">${Math.round(montant)}€ · ${pct}%</span></div>`;
       }).join('') || '<p style="font-size:12px; color:var(--text-mute);">—</p>';
 
-    // Top 3 plats du jour (sans sauces / suppléments / sous-lignes)
+    // Top 3 plats du jour (plats & formules uniquement)
+    const exclusJour = await getProduitsExclusTop();
     const agreg = {};
     (lignes || []).forEach(l => {
       const prix = Number(l.prix_unitaire);
@@ -8577,6 +8580,7 @@ async function ouvrirJourCal(annee, mois, jour) {
       const nom = l.nom_produit || '';
       const nomNettoye = nom.replace(/^\s*↳\s*/, '').trim();
       if (nom.trim().startsWith('↳')) return;
+      if (exclusJour.has(nomNettoye)) return;
       if (/^sauce\b|^suppl\.?(\s|$)|suppl[ée]ment/i.test(nomNettoye)) return;
       if (!agreg[nom]) agreg[nom] = { nom, quantite: 0 };
       agreg[nom].quantite += Number(l.quantite) || 0;
