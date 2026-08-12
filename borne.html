@@ -3001,6 +3001,7 @@ body {
 
 <div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-a</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="noyau-commande.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // ===== CONFIG (même base que la caisse et l'appli) =====
@@ -3386,6 +3387,10 @@ async function chargerMenu() {
   // On garde TOUS les produits actifs (y compris sauces/suppléments/extras
   // pour les retrouver via leurs UUIDs dans le parcours plat et upsell)
   produits = prods || [];
+  // Le noyau partagé (routage, détails, bons) travaille sur le MÊME catalogue.
+  // On lui passe TOUTES les catégories (non filtrées) pour que le routage
+  // connaisse Sauces/Suppléments, cachées côté affichage borne.
+  if (window.NC) NC.init({ produits: produits, categories: (cats || []) });
 
   // ✨ Sélectionner la première catégorie qui a des produits comme catégorie active
   if (catActive === 'tout' || !categories.find(c => c.id === catActive)) {
@@ -5155,81 +5160,59 @@ function genererTicketBorneEscPos(numero, methode) {
 // ---- Bons cuisine / sushi / comptoir via table Supabase (relais tablette) ----
 async function envoyerImpressionCuisine(numero, methode) {
   try {
-    // Accompagnement choisi (Riz / Nouilles) → intégré au NOM sur le bon cuisine
-    const accompagnementDe = (l) => {
-      if (!l.options || !l.options.options_base) return null;
-      const v = Object.values(l.options.options_base)
-        .find(x => /^(riz|nouilles?)$/i.test(String(x || '').trim()));
-      return v ? String(v).trim() : null;
-    };
-    // Détails d'une ligne — même règle que la caisse :
-    //   'cuisine'  : tout, sauf l'accompagnement (déjà dans le nom)
-    //   'comptoir' : sans les suppléments/sauces payantes (déjà facturés en lignes séparées)
-    const detailsDe = (l, pour) => {
-      const d = [];
-      if (!l.options) return d;
-      const p = produits.find(x => x.id === l.produit_id);
-      const acc = accompagnementDe(l);
-      if (l.options.options_base) {
-        Object.values(l.options.options_base).forEach(v => {
-          if (!v) return;
-          if (pour === 'cuisine' && acc && String(v).trim() === acc) return;
-          // 🌶️ "Normal" = préparation habituelle → on ne l'imprime pas
-          if (/^normal$/i.test(String(v).trim())) return;
-          d.push(String(v));
-        });
-      }
-      (l.options.retirable || []).forEach(r => d.push('Sans ' + r));
-      if (pour === 'cuisine') {
-        grouperIds(l.options.supplements).forEach(g => {
-          const sp = produits.find(x => x.id === g.id);
-          if (sp) d.push('+ ' + sp.nom.replace(/^Suppl\.\s*/i, '') + (g.qte > 1 ? ' x' + g.qte : ''));
-        });
-      }
-      (l.options.sauces || []).forEach(id => {
-        const sc = produits.find(x => x.id === id);
-        if (!sc) return;
-        const facturee = p && !p.sauces_incluses && parseFloat(sc.prix) > 0;
-        if (pour === 'comptoir' && facturee) return;
-        d.push(sc.nom.replace(/^Sauce\s+/i, 'Sauce '));
-      });
-      // 📦 Contenu d'une box : la cuisine doit voir le détail.
-      //    Pas de quantité : la composition est fixe et connue (nems par 2, etc.)
-      composantsFixes(p).forEach(c => {
-        const prod = produits.find(x => x.id === c.produit_id);
-        d.push(c.label || (prod ? prod.nom : 'Composant'));
-      });
-      return d;
-    };
+    // 🧩 Construction déléguée au NOYAU PARTAGÉ (noyau-commande.js), la même
+    //    brique que la caisse. Le routage cuisine/sushi/comptoir, les détails,
+    //    le nombre de pièces et l'éclatement des portions sushi sont donc
+    //    IDENTIQUES des deux côtés — plus aucune règle dupliquée à maintenir ici.
+    if (!window.NC) { console.error('noyau-commande.js non chargé'); return; }
 
-    const items = panier.map(l => {
-      const nom = (l.nom || '').replace('↳', '>');
-      // 🍳 Bon cuisine : on retire les mentions "(formule)", "(box)", "(supplément)"
-      //    — utiles au client sur le ticket comptoir, inutiles pour la cuisine.
-      const nomCuisineBrut = nom.replace(/\s*\((?:formule|box|supplément|supplement)\)\s*$/i, '');
-      const acc = accompagnementDe(l);
-      return {
-        nom: nom,                                              // ticket comptoir
-        nom_cuisine: (acc && !l.lien_plat) ? acc + ' ' + nomCuisineBrut : nomCuisineBrut,  // bon cuisine
+    const imp = NC.construireImpression(panier, {
+      numero: String(numero),
+      modeService: modeService,
+      modePaiement: methode,
+      total: (panier || []).reduce((s, l) => s + (Number(l.prix) || 0) * (l.quantite || 1), 0)
+    });
+
+    // La table impressions_borne attend un tableau 'lignes' à plat, chaque ligne
+    // portant sa 'station' + ses 'details' cuisine + 'details_comptoir'.
+    // On reconstruit ce format à partir des bons produits par le noyau.
+    const lignes = [];
+    const pousser = (it, station) => {
+      lignes.push({
+        nom: it.nom,
+        nom_cuisine: it.nom,
+        quantite: it.quantite,
+        prix: 0,
+        station: station,
+        details: it.details || [],
+        details_comptoir: []
+      });
+    };
+    if (imp.bonCuisine) imp.bonCuisine.items.forEach(it => pousser(it, 'cuisine'));
+    if (imp.bonSushi)   imp.bonSushi.items.forEach(it => pousser(it, 'sushi'));
+    // Le ticket comptoir porte les prix + détails comptoir (déjà éclatés/nettoyés)
+    imp.ticketClient.lignes.forEach(l => {
+      lignes.push({
+        nom: l.nom,
+        nom_cuisine: l.nom,
         quantite: l.quantite,
         prix: l.prix,
-        station: stationPourLigne(l),
-        est_boisson: estLigneBoisson(l),
-        details: detailsDe(l, 'cuisine'),
-        details_comptoir: detailsDe(l, 'comptoir')
-      };
+        station: 'comptoir',
+        est_boisson: l.est_boisson,
+        inclus: l.inclus,
+        details: [],
+        details_comptoir: l.details || []
+      });
     });
-    const total = items.reduce((s, it) => s + (Number(it.prix) || 0) * (it.quantite || 1), 0);
-    console.log('🖥️ BORNE v.FORMULE-FIX-2026-07-18 — panier:',
-      JSON.stringify(panier.map(l => ({ nom: l.nom, prix: l.prix, lien: l.lien_plat || null }))));
+
     const { error } = await sb.from('impressions_borne').insert({
       restaurant_id: RESTO_ID,
       numero: String(numero),
       mode_service: modeService,
       mode_paiement: methode,
       client_nom: clientFid ? clientFid.nom : null,
-      total: total,
-      lignes: items
+      total: imp.ticketClient.total,
+      lignes: lignes
     });
     if (error) console.error('Insert impressions_borne KO:', error.message);
   } catch (e) {
@@ -6062,10 +6045,17 @@ async function payer(methode) {
     recompense: l.recompense || null      // 🎁 palier fidélité (ligne remise)
   }));
 
+  // ⏱️ Garde-fou anti-blocage : le paiement carte a DÉJÀ réussi ici. Si le
+  //    serveur ne répond pas en 20 s (Wi-Fi qui décroche…), on abandonne
+  //    l'attente au lieu de figer la borne — sinon le client a payé mais
+  //    aucun ticket ne sort et l'écran reste bloqué pour toujours.
+  const ctrlVente = new AbortController();
+  const minuteurVente = setTimeout(() => ctrlVente.abort(), 20000);
   try {
     const resp = await fetch('/.netlify/functions/borne-enregistrer-vente', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: ctrlVente.signal,
       body: JSON.stringify({
         restaurant_id: RESTO_ID,
         mode_paiement: methode,
@@ -6075,6 +6065,7 @@ async function payer(methode) {
         client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null
       })
     });
+    clearTimeout(minuteurVente);
     const data = await resp.json();
     if (!resp.ok || !data.ok) throw new Error(data.erreur || 'Erreur d\'enregistrement');
 
@@ -6129,8 +6120,16 @@ async function payer(methode) {
       afficherConfirmation(data.numero, 'comptoir');
     }
   } catch (e) {
-    envoiEnCours = false;   // on relâche pour permettre une nouvelle tentative
-    borneAlert('Erreur : ' + e.message, '⚠️');
+    clearTimeout(minuteurVente);        // ne pas laisser le timer courir
+    envoiEnCours = false;               // on relâche pour permettre une nouvelle tentative
+    // Message spécifique si c'est le délai qui a sauté : le paiement a pu passer,
+    // il ne faut pas que le client re-paie — on l'oriente vers la caisse.
+    if (e.name === 'AbortError') {
+      borneAlert('Connexion trop lente. Si votre carte a été débitée, '
+        + 'présentez-vous à la caisse avec votre reçu — ne payez pas une 2e fois.', '⏱️');
+    } else {
+      borneAlert('Erreur : ' + e.message, '⚠️');
+    }
   }
 }
 
