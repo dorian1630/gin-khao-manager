@@ -5956,7 +5956,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">caisse v26.07-a</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">caisse v26.07-b</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ============================================
@@ -7644,8 +7644,26 @@ function ouvrirModaleParcours() {
 }
 
 // Ajout simple sans parcours
+// ⚠️ Deux lignes ne fusionnent QUE si elles sont strictement identiques.
+//    Avant, la recherche se faisait sur le seul produit_id : un article déjà
+//    présent comme composant de formule/box (sous-ligne à 0 €) était incrémenté
+//    → le 2e article était facturé 0 € ET invisible sur le bon cuisine, car les
+//    sous-lignes en sont exclues. Le plat n'était ni payé ni préparé.
+function ligneFusionnable(l, p) {
+  return l.produit_id === p.id
+      && !l.lien_plat                                   // jamais une sous-ligne
+      && !l.remise_ligne
+      && !l.variante
+      && !l.est_formule
+      && Object.keys(l.options_base || {}).length === 0
+      && (l.retirables || []).length === 0
+      && (l.supplements_sel || []).length === 0
+      && (l.sauces_sel || []).length === 0
+      && Number(l.prix) === parseFloat(p.prix);         // garde-fou prix
+}
+
 function ajouterSimple(p) {
-  const ligne = ticket.find(l => l.produit_id === p.id);
+  const ligne = ticket.find(l => ligneFusionnable(l, p));
   if (p.stock_actif) {
     const dejaDansTicket = ligne ? ligne.quantite : 0;
     if (dejaDansTicket >= p.stock) { flashStock(); return; }
@@ -7658,6 +7676,7 @@ function ajouterSimple(p) {
       nom: p.nom,
       prix: parseFloat(p.prix),
       quantite: 1,
+      ligne_uid: genUid(),          // toute ligne doit avoir son identifiant
       stock_actif: p.stock_actif,
       stock: p.stock,
       categorie_id: p.categorie_id
@@ -7673,7 +7692,7 @@ function ajouter(produitId) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
 
-  const ligne = ticket.find(l => l.produit_id === produitId);
+  const ligne = ticket.find(l => ligneFusionnable(l, p));
   // Vérifie le stock disponible
   if (p.stock_actif) {
     const dejaDansTicket = ligne ? ligne.quantite : 0;
@@ -7691,6 +7710,7 @@ function ajouter(produitId) {
       nom: p.nom,
       prix: parseFloat(p.prix),
       quantite: 1,
+      ligne_uid: genUid(),
       stock_actif: p.stock_actif,
       stock: p.stock,
       categorie_id: p.categorie_id
@@ -7699,17 +7719,21 @@ function ajouter(produitId) {
   afficherTicket();
 }
 
-function modifierQte(produitId, delta) {
-  const ligne = ticket.find(l => l.produit_id === produitId);
+// ⚠️ Indexé par ligne_uid, jamais par produit_id : deux lignes du même plat
+//    (options différentes) se partagent le produit_id → le "−" agissait sur la
+//    mauvaise ligne, et le passage à 0 SUPPRIMAIT LES DEUX d'un coup, en
+//    laissant leurs suppléments orphelins dans le ticket.
+function modifierQte(uid, delta) {
+  const ligne = ticket.find(l => l.ligne_uid === uid);
   if (!ligne) return;
-  // Empêche de dépasser le stock
   if (delta > 0 && ligne.stock_actif && ligne.quantite >= ligne.stock) {
     flashStock();
     return;
   }
   ligne.quantite += delta;
   if (ligne.quantite <= 0) {
-    ticket = ticket.filter(l => l.produit_id !== produitId);
+    // Retire la ligne ET ses sous-lignes rattachées
+    ticket = ticket.filter(l => l.ligne_uid !== uid && l.lien_plat !== uid);
   }
   afficherTicket();
 }
@@ -7717,6 +7741,11 @@ function modifierQte(produitId, delta) {
 function afficherTicket() {
   const zone = document.getElementById('ticket-lignes');
   const btn = document.getElementById('btn-encaisser');
+
+  // ⚠️ Filet de sécurité : TOUTE ligne doit porter un ligne_uid, sinon ses
+  //    boutons +/- (câblés dessus) seraient inertes. Certaines sous-lignes
+  //    (formule, box, commande borne) n'en recevaient pas à leur création.
+  ticket.forEach(l => { if (!l.ligne_uid) l.ligne_uid = genUid(); });
 
   if (ticket.length === 0) {
     zone.innerHTML = `
@@ -7744,13 +7773,13 @@ function afficherTicket() {
     return `
     <div class="ligne ${remiseLigne ? 'ligne-avec-remise' : ''}">
       <div class="ligne-info" onpointerdown="lpDown(${idx})" onpointerup="lpUp()" onpointerleave="lpUp()" onpointercancel="lpUp()" oncontextmenu="return false" onclick="ligneClick(${idx})" style="cursor:pointer; -webkit-user-select:none; user-select:none; touch-action:manipulation;">
-        <div class="ligne-nom">${l.nom}</div>
+        <div class="ligne-nom">${escapeHtmlPos(l.nom)}</div>
         <div class="ligne-pu">${fmt(l.prix)} / unité ${remiseLigne ? '· <span style="color:var(--danger);font-weight:700;">Remise appliquée</span>' : ''}</div>
       </div>
       <div class="qte-ctrl">
-        <button class="qte-btn" onclick="modifierQte('${l.produit_id}', -1)">−</button>
+        <button class="qte-btn" onclick="modifierQte('${l.ligne_uid}', -1)">−</button>
         <span class="qte-val">${l.quantite}</span>
-        <button class="qte-btn" onclick="modifierQte('${l.produit_id}', 1)">+</button>
+        <button class="qte-btn" onclick="modifierQte('${l.ligne_uid}', 1)">+</button>
       </div>
       <div class="ligne-st">${fmt(stFinal)}</div>
     </div>
@@ -7770,7 +7799,7 @@ function afficherTicket() {
     zone.innerHTML += `
       <div class="ligne ligne-offert">
         <div class="ligne-info">
-          <div class="ligne-nom">🎁 ${recompenseCaisse.libelle} — ${recompenseCaisse.nomArticle}</div>
+          <div class="ligne-nom">🎁 ${escapeHtmlPos(recompenseCaisse.libelle)} — ${escapeHtmlPos(recompenseCaisse.nomArticle)}</div>
           <div class="ligne-pu">Fidélité · −${recompenseCaisse.palier} points</div>
         </div>
         <button class="offert-retirer" onclick="retirerRecompenseCaisse()">retirer</button>
@@ -8056,6 +8085,33 @@ async function viderTicket() {
   posConfirm(msg, () => _viderCommandeConfirme(estCommandeBorne),
     { ic: estCommandeBorne ? '⚠️' : '🗑️', okLabel: estCommandeBorne ? 'Annuler la commande' : 'Vider', nonLabel: 'Retour' });
 }
+// ⚠️ Remise à zéro CENTRALISÉE de la commande.
+//    Avant, chaque appelant remettait à zéro sa propre liste de variables et en
+//    oubliait : les frais de livraison et le client restaient attachés, donc
+//    facturés/imputés au client suivant.
+function reinitialiserCommande() {
+  ticket = [];
+  remise = null;
+  recompenseCaisse = null;
+  clientActif = null;
+  clientFid = null;
+  fraisLivraison = 0; infoLivraison = null; fraisLivraisonManuel = null;
+  appointLivraison = null;
+  modeClientTel = null;
+  refBorneEnCours = null;
+  canalVente = 'sur_place';
+  modePaiement = 'especes';
+  paiementsMixtes = [];
+  trNbTickets = 1;
+  modeTicketPro = false;
+  window.commandeEnCoursLiee = null;
+  const el = document.getElementById('ticket-num');
+  if (el) { el.textContent = 'Nouveau ticket'; el.style.color = ''; el.style.fontWeight = ''; }
+  afficherClientFid();
+  afficherBandeauClient();
+  afficherTicket();
+}
+
 async function _viderCommandeConfirme(estCommandeBorne) {
   // Si commande borne → marquer en base comme 'annulee'
   if (estCommandeBorne) {
@@ -8075,24 +8131,8 @@ async function _viderCommandeConfirme(estCommandeBorne) {
     window.commandeEnCoursLiee = null;
   }
   
-  // Reset du ticket
-  ticket = [];
-  recompenseCaisse = null;
-  refBorneEnCours = null;
-  appointLivraison = null;
-  modeClientTel = null;
-  remise = null;
-  
-  // Reset visuel ticket-num
-  const ticketNumEl = document.getElementById('ticket-num');
-  if (ticketNumEl) {
-    ticketNumEl.textContent = 'Nouveau ticket';
-    ticketNumEl.style.color = '';
-    ticketNumEl.style.fontWeight = '';
-  }
-  
-  afficherClientFid();
-  afficherTicket();
+  // Reset COMPLET (frais de livraison + client inclus)
+  reinitialiserCommande();
 }
 
 // ============================================
@@ -8815,8 +8855,15 @@ async function validerVente() {
       statut: 'validee',
       canal: canalVente,
       cree_le: new Date().toISOString(),
-      lignes_vente: lignes.map(l => {
-        const src = ticket.find(t => t.produit_id === l.produit_id && t.nom === l.nom);
+      lignes_vente: lignes.map((l, i) => {
+        // ⚠️ NE PAS chercher par nom/produit_id : deux plats identiques aux
+        //    options différentes (un Riz, un Nouilles) portent le MÊME nom et le
+        //    MÊME produit_id → find() renvoyait toujours le premier, donc les
+        //    options du 1er plat s'appliquaient au 2e (« je prends nouilles,
+        //    le ticket dit riz »). Les N premières lignes correspondent index
+        //    par index à ticket[N] ; les suivantes (TR, remises, fidélité,
+        //    frais) sont ajoutées après et n'ont pas de source.
+        const src = (i < ticket.length) ? ticket[i] : null;
         const pu = Number(l.prix) || 0;            // garde anti-NaN
         const qt = Number(l.quantite) || 1;
         return {
@@ -8824,6 +8871,8 @@ async function validerVente() {
           prix_unitaire: pu,
           quantite: qt,
           sous_total: pu * qt,
+          produit_id: src ? (src.produit_id || null) : null,
+          categorie_id: src ? (src.categorie_id || null) : null,
           lien_plat: src ? (src.lien_plat || null) : null,
           details: detailsLigneTicket(src, 'comptoir')
         };
@@ -9565,7 +9614,6 @@ function voirTicket(venteId) {
     };
   });
   preparerImpression(lignesReimp, v);
-  preparerImpression(lignesReimp, v);
 
   // 🚗 Réimpression d'une LIVRAISON : recharger la fiche client pour le bon livreur
   if (v.canal === 'livraison' && v.client_id && !v.client) {
@@ -9817,7 +9865,7 @@ function preparerImpression(lignesTicket, venteLocale) {
   const modeServiceBon = venteLocale.canal || null;
 
   derniereImpression = {
-    version: 'REF-BORNE-2026-07-18',   // 🔎 permet de vérifier que la caisse est à jour
+    version: 'v26.07-b',   // 🔎 permet de vérifier que la caisse est à jour
     refBorne: (typeof refBorneEnCours !== 'undefined' ? refBorneEnCours : null),
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
@@ -9873,12 +9921,11 @@ function preparerImpression(lignesTicket, venteLocale) {
       // 🥤 est_boisson : le relais n'écrit pas "1x" devant une boisson seule
       lignes: (venteLocale.lignes_vente || [])
         .filter(l => !(l.lien_plat && Number(l.prix_unitaire) === 0))
-        .map(lv => {
-          const src = lignesTicket.find(t => t.nom === lv.nom_produit);
-          return Object.assign({}, lv, {
-            est_boisson: src ? idsBoissons.includes(src.categorie_id) : false
-          });
-        }),
+        .map(lv => Object.assign({}, lv, {
+          // categorie_id est désormais porté par la ligne : plus de recherche
+          // par nom, qui se trompait sur deux produits homonymes.
+          est_boisson: idsBoissons.includes(lv.categorie_id)
+        })),
       total: venteLocale.total,
       modePaiement: venteLocale.mode_paiement,
       restoNom: RESTO_INFOS.nom,
@@ -10602,7 +10649,9 @@ async function validerPin() {
     }
     
     // Succès !
-    caissierActif = { id: data.id, nom: data.nom, code_pin: data.code_pin };
+    // ⚠️ Le PIN n'est PAS conservé : il restait en clair dans le localStorage,
+    //    lisible par n'importe qui ayant accès à la tablette.
+    caissierActif = { id: data.id, nom: data.nom };
     localStorage.setItem('gin-khao-caissier', JSON.stringify(caissierActif));
     majAffichageCaissier();
     
@@ -12052,17 +12101,22 @@ async function chargerCommandeAttente(id) {
   //    produit_id du plat ; la caisse, elle, travaille avec des ligne_uid.
   //    Sans cette reconstruction, les sous-lignes deviennent des plats à part entière
   //    (doublons sur le bon cuisine et le ticket comptoir).
+  //    ⚠️ Deux fois LE MÊME plat (ex. 2x Riz Thaï poulet formule) ont le même
+  //    produit_id : un simple dictionnaire produit_id → uid faisait écraser le
+  //    1er plat par le 2e, donc TOUTES les sous-lignes (boisson, entrée) se
+  //    rattachaient au dernier — la 1re entrée disparaissait du bon cuisine.
+  //    On parcourt donc DANS L'ORDRE : chaque sous-ligne suit son plat, elle est
+  //    rattachée au plat le plus récemment rencontré portant ce produit_id.
   const uidParProduit = {};
   ticket.forEach(l => {
     if (!l._lien_borne) {
       l.ligne_uid = genUid();
       if (l.produit_id) uidParProduit[l.produit_id] = l.ligne_uid;
+    } else {
+      l.lien_plat = uidParProduit[l._lien_borne] || null;
     }
   });
-  ticket.forEach(l => {
-    if (l._lien_borne) l.lien_plat = uidParProduit[l._lien_borne] || null;
-    delete l._lien_borne;
-  });
+  ticket.forEach(l => { delete l._lien_borne; });
 
   // 🥤 La boisson d'une formule/box arrive de la borne comme une sous-ligne à 0 €.
   //    Or le ticket comptoir masque ces lignes (pour éviter les doublons) et
@@ -12184,23 +12238,19 @@ async function encaisserDirectBorne() {
   // Vérifier que le ticket actuel est vide
   if (ticket.length > 0) {
     posConfirm('Un ticket est en cours.<br>Le remplacer par cette commande ?', () => {
-      ticket = [];
-      afficherTicket();
-      _chargerCommandeAttenteSuite(id, cmd);
+      reinitialiserCommande();
+      _chargerCommandeAttenteSuite(id);
     }, { ic: '🧾', okLabel: 'Remplacer', nonLabel: 'Garder' });
     return;
   }
-  _chargerCommandeAttenteSuite(id, cmd);
+  _chargerCommandeAttenteSuite(id);
 }
-async function _chargerCommandeAttenteSuite(id, cmd) {
-  
-  // Charger la commande dans le ticket (réutilise la fonction existante)
+// ⚠️ 'cmd' n'existait pas dans cette portée (locale à chargerCommandeAttente) :
+//    le bouton "Encaisser direct" plantait sur un ReferenceError silencieux.
+async function _chargerCommandeAttenteSuite(id) {
   await chargerCommandeAttente(id);
-  
-  // Ouvrir directement la modale paiement
-  setTimeout(() => {
-    ouvrirPaiement();
-  }, 200);
+  // La modale paiement ne s'ouvre que si la commande a bien été chargée
+  if (ticket.length > 0) ouvrirPaiement();
 }
 async function vuEtOuvrirKDS() {
   const popup = document.getElementById('popup-notif-nouvelle');
