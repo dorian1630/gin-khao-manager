@@ -1395,6 +1395,13 @@ html, body {
   font-weight: 800;
   min-width: 34px;
 }
+.bc-sub {
+  margin: 0 0 4px 44px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+}
 .bc-vide { text-align: center; color: #888; font-size: 13px; padding: 16px 0; }
 
 /* ===== RAPPORT CLÔTURE Z ===== */
@@ -5958,6 +5965,7 @@ html, body {
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">caisse v26.07-b</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="noyau-commande.js"></script>
 <script>
 // ============================================
 //  💬 DIALOGUES CUSTOM (remplacent alert/confirm Android)
@@ -6157,6 +6165,10 @@ async function chargerMenu() {
     return;
   }
   produits = prods || [];
+  // 🧩 Le noyau partagé (routage + détails + bons) travaille sur le MÊME
+  //    catalogue que la borne. Toutes les catégories (non filtrées) pour que
+  //    le routage connaisse Sauces/Suppléments.
+  if (window.NC) NC.init({ produits: produits, categories: categories });
   afficherCats();
   afficherProduits();
 }
@@ -6964,6 +6976,7 @@ function cleGroupeOption(opt, idx) {
 
 // Accompagnement choisi (Riz / Nouilles) — passe dans le NOM du plat sur le bon cuisine.
 function accompagnementDe(l) {
+  if (window.NC) return NC.accompagnementDe(l);
   if (!l || !l.options_base) return null;
   const v = Object.values(l.options_base).find(x => /^(riz|nouilles?)$/i.test(String(x || '').trim()));
   return v ? String(v).trim() : null;
@@ -6975,6 +6988,9 @@ function accompagnementDe(l) {
 //   'comptoir' : on NE répète PAS ce qui est déjà facturé sur une ligne à part
 //                (suppléments, sauces payantes) — sinon doublon sur le ticket client.
 function detailsLigneTicket(l, pour) {
+  // 🧩 Règle unique partagée avec la borne (crousty, sauces, suppléments,
+  //    entrées de formule, pièces…). Repli local complet si noyau absent.
+  if (window.NC) return NC.detailsLigne(l, pour);
   const d = [];
   if (!l) return d;
   const p = produits.find(x => x.id === l.produit_id);
@@ -9637,9 +9653,13 @@ function fermerTicket() {
 // Catégories qui ne vont PAS en cuisine (le comptoir s'en occupe) :
 // boissons ET desserts. Servaient jusqu'ici uniquement pour les boissons.
 function categoriesBoissons() {
-  return categories
-    .filter(c => /boisson|dessert/i.test(c.nom))
-    .map(c => c.id);
+  // 🧩 Aligné sur le noyau : tout ce qui est routé 'comptoir' (Boissons,
+  //    Desserts — et, selon la base, Sauces/Suppléments) est exclu des bons.
+  //    Repli local sur le nom si le noyau n'est pas chargé.
+  if (window.NC) {
+    return categories.filter(c => NC.stationCategorie(c.id) === 'comptoir').map(c => c.id);
+  }
+  return categories.filter(c => /boisson|dessert/i.test(c.nom)).map(c => c.id);
 }
 
 // Construit le bon cuisine à partir des lignes du ticket courant (avant réinitialisation).
@@ -9647,25 +9667,34 @@ function categoriesBoissons() {
 // Génère les bons de préparation à afficher : un pour la CUISINE, un pour le SUSHI.
 // Retourne le HTML combiné (les deux bons, ou seulement celui qui a des items).
 function genererBonsPreparationHTML(lignesTicket, numero) {
-  const idsBoissons = categoriesBoissons();
-  const aPreparer = lignesTicket.filter(l =>
-    l.produit_id &&                          // pas les lignes remise/plat offert
-    !idsBoissons.includes(l.categorie_id)    // pas les boissons
-  );
-
-  const itemsSushi = aPreparer.filter(l => estCategorieSushi(l.categorie_id));
-  const itemsCuisine = aPreparer.filter(l => !estCategorieSushi(l.categorie_id));
+  // 🧩 Mêmes items que le bon IMPRIMÉ (via le noyau) → l'écran et le papier
+  //    affichent EXACTEMENT la même chose (avant, l'écran ignorait les détails).
+  let itemsCuisine, itemsSushi;
+  if (window.NC) {
+    const _imp = NC.construireImpression(lignesTicket, { numero: numero });
+    itemsCuisine = _imp.bonCuisine ? _imp.bonCuisine.items : [];
+    itemsSushi   = _imp.bonSushi   ? _imp.bonSushi.items   : [];
+  } else {
+    const idsBoissons = categoriesBoissons();
+    const aPreparer = lignesTicket.filter(l => l.produit_id && !idsBoissons.includes(l.categorie_id));
+    itemsSushi = aPreparer.filter(l => estCategorieSushi(l.categorie_id));
+    itemsCuisine = aPreparer.filter(l => !estCategorieSushi(l.categorie_id));
+  }
 
   const h = new Date();
   const heure = String(h.getHours()).padStart(2,'0') + ':' + String(h.getMinutes()).padStart(2,'0');
 
   function unBon(titre, emoji, items, classe) {
     if (items.length === 0) return '';
-    const itemsHTML = items.map(l => `
+    const itemsHTML = items.map(l => {
+      const dets = (l.details || []).map(d =>
+        `<div class="bc-sub">${escapeHtmlPos(String(d))}</div>`).join('');
+      return `
         <div class="bc-item">
           <span class="qte">${l.quantite}×</span>
-          <span>${l.nom}</span>
-        </div>`).join('');
+          <span>${escapeHtmlPos(String(l.nom))}</span>
+        </div>${dets}`;
+    }).join('');
     return `
     <div class="bon-cuisine ${classe}">
       <div class="bc-head">
@@ -9824,9 +9853,12 @@ async function imprimerTicket() {  if (!derniereImpression) {
 // Catégories qui partent au POSTE SUSHI (tout ce qui est froid/cru préparé par le sushiman).
 // Le matching se fait sur le NOM de la catégorie (insensible à la casse).
 // Ajoute ici tes futures catégories : 'Californias', 'Makis', 'Crispys', 'Tigers', etc.
+// Repli conservé si le noyau n'est pas chargé (ceinture + bretelles)
 const CATEGORIES_SUSHI = ['sushi', 'pokébowl', 'pokebowl', 'california', 'maki', 'crispy', 'tiger'];
 
 function estCategorieSushi(categorieId) {
+  // 🧩 Source unique : le noyau (identique à la borne). Repli local si absent.
+  if (window.NC) return NC.stationCategorie(categorieId) === 'sushi';
   const cat = categories.find(c => c.id === categorieId);
   if (!cat) return false;
   const nom = cat.nom.toLowerCase();
@@ -9846,14 +9878,18 @@ function preparerImpression(lignesTicket, venteLocale) {
 
   const versItem = l => ({ quantite: l.quantite, nom: (l.nom || '').replace(/\s*\((?:formule|box|supplément|supplement)\)\s*$/i, ''), details: l.details || [] });
 
-  // Répartition par poste
-  const itemsSushi = itemsAPreparer
-    .filter(l => estCategorieSushi(l.categorie_id))
-    .map(versItem);
-
-  const itemsCuisine = itemsAPreparer
-    .filter(l => !estCategorieSushi(l.categorie_id))
-    .map(versItem);
+  // 🧩 Répartition par poste DÉLÉGUÉE AU NOYAU (routage + éclatement portions
+  //    sushi + pièces + entrées de formule sur la bonne imprimante). Identique
+  //    à la borne. Repli local (ancienne logique) si le noyau n'est pas chargé.
+  let itemsSushi, itemsCuisine;
+  if (window.NC) {
+    const _imp = NC.construireImpression(lignesTicket, { numero: venteLocale.numero });
+    itemsCuisine = _imp.bonCuisine ? _imp.bonCuisine.items : [];
+    itemsSushi   = _imp.bonSushi   ? _imp.bonSushi.items   : [];
+  } else {
+    itemsSushi = itemsAPreparer.filter(l => estCategorieSushi(l.categorie_id)).map(versItem);
+    itemsCuisine = itemsAPreparer.filter(l => !estCategorieSushi(l.categorie_id)).map(versItem);
+  }
 
   const d = new Date(venteLocale.cree_le);
   const heure = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
