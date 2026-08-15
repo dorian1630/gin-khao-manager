@@ -3728,7 +3728,10 @@ function ajouterUpsell(produitId, type) {
   if (!p) return;
   
   // Ajout direct au panier
-  const ligne = panier.find(l => l.produit_id === p.id && !l.options && !l.variante);
+  // ⚠️ !l.lien_plat : sans lui, l'upsell d'un Coca incrémentait le Coca à 0 €
+  //    d'une formule déjà au panier → 2e Coca gratuit + quantités désynchronisées.
+  const ligne = panier.find(l => l.produit_id === p.id && !l.options && !l.variante
+    && !l.lien_plat && Number(l.prix) === parseFloat(p.prix));
   if (ligne) {
     ligne.quantite++;
   } else {
@@ -3792,7 +3795,9 @@ function choisirVarianteUpsell(produitId, indexVariante) {
   const vLabel = labelVariante(variante);
   
   // Ajout au panier (regroupe si même produit + même variante déjà présent sans options)
-  const ligne = panier.find(l => l.produit_id === p.id && !l.options && l.variante === vLabel);
+  // ⚠️ !l.lien_plat + prix identique : jamais de fusion avec une sous-ligne de formule
+  const ligne = panier.find(l => l.produit_id === p.id && !l.options && l.variante === vLabel
+    && !l.lien_plat && Number(l.prix) === parseFloat(variante.prix));
   if (ligne) {
     ligne.quantite++;
   } else {
