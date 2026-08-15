@@ -2999,7 +2999,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-a</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-c</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -3084,6 +3084,10 @@ let categories = [];
 let catActive = 'tout';
 let panier = [];          // [{produit_id, nom, prix, quantite, emoji}]
 let modeService = 'sur_place';
+// Identifiant unique de ligne panier — JAMAIS de rattachement par produit_id :
+// deux formules identiques partageraient le même id et se voleraient leurs
+// sous-lignes (entrée/boisson) à la suppression ou au changement de quantité.
+function bUid() { return 'B' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 let clientFid = null;     // 🎫 Client attaché via QR code fidélité {id, nom, points, ...}
 
 // ===== NAVIGATION ENTRE ÉCRANS =====
@@ -3518,24 +3522,33 @@ function ajouterDirect(p, options) {
     (options.options_base && Object.keys(options.options_base).length > 0)
   );
   if (!aDesOptions) {
-    // Regroupe si même produit + même variante (ou aucune) + pas d'options
-    const ligne = panier.find(l => l.produit_id === p.id && !l.options && (l.variante || null) === varLabel);
+    // Regroupe si même produit + même variante + pas d'options.
+    // ⚠️ JAMAIS avec une sous-ligne (!l.lien_plat) : sinon un Coca commandé
+    //    seul incrémentait le Coca à 0 € d'une formule → gratuit + désynchro.
+    const ligne = panier.find(l => l.produit_id === p.id && !l.options && !l.lien_plat
+      && (l.variante || null) === varLabel && Number(l.prix) === prixFinal);
+    var _ligneAjoutee;
     if (ligne) {
       ligne.quantite++;
+      if (!ligne.ligne_uid) ligne.ligne_uid = bUid();
+      _ligneAjoutee = ligne;
     } else {
-      panier.push({ produit_id: p.id, nom: nomFinal, prix: prixFinal, quantite: 1, emoji, variante: varLabel || undefined });
+      _ligneAjoutee = { produit_id: p.id, nom: nomFinal, prix: prixFinal, quantite: 1, emoji, variante: varLabel || undefined, ligne_uid: bUid() };
+      panier.push(_ligneAjoutee);
     }
   } else {
     // Avec options : toujours une nouvelle ligne (chaque combinaison unique)
-    panier.push({
+    var _ligneAjoutee = {
       produit_id: p.id,
       nom: nomFinal,
       prix: prixFinal,
       quantite: 1,
       emoji,
       variante: varLabel || undefined,
-      options: options
-    });
+      options: options,
+      ligne_uid: bUid()
+    };
+    panier.push(_ligneAjoutee);
   }
   // 🎁 Récompense en attente : l'article qui vient d'être ajouté est offert
   if (recompensePendingAjout && clientFid && !recompenseEnAttente) {
@@ -3565,6 +3578,7 @@ function ajouterDirect(p, options) {
   if (!options || (!options.retirable && !options.supplements && !options.sauces && !options.options_base)) {
     declencherUpsell(p);
   }
+  return _ligneAjoutee;   // ← les sous-lignes se rattachent à SON ligne_uid
 }
 
 // ============================================================
@@ -3979,8 +3993,11 @@ function finaliserParcoursPlat() {
     variante_prix: parcoursPlatEnCours.variante_prix
   };
 
-  // Ajouter le plat au panier avec options
-  ajouterDirect(p, options);
+  // Ajouter le plat au panier avec options — on récupère SA ligne pour
+  // rattacher les sous-lignes à son uid (jamais au produit_id : deux formules
+  // identiques se volaient leurs entrées à la suppression / changement de qté).
+  const lignePlat = ajouterDirect(p, options);
+  const uidPlat = lignePlat ? lignePlat.ligne_uid : bUid();
 
   // 🌶️ "Sauce Piquante" (groupe Sauce Riz) est facturée +0,50 € :
   //    les choix d'options n'ayant pas de prix, on ajoute une sous-ligne liée.
@@ -3992,7 +4009,7 @@ function finaliserParcoursPlat() {
       prix: 0.50,
       quantite: 1,
       emoji: '🌶️',
-      lien_plat: p.id
+      lien_plat: uidPlat
     });
   }
 
@@ -4006,7 +4023,7 @@ function finaliserParcoursPlat() {
         prix: parseFloat(supp.prix),
         quantite: g.qte,
         emoji: '➕',
-        lien_plat: p.id
+        lien_plat: uidPlat
       });
     }
   });
@@ -4023,7 +4040,7 @@ function finaliserParcoursPlat() {
           prix: parseFloat(sauce.prix),
           quantite: 1,
           emoji: '🌶️',
-          lien_plat: p.id
+          lien_plat: uidPlat
         });
       }
     });
@@ -4041,7 +4058,7 @@ function finaliserParcoursPlat() {
           prix: pB,
           quantite: 1,
           emoji: '🥤',
-          lien_plat: p.id
+          lien_plat: uidPlat
         });
       }
     }
@@ -4055,7 +4072,7 @@ function finaliserParcoursPlat() {
           prix: 0,  // OFFERT, prix dans la formule
           quantite: 1,
           emoji: '🥟',
-          lien_plat: p.id
+          lien_plat: uidPlat
         });
       }
     }
@@ -4828,17 +4845,21 @@ function modifierQte(index, delta) {
     }
   }
   ligne.quantite += delta;
-  // 🍱 Formule : l'entrée et la boisson liées suivent la même quantité
-  //    (doubler la formule double aussi son entrée et sa boisson).
+  // 🍱 Formule : l'entrée et la boisson liées suivent la même quantité.
+  //    ⚠️ Rattachement par ligne_uid : avant (par produit_id), supprimer une
+  //    formule emportait les sous-lignes de TOUTES les formules identiques →
+  //    l'autre client gardait sa formule facturée mais SANS entrée en cuisine.
   const prodQte = produits.find(x => x.id === ligne.produit_id);
   if (!ligne.lien_plat && prodQte && prodQte.est_formule === true) {
     if (ligne.quantite <= 0) {
-      panier = panier.filter(l => l !== ligne && l.lien_plat !== ligne.produit_id);
+      panier = panier.filter(l => l !== ligne && l.lien_plat !== ligne.ligne_uid);
     } else {
-      panier.forEach(l => { if (l.lien_plat === ligne.produit_id) l.quantite = ligne.quantite; });
+      panier.forEach(l => { if (l.lien_plat === ligne.ligne_uid) l.quantite = ligne.quantite; });
     }
   } else if (ligne.quantite <= 0) {
-    panier.splice(index, 1);
+    // Tout parent qui part emporte ses sous-lignes (suppléments, sauces) —
+    // sinon elles restaient orphelines et facturées.
+    panier = panier.filter(l => l !== ligne && l.lien_plat !== ligne.ligne_uid);
   }
   afficherPanier();
   majBarrePanier();
@@ -4912,7 +4933,8 @@ function afficherPanier() {
     const classe = l.lien_plat ? 'panier-ligne pl-lie' : 'panier-ligne';
     // 🍱 Sous-lignes de formule (entrée, boisson) : leur quantité est pilotée
     //    par la formule elle-même → pas de boutons +/- (elles suivent).
-    const prodParent = l.lien_plat ? produits.find(pp => pp.id === l.lien_plat) : null;
+    const ligneParent = l.lien_plat ? panier.find(x => x.ligne_uid === l.lien_plat) : null;
+    const prodParent = ligneParent ? produits.find(pp => pp.id === ligneParent.produit_id) : null;
     const sousLigneFormule = prodParent && prodParent.est_formule === true;
     const qteHtml = sousLigneFormule
       ? `<span class="pl-qval">${l.quantite}</span>`
