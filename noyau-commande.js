@@ -122,6 +122,7 @@
       retirables: l.retirables || o.retirable || o.retirables || [],
       supplements_sel: l.supplements_sel || o.supplements || [],
       sauces_sel: l.sauces_sel || o.sauces || [],
+      details_precalcules: Array.isArray(l.details) ? l.details : null,
       est_formule: !!(l.est_formule || (p && p.est_formule)),
       formule_boisson_id: l.formule_boisson_id || null,
       formule_entree_id: l.formule_entree_id || null,
@@ -352,7 +353,10 @@
       .replace(/\s*\((?:formule|box|supplément|supplement)\)\s*$/i, '')
       .trim();
     var acc = accompagnementDe(l);
-    var nom = (acc && !l.lien_plat) ? acc + ' ' + base : base;
+    // ⚠️ IDEMPOTENT : si l'appelant a déjà collé l'accompagnement au nom
+    //    (ancien code de la caisse), ne pas le recoller → "Riz Riz Bœuf…".
+    var dejaColle = acc && norm(base).indexOf(norm(acc) + ' ') === 0;
+    var nom = (acc && !l.lien_plat && !dejaColle) ? acc + ' ' + base : base;
     // Le nombre de pièces des sushis est écrit DANS LE NOM ("... (6 pièces)")
     // et les variantes sont vides : on le préserve tel quel, on ne force jamais
     // un nombre (un "Sushi Saumon (4 pièces)" existe). On ne le complète depuis
@@ -419,11 +423,18 @@
               details: []
             };
           }
+          // Détails recalculés depuis les données brutes ; si la ligne vient de
+          // la base (réimpression : plus d'options_base), repli sur les détails
+          // stockés — sinon les bons de réimpression sortiraient nus.
+          var dets = detailsLigne(l, 'cuisine');
+          if (!dets.length && l.details_precalcules && l.details_precalcules.length) {
+            dets = l.details_precalcules;
+          }
           return {
             ligne_uid: l.ligne_uid,
             quantite: l.quantite,
             nom: nomPourPreparation(l),
-            details: detailsLigne(l, 'cuisine')
+            details: dets
           };
         });
       return eclaterPortions(items, station);
