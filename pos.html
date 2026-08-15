@@ -12146,7 +12146,8 @@ async function chargerCommandeAttente(id) {
       supplements_sel: o.supplements || [],
       sauces_sel: o.sauces || [],
       est_formule: prod ? (prod.est_formule === true) : false,
-      _lien_borne: l.lien_plat || null   // la borne référence le produit_id du plat parent
+      _uid_borne: l.ligne_uid || null,   // uid transmis par la borne (v26.07-c+)
+      _lien_borne: l.lien_plat || null   // ancien format : produit_id du parent
     };
   });
 
@@ -12160,16 +12161,30 @@ async function chargerCommandeAttente(id) {
   //    rattachaient au dernier — la 1re entrée disparaissait du bon cuisine.
   //    On parcourt donc DANS L'ORDRE : chaque sous-ligne suit son plat, elle est
   //    rattachée au plat le plus récemment rencontré portant ce produit_id.
+  //    ⚠️ TROIS formats de lien coexistent selon la version de la borne :
+  //      1. lien_plat = ligne_uid borne (v26.07-c+, transmis dans le payload)
+  //      2. lien_plat = produit_id du parent (anciennes bornes)
+  //      3. lien_plat = uid borne NON transmis (fenêtre v26.07-c avant ce fix)
+  //         → repli : la sous-ligne suit le DERNIER plat rencontré (la borne
+  //         pousse toujours plat puis ses sous-lignes, dans l'ordre).
   const uidParProduit = {};
+  const uidParBorneUid = {};
+  let dernierParentUid = null;
   ticket.forEach(l => {
     if (!l._lien_borne) {
       l.ligne_uid = genUid();
+      dernierParentUid = l.ligne_uid;
       if (l.produit_id) uidParProduit[l.produit_id] = l.ligne_uid;
+      if (l._uid_borne) uidParBorneUid[l._uid_borne] = l.ligne_uid;
     } else {
-      l.lien_plat = uidParProduit[l._lien_borne] || null;
+      l.ligne_uid = genUid();
+      l.lien_plat = uidParBorneUid[l._lien_borne]
+                 || uidParProduit[l._lien_borne]
+                 || dernierParentUid
+                 || null;
     }
   });
-  ticket.forEach(l => { delete l._lien_borne; });
+  ticket.forEach(l => { delete l._lien_borne; delete l._uid_borne; });
 
   // 🥤 La boisson d'une formule/box arrive de la borne comme une sous-ligne à 0 €.
   //    Or le ticket comptoir masque ces lignes (pour éviter les doublons) et
