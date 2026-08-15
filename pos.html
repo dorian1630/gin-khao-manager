@@ -8809,14 +8809,31 @@ async function validerVente() {
     quantite: l.quantite,
     categorie_id: l.categorie_id,
     lien_plat: l.lien_plat || null,
-    // ⚠️ Les options étaient perdues ici : sans elles, aucun détail sur les bons.
+    ligne_uid: l.ligne_uid || null,
+    // ⚠️ Le noyau recalcule les détails depuis les données BRUTES : si on ne
+    //    copie que 'details', il ne trouve rien et les bons sortent nus
+    //    (plus de Spicy / Sans Œuf / suppléments). On garde donc tout.
+    options_base: l.options_base || null,
+    retirables: l.retirables || null,
+    supplements_sel: l.supplements_sel || null,
+    sauces_sel: l.sauces_sel || null,
+    variante: l.variante || null,
+    est_formule: l.est_formule || false,
+    formule_entree_id: l.formule_entree_id || null,
+    formule_entree_label: l.formule_entree_label || null,
+    formule_boisson_id: l.formule_boisson_id || null,
     details: detailsLigneTicket(l, 'cuisine')
   }));
   // Bon cuisine : l'accompagnement passe dans le nom → "RIZ POULET LOC LAC"
-  lignesPourCuisine.forEach((lc, i) => {
-    const acc = accompagnementDe(ticket[i]);
-    if (acc && !lc.lien_plat) lc.nom = acc + ' ' + lc.nom;
-  });
+  // (Le collage de l'accompagnement au nom est désormais fait par le noyau
+  //  dans nomPourPreparation — le refaire ici doublait le préfixe. On ne le
+  //  garde que si le noyau n'est pas chargé.)
+  if (!window.NC) {
+    lignesPourCuisine.forEach((lc, i) => {
+      const acc = accompagnementDe(ticket[i]);
+      if (acc && !lc.lien_plat) lc.nom = acc + ' ' + lc.nom;
+    });
+  }
 
   try {
     // Le canal "cc_enligne" et "cc_comptoir" sont tous deux du click&collect côté base.
