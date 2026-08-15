@@ -2999,7 +2999,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-c</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-d</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -3558,6 +3558,7 @@ function ajouterDirect(p, options) {
       const reco = FID_PALIERS.find(r => r.palier === rp.palier);
       recompenseEnAttente = { palier: rp.palier, libelle: reco.libelle, montant: prixFinal };
       panier.push({
+        ligne_uid: bUid(),
         produit_id: null,
         nom: '🎁 ' + reco.libelle + ' (fidélité)',
         prix: -prixFinal,
@@ -3732,6 +3733,7 @@ function ajouterUpsell(produitId, type) {
     ligne.quantite++;
   } else {
     panier.push({
+      ligne_uid: bUid(),
       produit_id: p.id,
       nom: p.nom,
       prix: parseFloat(p.prix),
@@ -3795,6 +3797,7 @@ function choisirVarianteUpsell(produitId, indexVariante) {
     ligne.quantite++;
   } else {
     panier.push({
+      ligne_uid: bUid(),
       produit_id: p.id,
       nom: p.nom + ' (' + vLabel + ')',
       prix: parseFloat(variante.prix),
@@ -4850,16 +4853,21 @@ function modifierQte(index, delta) {
   //    formule emportait les sous-lignes de TOUTES les formules identiques →
   //    l'autre client gardait sa formule facturée mais SANS entrée en cuisine.
   const prodQte = produits.find(x => x.id === ligne.produit_id);
+  // ⚠️ GARDE-FOU CRITIQUE : ne JAMAIS comparer l.lien_plat à un uid absent.
+  //    Si ligne.ligne_uid est undefined, "l.lien_plat !== undefined" est FAUX
+  //    pour toute ligne principale → supprimer UNE ligne sans uid VIDAIT tout
+  //    le panier. D'où le test "ligne.ligne_uid &&" ci-dessous.
+  const uidL = ligne.ligne_uid || null;
   if (!ligne.lien_plat && prodQte && prodQte.est_formule === true) {
     if (ligne.quantite <= 0) {
-      panier = panier.filter(l => l !== ligne && l.lien_plat !== ligne.ligne_uid);
+      panier = panier.filter(l => l !== ligne && !(uidL && l.lien_plat === uidL));
     } else {
-      panier.forEach(l => { if (l.lien_plat === ligne.ligne_uid) l.quantite = ligne.quantite; });
+      panier.forEach(l => { if (uidL && l.lien_plat === uidL) l.quantite = ligne.quantite; });
     }
   } else if (ligne.quantite <= 0) {
     // Tout parent qui part emporte ses sous-lignes (suppléments, sauces) —
     // sinon elles restaient orphelines et facturées.
-    panier = panier.filter(l => l !== ligne && l.lien_plat !== ligne.ligne_uid);
+    panier = panier.filter(l => l !== ligne && !(uidL && l.lien_plat === uidL));
   }
   afficherPanier();
   majBarrePanier();
@@ -4901,6 +4909,9 @@ function majBarrePanier() {
 }
 
 function afficherPanier() {
+  // 🛡️ Filet : TOUTE ligne du panier doit porter un ligne_uid avant que les
+  //    boutons +/- (qui suppriment par uid) ne soient cliquables.
+  panier.forEach(l => { if (!l.ligne_uid) l.ligne_uid = bUid(); });
   const liste = document.getElementById('panier-liste');
   liste.innerHTML = panier.map((l, idx) => {
     // Affichage des options
@@ -5880,6 +5891,7 @@ function choisirRecompense(palier) {
   const montant = ligne.prix;   // 1 unité offerte
   recompenseEnAttente = { palier: palier, libelle: reco.libelle, montant: montant };
   panier.push({
+    ligne_uid: bUid(),
     produit_id: null,
     nom: '🎁 ' + reco.libelle + ' (fidélité)',
     prix: -montant,
@@ -6063,7 +6075,8 @@ async function payer(methode) {
     prix: l.prix,
     quantite: l.quantite,
     options: l.options || null,
-    lien_plat: l.lien_plat || null,
+    ligne_uid: l.ligne_uid || null,       // ⚠️ indispensable : la caisse rattache
+    lien_plat: l.lien_plat || null,       //    les sous-lignes via cet uid
     recompense: l.recompense || null      // 🎁 palier fidélité (ligne remise)
   }));
 
