@@ -23,12 +23,12 @@ resto: 'saint-just', // magasin de CETTE tablette
 intervalMs: 8000, // fréquence de vérification (8 s)
 modeTest: false, // true = affiche le ticket dans la console (aucune impression)
 
-// ⚠️ À VÉRIFIER : mêmes IP que serveur-impression.js (réseau 192.168.123.x).
-//    Comparer avec http://localhost:9100/ avant de remplacer ce fichier.
+// ✅ IP alignées sur serveur-impression.js EN PRODUCTION (source de vérité :
+//    il imprime chaque jour). Ping depuis le Pi : .245 / .149 / .246.
 imprimantes: {
-cuisine: { ip: '192.168.123.245', port: 9100, nom: 'Cuisine' },
-sushi: { ip: '192.168.123.149', port: 9100, nom: 'Sushi' },
-comptoir: { ip: '192.168.123.246', port: 9100, nom: 'Comptoir' },
+cuisine: { ip: '192.168.1.245', port: 9100, nom: 'Cuisine' },
+sushi: { ip: '192.168.1.149', port: 9100, nom: 'Sushi' },
+comptoir: { ip: '192.168.1.246', port: 9100, nom: 'Comptoir' },
 },
 largeur: 42,
 // Mentions légales / TVA — mêmes valeurs que la caisse et la borne
