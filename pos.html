@@ -5963,7 +5963,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-g</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-h</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -10003,11 +10003,18 @@ function preparerImpression(lignesTicket, venteLocale) {
     ticketClient: {
       numero: venteLocale.numero,
       date: dateStr,
-      // Les éléments inclus (composants de box, boisson/entrée de formule à 0 €)
-      // sont déjà listés en détails sous le plat → pas de ligne "0,00 EUR" en double.
+      // ⚠️ Filtre AFFINÉ (le noyau a changé la donne) :
+      //   - composants de BOX à 0 € : déjà dans les détails du plat (noyau)
+      //     → on les masque, sinon doublon ligne + détail.
+      //   - entrée / boisson de FORMULE à 0 € : le noyau les EXCLUT des détails
+      //     (convention borne : ligne à part) → elles doivent S'IMPRIMER en
+      //     ligne "0,00", comme sur le ticket #1180 validé. L'ancien filtre
+      //     les avalait dès que lien_plat a été stocké en base → brochette
+      //     de formule invisible sur le ticket de caisse.
       // 🥤 est_boisson : le relais n'écrit pas "1x" devant une boisson seule
       lignes: (venteLocale.lignes_vente || [])
-        .filter(l => !(l.lien_plat && Number(l.prix_unitaire) === 0))
+        .filter(l => !(l.lien_plat && Number(l.prix_unitaire) === 0
+                       && /\(box\)\s*$/i.test(l.nom_produit || l.nom || '')))
         .map(lv => Object.assign({}, lv, {
           // categorie_id est désormais porté par la ligne : plus de recherche
           // par nom, qui se trompait sur deux produits homonymes.
