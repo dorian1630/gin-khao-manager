@@ -5963,7 +5963,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-h</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-j</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -8697,12 +8697,34 @@ async function validerVente() {
   // Prépare les lignes pour la fonction SQL
   // On garde tous les articles à leur prix normal (le stock se décrémente correctement,
   // car le plat offert sort bien du stock même s'il est gratuit).
+  // 🍳 Photo du bon au moment de la vente : nom EXACT (féculent collé,
+  //    pièces d'entrée) + détails cuisine, indexés par ligne_uid. C'est ce
+  //    que la réimpression ressortira à l'identique. Avant : seuls les
+  //    détails comptoir étaient stockés → bons réimprimés sans suppléments
+  //    ni NOUILLES/RIZ dans le nom.
+  const _bonParUid = {};
+  if (window.NC) {
+    const _impV = NC.construireImpression(ticket, { numero: 0 });
+    [ ...(_impV.bonCuisine ? _impV.bonCuisine.items : []),
+      ...(_impV.bonSushi   ? _impV.bonSushi.items   : []) ].forEach(it => {
+      const k = String(it.ligne_uid || '').split('#')[0];   // #i = portions sushi
+      if (k && !_bonParUid[k]) _bonParUid[k] = it;
+    });
+  }
   let lignes = ticket.map(l => ({
     produit_id: l.produit_id,
     nom: l.nom,
     prix: l.prix,
     quantite: l.quantite,
-    details: detailsLigneTicket(l, 'comptoir')
+    details: detailsLigneTicket(l, 'comptoir'),
+    ligne_uid: l.ligne_uid || null,   // permet à la réimpression de relier
+    nom_cuisine: (_bonParUid[l.ligne_uid] || {}).nom || null,
+    details_cuisine: (_bonParUid[l.ligne_uid] || {}).details
+                     || detailsLigneTicket(l, 'cuisine'),
+    // 🧩 Ids de formule : la réimpression reconnaît l'entrée par ID
+    //    (le nom du bon stocké n'a plus le suffixe "(formule)")
+    formule_entree_id: l.formule_entree_id || null,
+    formule_boisson_id: l.formule_boisson_id || null
   }));
 // ✨ Si paiement TR papier : ajouter une ligne de détail
   if (modePaiement === 'ticket_resto_papier') {
@@ -8725,11 +8747,12 @@ async function validerVente() {
     const totalBoutique = ticket.reduce((s, l) => s + l.prix * l.quantite, 0);
     if (totalBoutique > 0 && montantPlateforme > 0) {
       const ratio = montantPlateforme / totalBoutique;
+      // ⚠️ SPREAD obligatoire : l'ancienne liste explicite de champs EFFAÇAIT
+      //    tout le reste (details, photo du bon, ids…) pour les ventes
+      //    plateforme → réimpressions nues. On ne touche QUE le prix.
       lignes = lignes.map(l => ({
-        produit_id: l.produit_id,
-        nom: l.nom,
-        prix: Math.round(l.prix * ratio * 100) / 100,  // prix ajusté au prorata
-        quantite: l.quantite
+        ...l,
+        prix: Math.round(l.prix * ratio * 100) / 100   // prorata
       }));
     }
   }
@@ -8907,7 +8930,15 @@ async function validerVente() {
           produit_id: src ? (src.produit_id || null) : null,
           categorie_id: src ? (src.categorie_id || null) : null,
           lien_plat: src ? (src.lien_plat || null) : null,
-          details: detailsLigneTicket(src, 'comptoir')
+          details: detailsLigneTicket(src, 'comptoir'),
+          // 🍳 Photo du bon (réimpression fidèle) — même source que le payload
+          ligne_uid: src ? (src.ligne_uid || null) : null,
+          nom_cuisine: src ? ((_bonParUid[src.ligne_uid] || {}).nom || null) : null,
+          details_cuisine: src
+            ? ((_bonParUid[src.ligne_uid] || {}).details || detailsLigneTicket(src, 'cuisine'))
+            : [],
+          formule_entree_id: src ? (src.formule_entree_id || null) : null,
+          formule_boisson_id: src ? (src.formule_boisson_id || null) : null
         };
       })
     };
@@ -9609,14 +9640,18 @@ function basculerTicketPro() {
     // Re-afficher le ticket normal (avec les bons cuisine + livraison si applicable)
     const lignesPourCuisine = (derniereVenteLocale.lignes_vente || []).map(l => ({
       produit_id: l.produit_id,
-      nom: l.nom_produit || l.nom,
+      ligne_uid: l.ligne_uid || null,
+      nom: l.nom_cuisine || l.nom_produit || l.nom,
       quantite: l.quantite,
       categorie_id: l.categorie_id,
       // ⚠️ Sans ces deux champs, la réimpression sortait des bons NUS
       //    (détails perdus) et les suppléments redevenaient des lignes
       //    autonomes en cuisine (lien de rattachement perdu).
       lien_plat: l.lien_plat || null,
-      details: Array.isArray(l.details) ? l.details : []
+      formule_entree_id: l.formule_entree_id || null,
+      formule_boisson_id: l.formule_boisson_id || null,
+      details: Array.isArray(l.details_cuisine) ? l.details_cuisine
+             : (Array.isArray(l.details) ? l.details : [])
     }));
     const bonHTML = genererBonsPreparationHTML(lignesPourCuisine, derniereVenteLocale.numero);
     const livraisonHTML = derniereVenteLocale.client ? genererBonLivraisonHTML(derniereVenteLocale, derniereVenteLocale.client, lignesPourCuisine) : '';
@@ -9645,7 +9680,9 @@ function voirTicket(venteId) {
     const prod = produits.find(p => p.nom === lv.nom_produit);
     return {
       produit_id: lv.produit_id || (prod ? prod.id : null),
-      nom: lv.nom_produit,
+      ligne_uid: lv.ligne_uid || null,
+      // Nom EXACT du bon d'origine (NOUILLES/RIZ collé, pièces) si dispo
+      nom: lv.nom_cuisine || lv.nom_produit,
       prix: Number(lv.prix_unitaire) || 0,
       quantite: Number(lv.quantite) || 1,
       sous_total: Number(lv.sous_total) || 0,
@@ -9653,7 +9690,12 @@ function voirTicket(venteId) {
       // ⚠️ Sans lien_plat, un "Suppl. Poulet" réimprimé redevenait une ligne
       //    autonome → il ressortait en DOUBLE sur le bon cuisine réimprimé.
       lien_plat: lv.lien_plat || null,
-      details: Array.isArray(lv.details) ? lv.details : []
+      formule_entree_id: lv.formule_entree_id || null,
+      formule_boisson_id: lv.formule_boisson_id || null,
+      // Bons = détails CUISINE (suppléments inclus) ; repli comptoir pour
+      // les ventes d'avant ce correctif (bons dégradés mais pas vides).
+      details: Array.isArray(lv.details_cuisine) ? lv.details_cuisine
+             : (Array.isArray(lv.details) ? lv.details : [])
     };
   });
   preparerImpression(lignesReimp, v);
