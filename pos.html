@@ -5963,7 +5963,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-j</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-k</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -8717,6 +8717,8 @@ async function validerVente() {
     prix: l.prix,
     quantite: l.quantite,
     details: detailsLigneTicket(l, 'comptoir'),
+    categorie_id: l.categorie_id || null,   // ↘ persistés en base (migration
+    lien_plat: l.lien_plat || null,         //   lignes_vente du 17/08)
     ligne_uid: l.ligne_uid || null,   // permet à la réimpression de relier
     nom_cuisine: (_bonParUid[l.ligne_uid] || {}).nom || null,
     details_cuisine: (_bonParUid[l.ligne_uid] || {}).details
