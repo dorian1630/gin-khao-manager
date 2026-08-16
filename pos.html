@@ -5963,7 +5963,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">caisse v26.07-e</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-g</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -9815,7 +9815,27 @@ function genererBonLivraisonHTML(vente, client, lignesTicket) {
 // réseau (TCP/ESC-POS). Il route automatiquement :
 //   - bon cuisine   -> imprimante cuisine (SAGA)
 //   - ticket client -> imprimante comptoir (Epson)
-const RELAIS_URL = 'http://localhost:9100/imprimer';
+// 🍓 Cible du relais d'impression — réglable PAR TABLETTE, sans redéploiement.
+//    Sur la tablette : ouvrir UNE FOIS  pos.html?relais=http://192.168.1.68:9100
+//    (mémorisé dans le navigateur). Retour au local : pos.html?relais=reset
+//    La cible active s'affiche à côté du marqueur de version, en bas d'écran.
+// 🛡️ Tout le bloc est blindé : si localStorage est indisponible (mode
+//    restreint), la caisse retombe sur localhost au lieu de mourir.
+let RELAIS_BASE = 'http://localhost:9100';
+try {
+  const _relaisParam = new URLSearchParams(location.search).get('relais');
+  if (_relaisParam === 'reset') localStorage.removeItem('relais_url');
+  else if (_relaisParam) localStorage.setItem('relais_url',
+    _relaisParam.replace(/\/+$/, '').replace(/\/imprimer$/, ''));
+  RELAIS_BASE = localStorage.getItem('relais_url') || RELAIS_BASE;
+} catch (e) { console.warn('Cible relais : repli localhost (' + e.message + ')'); }
+const RELAIS_URL = RELAIS_BASE + '/imprimer';
+// Affiche la cible dans le marqueur de version (contrôle visuel immédiat)
+try {
+  const _mv = document.getElementById('marqueur-version');
+  if (_mv) _mv.textContent += ' · relais: ' +
+    (RELAIS_BASE.includes('localhost') ? 'tablette' : RELAIS_BASE.replace(/^https?:\/\//, ''));
+} catch (e) {}
 
 // Données préparées pour le relais après chaque vente validée
 let derniereImpression = null;
