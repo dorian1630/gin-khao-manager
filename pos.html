@@ -5963,7 +5963,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">caisse v26.07-b</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">caisse v26.07-e</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -9611,7 +9611,12 @@ function basculerTicketPro() {
       produit_id: l.produit_id,
       nom: l.nom_produit || l.nom,
       quantite: l.quantite,
-      categorie_id: l.categorie_id
+      categorie_id: l.categorie_id,
+      // ⚠️ Sans ces deux champs, la réimpression sortait des bons NUS
+      //    (détails perdus) et les suppléments redevenaient des lignes
+      //    autonomes en cuisine (lien de rattachement perdu).
+      lien_plat: l.lien_plat || null,
+      details: Array.isArray(l.details) ? l.details : []
     }));
     const bonHTML = genererBonsPreparationHTML(lignesPourCuisine, derniereVenteLocale.numero);
     const livraisonHTML = derniereVenteLocale.client ? genererBonLivraisonHTML(derniereVenteLocale, derniereVenteLocale.client, lignesPourCuisine) : '';
@@ -9635,14 +9640,19 @@ function voirTicket(venteId) {
   //    de CE ticket. Sans ça, le bouton "Imprimer" réutilisait derniereImpression
   //    (la dernière vente encaissée) → c'était toujours le même ticket qui sortait.
   const lignesReimp = (v.lignes_vente || []).map(lv => {
+    // Repli par NOM uniquement pour les vieux tickets : les ventes récentes
+    // portent produit_id / categorie_id / lien_plat directement dans la ligne.
     const prod = produits.find(p => p.nom === lv.nom_produit);
     return {
-      produit_id: prod ? prod.id : null,
+      produit_id: lv.produit_id || (prod ? prod.id : null),
       nom: lv.nom_produit,
       prix: Number(lv.prix_unitaire) || 0,
       quantite: Number(lv.quantite) || 1,
       sous_total: Number(lv.sous_total) || 0,
-      categorie_id: prod ? prod.categorie_id : null,
+      categorie_id: lv.categorie_id || (prod ? prod.categorie_id : null),
+      // ⚠️ Sans lien_plat, un "Suppl. Poulet" réimprimé redevenait une ligne
+      //    autonome → il ressortait en DOUBLE sur le bon cuisine réimprimé.
+      lien_plat: lv.lien_plat || null,
       details: Array.isArray(lv.details) ? lv.details : []
     };
   });
@@ -9957,7 +9967,11 @@ function preparerImpression(lignesTicket, venteLocale) {
         ville: venteLocale.client.ville || '',
         notes: venteLocale.client.notes || ''
       },
-      items: itemsAPreparer.map(versItem),
+      // 🧩 Mêmes items que les bons cuisine/sushi (noyau) : noms avec
+      //    accompagnement collé, entrées de formule en lignes, pièces.
+      //    L'ancien chemin (itemsAPreparer.map(versItem)) perdait le
+      //    RIZ/NOUILLES et l'entrée depuis le câblage du noyau.
+      items: [...itemsCuisine, ...itemsSushi],
       lignes: lignesTicket.filter(l => l.produit_id).map(l => ({
         quantite: l.quantite, nom: l.nom, prix: l.prix
       })),
