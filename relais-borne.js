@@ -20,11 +20,11 @@ const CONFIG = {
   modeTest: false,            // ⚠️ true = simulation console. Passer à false pour imprimer.
   ticketComptoir: true,      // récap complet sur l'imprimante comptoir
   // ⚠️ À VÉRIFIER avant déploiement : mêmes IP que serveur-impression.js
-  //    (ping depuis le Pi : 192.168.123.245 / .149 / .246 doivent répondre).
+  //    (ping depuis le Pi : 192.168.1.245 / .149 / .246 doivent répondre).
   imprimantes: {
-    cuisine:  { ip: '192.168.123.245', port: 9100, nom: 'Cuisine' },
-    sushi:    { ip: '192.168.123.149', port: 9100, nom: 'Sushi' },
-    comptoir: { ip: '192.168.123.246', port: 9100, nom: 'Comptoir' },
+    cuisine:  { ip: '192.168.1.245', port: 9100, nom: 'Cuisine' },
+    sushi:    { ip: '192.168.1.149', port: 9100, nom: 'Sushi' },
+    comptoir: { ip: '192.168.1.246', port: 9100, nom: 'Comptoir' },
   },
   largeur: 42,
   // Mentions légales / TVA — mêmes valeurs que la caisse (pos.html)
