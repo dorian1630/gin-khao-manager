@@ -2999,7 +2999,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-d</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-e</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -5054,13 +5054,22 @@ function detailsTicketBorne(l) {
     });
   }
   (o.retirable || []).forEach(r => d.push('Sans ' + r));
+  // ⚠️ ANTI-DOUBLON : un supplément / une sauce qui possède DÉJÀ sa propre
+  //    ligne facturée rattachée à ce plat ("1x > Suppl. Poulet  3,00 EUR")
+  //    ne doit pas être répété en détail "+ Poulet" juste au-dessus.
+  //    S'il n'a PAS de ligne facturée (sauce incluse, ancien chemin d'ajout),
+  //    le détail reste : c'est alors la seule trace pour le client.
+  const dejaFacture = (pid) =>
+    panier.some(sl => sl !== l && sl.lien_plat && sl.lien_plat === l.ligne_uid && sl.produit_id === pid);
   grouperIds(o.supplements).forEach(g => {
     const p = produits.find(x => x.id === g.id);
-    if (p) d.push('+ ' + p.nom.replace(/^Suppl\.\s*/i, '') + (g.qte > 1 ? ' x' + g.qte : ''));
+    if (!p || dejaFacture(g.id)) return;
+    d.push('+ ' + p.nom.replace(/^Suppl\.\s*/i, '') + (g.qte > 1 ? ' x' + g.qte : ''));
   });
   (o.sauces || []).forEach(id => {
     const p = produits.find(x => x.id === id);
-    if (p) d.push(p.nom.replace(/^Sauce\s+/i, 'Sauce '));
+    if (!p || dejaFacture(id)) return;
+    d.push(p.nom.replace(/^Sauce\s+/i, 'Sauce '));
   });
   return d;
 }
