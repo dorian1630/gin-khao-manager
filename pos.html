@@ -5963,7 +5963,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-k</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-l</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -9350,7 +9350,7 @@ async function chargerHistorique() {
 
     // 1) Ventes (caisse + borne encaissées)
     const { data: ventes, error } = await sb.from('ventes')
-.select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, lignes_vente(nom_produit, prix_unitaire, quantite, sous_total, details)')      .eq('restaurant_id', RESTO_ID)
+.select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, lignes_vente(*)')      .eq('restaurant_id', RESTO_ID)
       .gte('cree_le', debut.toISOString())
       .order('numero', { ascending: false });
     if (error) throw error;
