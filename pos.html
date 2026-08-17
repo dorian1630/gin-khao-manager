@@ -4877,9 +4877,9 @@ html, body {
   var btn=document.getElementById('btn-fullscreen');
   function enFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
   function majBtn(){
-    // Bouton visible uniquement hors plein écran, sur écran tactile Android
-    var android=/Android/i.test(navigator.userAgent);
-    btn.style.display=(android && !enFS())?'flex':'none';
+    // Bouton visible partout HORS plein écran (l'ancien filtre Android le
+    // cachait sur PC et sur certaines PWA/WebView — "le bouton a disparu").
+    btn.style.display = enFS() ? 'none' : 'flex';
   }
   window.basculerPleinEcran=function(){
     var el=document.documentElement;
@@ -5963,7 +5963,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-l</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-m</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
