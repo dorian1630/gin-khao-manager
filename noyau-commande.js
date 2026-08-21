@@ -443,6 +443,35 @@
     var itemsCuisine = itemsPour('cuisine');
     var itemsSushi = itemsPour('sushi');
 
+    // --- 🛵 Checklist LIVREUR : tout ce qui part physiquement dans le sac ---
+    //  Boissons et desserts n'ont AUCUN bon de préparation (station comptoir),
+    //  mais le livreur doit les compter. Règles :
+    //   · ligne principale (plat, boisson, dessert, box) → 1 entrée
+    //   · entrée de formule → 1 entrée (avec ses pièces)
+    //   · boisson de formule → 1 entrée (le client doit recevoir sa canette)
+    //   · suppléments / sauces / composants box → DANS le plat → rien
+    //   · remises (prix < 0) et lignes sans produit (frais, infos) → rien
+    var itemsLivraison = [];
+    norms.forEach(function (l) {
+      if (!l.produit_id) return;
+      if ((Number(l.prix) || 0) < 0) return;
+      var parent = parentDe(l);
+      if (!l.lien_plat) {
+        itemsLivraison.push({ quantite: l.quantite || 1,
+                              nom: nomPourPreparation(l), details: [] });
+      } else if (estEntreeDeFormule(l, parent)) {
+        itemsLivraison.push({ quantite: l.quantite || 1,
+          nom: labelEntreeFormule(l.produit_id,
+                 (parent && parent.formule_entree_label) || null),
+          details: [] });
+      } else if (parent && parent.formule_boisson_id === l.produit_id) {
+        itemsLivraison.push({ quantite: l.quantite || 1,
+          nom: String(l.nom || '').replace(/^\s*↳\s*/, '')
+                                  .replace(/\s*\(formule\)\s*$/i, ''),
+          details: [] });
+      }
+    });
+
     function bon(items, poste) {
       if (!items.length) return null;
       return {
@@ -502,6 +531,7 @@
     return {
       version: 'noyau-1.0',
       refBorne: meta.refBorne || null,
+      itemsLivraison: itemsLivraison,
       bonCuisine: bon(itemsCuisine, 'cuisine'),
       bonSushi: bon(itemsSushi, 'sushi'),
       ticketClient: {
