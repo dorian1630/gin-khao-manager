@@ -5602,7 +5602,9 @@ html, body {
     <div class="modal-actions actions-ticket">
       <button class="btn-annuler" onclick="fermerTicket()">Fermer</button>
       <button class="btn-ticket-pro" onclick="basculerTicketPro()" id="btn-ticket-pro">💼 Ticket pro</button>
-      <button class="btn-valider" onclick="imprimerTicket()">🖨️ Imprimer</button>
+      <button class="btn-valider" style="background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="imprimerTicket('ticket')">🧾 Ticket</button>
+      <button class="btn-valider" style="background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="imprimerTicket('bons')">🍳 Bons</button>
+      <button class="btn-valider" onclick="imprimerTicket('tout')">🖨️ Tout</button>
     </div>
   </div>
 </div>
@@ -5963,7 +5965,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-m</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-u</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -9350,10 +9352,23 @@ async function chargerHistorique() {
 
     // 1) Ventes (caisse + borne encaissées)
     const { data: ventes, error } = await sb.from('ventes')
-.select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, lignes_vente(*)')      .eq('restaurant_id', RESTO_ID)
+.select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, clients(nom, telephone, adresse, code_postal, ville, notes), lignes_vente(*)')      .eq('restaurant_id', RESTO_ID)
       .gte('cree_le', debut.toISOString())
       .order('numero', { ascending: false });
-    if (error) throw error;
+    if (error) {
+      // 🛟 Si la jointure clients(...) échoue (colonne inconnue), on recharge
+      //    SANS elle : l'historique vit, le bon livreur garde son rattrapage
+      //    async existant (fetch client à la demande).
+      console.error('Erreur historique (jointure ?):', error);
+      const r2 = await sb.from('ventes')
+        .select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, lignes_vente(*)')
+        .eq('restaurant_id', RESTO_ID)
+        .gte('cree_le', debut.toISOString())
+        .order('numero', { ascending: false });
+      if (r2.error) throw r2.error;
+      console.warn('⚠️ Jointure clients indisponible — repli sans adresse.');
+      ventes = r2.data;
+    }
 
     // 2) Commandes borne ANNULÉES uniquement (les encaissées ont créé une vente liée)
     const { data: bornesAnnulees } = await sb.from('commandes_en_cours')
@@ -9620,7 +9635,67 @@ function genererTicketHTML(v) {
     </div>`;
 }
 // Le « ticket pro » réutilise désormais le ticket normal (qui contient déjà la TVA)
-function genererTicketProHTML(v) { return genererTicketHTML(v); }
+function genererTicketProHTML(v) {
+  // 💼 NOTE professionnelle (justificatif de frais) : PAS de détail des plats.
+  //    Une ligne récap, total TTC, détail TVA, règlement, mentions légales.
+  const E = escapeHtmlPos;
+  const t = calculerTVA(v.total, RESTO_INFOS.tauxTVA);
+  const nbArt = (v.lignes_vente || []).reduce((sN, l) =>
+    sN + ((Number(l.prix_unitaire) > 0) ? (Number(l.quantite) || 1) : 0), 0);
+  const MODES = { cb: 'Carte bancaire', carte: 'Carte bancaire', espece: 'Espèces',
+                  especes: 'Espèces', tr: 'Ticket restaurant', ticket_resto: 'Ticket restaurant',
+                  mixte: 'Règlement mixte' };
+  const regl = MODES[v.mode_paiement] || (v.mode_paiement || '—');
+  const d = new Date(v.cree_le || Date.now());
+  const dateTxt = d.toLocaleDateString('fr-FR') + ' ' +
+                  d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const legal = [];
+  if (RESTO_INFOS.tva)   legal.push('TVA intracom : ' + E(RESTO_INFOS.tva));
+  if (RESTO_INFOS.siret) legal.push('SIRET : ' + E(RESTO_INFOS.siret));
+  if (RESTO_INFOS.naf)   legal.push('NAF : ' + E(RESTO_INFOS.naf));
+  if (RESTO_INFOS.tel)   legal.push('Tél : ' + E(RESTO_INFOS.tel));
+  return `
+  <div class="ticket-pro">
+    <div class="tp-head">
+      <div class="tp-resto-nom">${E(RESTO_INFOS.nom)}</div>
+      <div style="font-size:12px;">${E(RESTO_INFOS.sousTitre || '')}</div>
+      <div style="font-size:12px;">${E(RESTO_INFOS.adresse || '')}</div>
+    </div>
+    <div style="text-align:center;font-weight:800;letter-spacing:2px;margin-bottom:10px;">NOTE</div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;">
+      <span>N° ${E(String(v.numero))}</span><span>${E(dateTxt)}</span>
+    </div>
+    <div style="border-top:1px dashed #111;margin:12px 0;"></div>
+    <div style="display:flex;justify-content:space-between;font-size:14px;">
+      <span>Repas — ${nbArt} article(s)</span><span>${fmt(v.total)}</span>
+    </div>
+    <div style="border-top:1px dashed #111;margin:12px 0;"></div>
+    <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:800;">
+      <span>TOTAL TTC</span><span>${fmt(v.total)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:6px;">
+      <span>dont TVA ${E(String(t.taux))}% (HT ${fmt(t.ht)})</span><span>${fmt(t.montant)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:10px;">
+      <span>Règlement</span><span>${E(regl)}</span>
+    </div>
+    <div style="border-top:2px solid #111;margin:14px 0 10px;"></div>
+    <div style="font-size:10px;text-align:center;line-height:1.6;">${legal.join('<br>')}</div>
+  </div>`;
+}
+
+// 💼 Version IMPRIMANTE de la note : mêmes règles, format ticketClient.
+function construireNoteProImpression() {
+  const base = (derniereImpression && derniereImpression.ticketClient) || {};
+  const nbArt = (base.lignes || []).reduce((sN, l) =>
+    sN + ((Number(l.prix_unitaire) > 0) ? (Number(l.quantite) || 1) : 0), 0);
+  return Object.assign({}, base, {
+    lignes: [{ nom_produit: 'Repas — ' + nbArt + ' article(s)', quantite: 1,
+               prix_unitaire: base.total, sous_total: base.total,
+               details: [], est_boisson: false }],
+    masquerReglement: false   // sur une note de frais, le règlement fait foi
+  });
+}
 // 💼 Bascule entre ticket normal et ticket pro dans la modale
 let modeTicketPro = false;
 let derniereVenteLocale = null;  // pour réutiliser dans basculerTicketPro
@@ -9665,6 +9740,9 @@ function basculerTicketPro() {
 function voirTicket(venteId) {
   const v = ventesDuJour.find(x => x.id === venteId);
   if (!v) { posAlert('Ticket introuvable'); return; }
+  // 🛵 La jointure Supabase arrive sous v.clients → v.client, pour que la
+  //    réimpression reconstruise AUSSI le bon livreur (avant : jamais).
+  if (!v.client && v.clients) v.client = v.clients;
   
   // ✨ Mémoriser pour le bouton "Ticket pro"
   derniereVenteLocale = v;
@@ -9791,8 +9869,15 @@ function genererBonLivraisonHTML(vente, client, lignesTicket) {
   const heure = String(h.getHours()).padStart(2,'0') + ':' + String(h.getMinutes()).padStart(2,'0');
   const date = String(h.getDate()).padStart(2,'0') + '/' + String(h.getMonth()+1).padStart(2,'0') + '/' + h.getFullYear();
   
-  // Détail commande
-  const lignesHTML = lignesTicket.filter(l => l.produit_id).map(l => `
+  // Détail commande — même checklist que le papier (noyau), repli ancien format
+  const itemsBL = (typeof derniereImpression !== 'undefined' && derniereImpression
+                   && derniereImpression.bonLivraison
+                   && Array.isArray(derniereImpression.bonLivraison.items)
+                   && derniereImpression.bonLivraison.items.length)
+    ? derniereImpression.bonLivraison.items
+    : lignesTicket.filter(l => l.produit_id)
+        .map(l => ({ quantite: l.quantite, nom: l.nom }));
+  const lignesHTML = itemsBL.map(l => `
     <div class="bl-item">
       <span class="bl-qte">${l.quantite}×</span>
       <span>${escapeHtmlPos(l.nom)}</span>
@@ -9881,19 +9966,59 @@ try {
     (RELAIS_BASE.includes('localhost') ? 'tablette' : RELAIS_BASE.replace(/^https?:\/\//, ''));
 } catch (e) {}
 
+// ⏱️ fetch avec délai maxi (10 s) : si le relais reste muet, l'utilisateur
+//    obtient un message au lieu d'un bouton qui semble mort à jamais.
+async function fetchRelais(corps) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 10000);
+  try {
+    return await fetch(RELAIS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corps),
+      signal: ctl.signal
+    });
+  } catch (e) {
+    if (e.name === 'AbortError')
+      throw new Error('le relais n\'a pas répondu en 10 secondes (Pi occupé ou injoignable)');
+    throw e;
+  } finally { clearTimeout(t); }
+}
+
 // Données préparées pour le relais après chaque vente validée
 let derniereImpression = null;
 
 // 🔒 Impression du rapport Z (après clôture)
 let dernierZData = null;
+let dernierZDataTs = 0;
+let cloturesPassees = [];   // dernières clôtures chargées (réimpression)
+
+// 🖨️ Réimprime un Z archivé : la ligne de la table clotures porte les
+//    mêmes champs que le Z du jour → même canal, même papier.
+async function imprimerZPasse(clotureId) {
+  const z = cloturesPassees.find(c => String(c.id) === String(clotureId));
+  if (!z) { posAlert('Clôture introuvable.'); return; }
+  try {
+    const reponse = await fetchRelais({ ticketZ: z });
+    const data = await reponse.json();
+    if (data.ok) afficherToast('Z#' + z.numero_z, 'Z réimprimé ✓', 'Comptoir');
+    else posAlert('Impression du Z impossible : ' + (data.erreur || 'erreur inconnue'));
+  } catch (e) {
+    posAlert('Le relais d\'impression ne répond pas.\n' + e.message);
+  }
+}
 async function imprimerTicketZ() {
   if (!dernierZData) { posAlert('Aucune clôture à imprimer.'); return; }
+  // 🛡️ Anti-Z-rassis : si la donnée en mémoire date de plus de 15 min
+  //    (session PWA ouverte depuis des jours, clôture précédente…), ce
+  //    bouton refuserait d'imprimer un VIEUX Z en le faisant passer pour
+  //    celui du jour. Le bon chemin : ☰ → Clôtures passées → 🖨️.
+  if (Date.now() - dernierZDataTs > 15 * 60 * 1000) {
+    posAlert('Ce Z date de plus de 15 minutes.<br>Pour le réimprimer en toute sûreté :<br><b>☰ menu → Clôtures passées → 🖨️</b>', '🕐');
+    return;
+  }
   try {
-    const reponse = await fetch(RELAIS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticketZ: dernierZData })
-    });
+    const reponse = await fetchRelais({ ticketZ: dernierZData });
     const data = await reponse.json();
     if (data.ok) {
       afficherToast('Z n°' + dernierZData.numero_z, 'Rapport Z imprimé ✓', 'Comptoir');
@@ -9906,22 +10031,40 @@ async function imprimerTicketZ() {
   }
 }
 
-async function imprimerTicket() {  if (!derniereImpression) {
+async function imprimerTicket(quoi) {  if (!derniereImpression) {
     posAlert('Aucun ticket à imprimer.');
     return;
   }
+  quoi = quoi || 'tout';   // 'ticket' | 'bons' | 'tout'
+  // 🎯 Le serveur imprime ce qui est présent dans l'envoi : choisir,
+  //    c'est simplement envoyer un colis partiel.
+  //    💼 Mode Ticket pro : quoi qu'on presse, seule la NOTE sort.
+  const corps = modeTicketPro
+    ? { ticketClient: construireNoteProImpression(),
+        bonCuisine: null, bonSushi: null, bonLivraison: null }
+    : (quoi === 'ticket'
+        ? { ticketClient: derniereImpression.ticketClient,
+            bonCuisine: null, bonSushi: null, bonLivraison: null }
+        : quoi === 'bons'
+        ? { ticketClient: null,
+            bonCuisine: derniereImpression.bonCuisine,
+            bonSushi: derniereImpression.bonSushi,
+            bonLivraison: derniereImpression.bonLivraison }
+        : derniereImpression);
   try {
-    const reponse = await fetch(RELAIS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(derniereImpression)
-    });
+    const reponse = await fetchRelais(corps);
     const data = await reponse.json();
 
     if (data.ok) {
       fermerTicket();
       const num = (derniereImpression.bonCuisine && derniereImpression.bonCuisine.numero) || (derniereImpression.ticketClient && derniereImpression.ticketClient.numero) || '—';
-      afficherToast(num, 'Tickets imprimés ✓', 'Cuisine + Comptoir');
+      const libelles = modeTicketPro
+        ? ['Note pro imprimée ✓', 'Comptoir']
+        : quoi === 'ticket' ? ['Ticket imprimé ✓', 'Comptoir']
+        : quoi === 'bons'   ? ['Bons imprimés ✓', 'Cuisine' +
+            (corps.bonLivraison ? ' + Livraison' : '')]
+        : ['Tickets imprimés ✓', 'Cuisine + Comptoir'];
+      afficherToast(num, libelles[0], libelles[1]);
     } else {
       // Impression partielle ou totalement ratée : on affiche le détail
       const msgs = (data.resultats || []).map(r =>
@@ -10035,7 +10178,12 @@ function preparerImpression(lignesTicket, venteLocale) {
       //    accompagnement collé, entrées de formule en lignes, pièces.
       //    L'ancien chemin (itemsAPreparer.map(versItem)) perdait le
       //    RIZ/NOUILLES et l'entrée depuis le câblage du noyau.
-      items: [...itemsCuisine, ...itemsSushi],
+      // 🛵 Checklist COMPLÈTE du sac (boissons & desserts inclus) — noyau.
+      //    L'ancienne union cuisine+sushi faisait un bon de PRÉPARATION :
+      //    parfait pour le cuisinier, aveugle aux boissons pour le livreur.
+      items: (_imp && Array.isArray(_imp.itemsLivraison) && _imp.itemsLivraison.length)
+        ? _imp.itemsLivraison
+        : [...itemsCuisine, ...itemsSushi],
       lignes: lignesTicket.filter(l => l.produit_id).map(l => ({
         quantite: l.quantite, nom: l.nom, prix: l.prix
       })),
@@ -10215,6 +10363,8 @@ async function _confirmerClotureConfirme() {
       </div>`;
     // 🖨️ Mémorise le Z pour l'impression + boutons Imprimer / Terminé
     dernierZData = data;
+    dernierZDataTs = Date.now();   // 🕐 fraîcheur : le bouton 🖨️ du modal
+                                   //    refusera d'imprimer un Z rassis
     document.getElementById('cloture-actions').innerHTML =
       '<button class="btn-annuler" onclick="imprimerTicketZ()">🖨️ Imprimer le Z</button>' +
       '<button class="btn-valider" onclick="fermerCloture()">Terminé</button>';
@@ -10635,6 +10785,7 @@ async function chargerCloturesPassees() {
     
     sub.innerHTML = `<b>${data.length}</b> clôture${data.length > 1 ? 's' : ''} (60 dernières)`;
     
+    cloturesPassees = data;   // 🖨️ cache pour la réimpression
     liste.innerHTML = data.map(c => {
       const d = new Date(c.periode_fin);
       const dateLue = d.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
@@ -10648,6 +10799,8 @@ async function chargerCloturesPassees() {
             <div class="hv-detail">${c.nb_ventes} ventes · 💵 ${fmt(c.total_especes)} · 💳 ${fmt(c.total_carte)}</div>
           </div>
           <div class="hv-total">${fmt(c.total_ttc)}</div>
+          <button class="link-btn" style="margin-left:10px;font-size:20px;"
+                  onclick="imprimerZPasse('${c.id}')" title="Réimprimer ce Z">🖨️</button>
         </div>`;
     }).join('');
   } catch (e) {
@@ -11796,7 +11949,9 @@ async function majFraisLivraison() {
     majTotal(); afficherBandeauClient(); afficherTicket();
     return;
   }
-const km = await distanceRouteKm(RESTO_COORDS, coords);
+// 🎯 Arrondi à 1 décimale AVANT tarification : le tarif repose sur le km
+  //    AFFICHÉ (3,04 brut → « 3,0 km » → 2 €, cohérent avec la grille).
+  const km = Math.round((await distanceRouteKm(RESTO_COORDS, coords)) * 10) / 10;
   // 🛡️ Garde-fou : > 50 km = adresse mal localisée (homonyme d'une autre
   //    ville). On n'applique pas un tarif absurde — frais à régler à la main.
   if (km > 50) {
