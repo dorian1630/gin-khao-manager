@@ -5965,7 +5965,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-v</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-w</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6555,7 +6555,7 @@ function ajouterDirect() {
   
   // Options_base : 1er choix de chaque
   if (p.options_base && p.options_base.length > 0) {
-    p.options_base.forEach(opt => {
+    p.options_base.forEach((opt, idx) => {
       const cleP = cleGroupeOption(opt, idx);
       if (!parcoursPlat.options_base[cleP] && opt.choix && opt.choix.length > 0) {
         parcoursPlat.options_base[cleP] = opt.choix[0];
@@ -9998,6 +9998,8 @@ let cloturesPassees = [];   // dernières clôtures chargées (réimpression)
 async function imprimerZPasse(clotureId) {
   const z = cloturesPassees.find(c => String(c.id) === String(clotureId));
   if (!z) { posAlert('Clôture introuvable.'); return; }
+  if (impressionEnCours) { afficherToast('⏳', 'Impression en cours…', 'un instant'); return; }
+  impressionEnCours = true;
   try {
     const reponse = await fetchRelais({ ticketZ: z });
     const data = await reponse.json();
@@ -10005,6 +10007,8 @@ async function imprimerZPasse(clotureId) {
     else posAlert('Impression du Z impossible : ' + (data.erreur || 'erreur inconnue'));
   } catch (e) {
     posAlert('Le relais d\'impression ne répond pas.\n' + e.message);
+  } finally {
+    impressionEnCours = false;
   }
 }
 async function imprimerTicketZ() {
@@ -10013,10 +10017,12 @@ async function imprimerTicketZ() {
   //    (session PWA ouverte depuis des jours, clôture précédente…), ce
   //    bouton refuserait d'imprimer un VIEUX Z en le faisant passer pour
   //    celui du jour. Le bon chemin : ☰ → Clôtures passées → 🖨️.
+  if (impressionEnCours) { afficherToast('⏳', 'Impression en cours…', 'un instant'); return; }
   if (Date.now() - dernierZDataTs > 15 * 60 * 1000) {
     posAlert('Ce Z date de plus de 15 minutes.<br>Pour le réimprimer en toute sûreté :<br><b>☰ menu → Clôtures passées → 🖨️</b>', '🕐');
     return;
   }
+  impressionEnCours = true;
   try {
     const reponse = await fetchRelais({ ticketZ: dernierZData });
     const data = await reponse.json();
@@ -10028,14 +10034,24 @@ async function imprimerTicketZ() {
     }
   } catch (e) {
     posAlert('Impression du Z impossible : ' + e.message + '<br><br>Vérifiez la tablette d\'impression puis réessayez.', '⚠️');
+  } finally {
+    impressionEnCours = false;
   }
 }
+
+// 🔒 UNE impression à la fois : pendant l'envoi (jusqu'à 10 s), les clics
+//    supplémentaires sont ignorés avec un message — fini les 5 tickets du
+//    caissier qui ré-appuie sur un bouton muet.
+let impressionEnCours = false;
 
 async function imprimerTicket(quoi) {  if (!derniereImpression) {
     posAlert('Aucun ticket à imprimer.');
     return;
   }
   quoi = quoi || 'tout';   // 'ticket' | 'bons' | 'tout'
+  if (impressionEnCours) { afficherToast('⏳', 'Impression en cours…', 'un instant'); return; }
+  impressionEnCours = true;
+  afficherToast('🖨️', 'Envoi vers l\'imprimante…', '');
   // 🎯 Le serveur imprime ce qui est présent dans l'envoi : choisir,
   //    c'est simplement envoyer un colis partiel.
   //    💼 Mode Ticket pro : quoi qu'on presse, seule la NOTE sort.
@@ -10079,6 +10095,8 @@ async function imprimerTicket(quoi) {  if (!derniereImpression) {
       '(fenêtre noire visible avec "RELAIS D\'IMPRESSION GIN KHAO").\n\n' +
       'Détail : ' + e.message
     );
+  } finally {
+    impressionEnCours = false;
   }
 }
 
