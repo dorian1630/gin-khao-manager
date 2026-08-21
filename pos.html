@@ -781,7 +781,9 @@ html, body {
   position: fixed;
   inset: 0;
   background: rgba(5,4,3,0.78);
-  backdrop-filter: blur(6px);
+  /* backdrop-filter: blur(6px) retiré : sur les WebView Android, un flou
+     plein écran pendant les transitions (clavier qui se replie, fondu)
+     provoque des écrans NOIRS de plusieurs secondes (compositor GPU). */
   display: none;
   align-items: center;
   justify-content: center;
@@ -2645,7 +2647,7 @@ html, body {
   position: fixed;
   inset: 0;
   background: rgba(5, 4, 3, 0.92);
-  backdrop-filter: blur(10px);
+  /* blur retiré : plein écran → écrans noirs WebView Android (cf. .overlay) */
   z-index: 4500;
   display: none;
   align-items: center;
@@ -3173,7 +3175,7 @@ html, body {
   position: fixed;
   inset: 0;
   background: rgba(5,4,3,0.85);
-  backdrop-filter: blur(8px);
+  /* blur retiré : plein écran → écrans noirs WebView Android (cf. .overlay) */
   display: none;
   align-items: center;
   justify-content: center;
@@ -5965,7 +5967,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-w</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-y</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6041,6 +6043,8 @@ let canalVente = 'sur_place';
 // ====== 🚗 FRAIS DE LIVRAISON (calcul par distance, à vol d'oiseau) ======
 let fraisLivraison = 0;        // montant € ajouté au total en mode livraison
 let infoLivraison = null;      // { km, frais } ou { erreur } pour l'affichage
+let majFraisJeton = 0;         // 🎫 anti-course : seule la DERNIÈRE exécution
+                               //    de majFraisLivraison a le droit d'écrire
 let fraisLivraisonManuel = null; // si défini, force le montant (override du calcul auto)
 const RESTO_ADRESSE_LIVRAISON = '78 avenue de Saint-Just 13013 Marseille';
 let RESTO_COORDS = { lat: 43.31600, lng: 5.39560 }; // fallback, raffiné via géocodage au 1er calcul
@@ -7836,6 +7840,14 @@ function afficherTicket() {
           <div class="ligne-pu">Livraison${kmTxt}${manuelTxt}</div>
         </div>
         <div class="ligne-st">+${fmt(fraisLivraison)}</div>
+      </div>`;
+  } else if (infoLivraison && infoLivraison.calc && clientActif) {
+    zone.innerHTML += `
+      <div class="ligne ligne-livraison">
+        <div class="ligne-info">
+          <div class="ligne-nom" style="opacity:.75;">🚗 Livraison : calcul de la distance…</div>
+          <div class="ligne-pu">itinéraire en cours</div>
+        </div>
       </div>`;
   } else if (infoLivraison && infoLivraison.erreur && clientActif) {
     zone.innerHTML += `
@@ -11857,12 +11869,21 @@ function retirerClientCommande() {
 //  🚗 CALCUL DES FRAIS DE LIVRAISON
 // ============================================
 // Géocodage via l'API Adresse du gouvernement français (gratuit, sans clé)
+// ⏱️ Couperet réseau du calcul de distance : jamais plus de 6 s d'attente
+//    par appel (géocodage OU itinéraire). Au-delà : géocodage → null
+//    (frais à la main), itinéraire → repli vol d'oiseau automatique.
+const GEO_TIMEOUT_MS = 6000;
+
 async function geocoderAdresse(adresse) {
   try {
 // 📍 lat/lon = biais géographique : privilégie les résultats proches de
     //    Marseille. Sans ça, une rue homonyme d'une autre ville pouvait être
     //    choisie (ex. 91 km affichés pour une adresse à 1,5 km).
-    const url = 'https://api-adresse.data.gouv.fr/search/?limit=1&lat=43.31&lon=5.40&q=' + encodeURIComponent(adresse);    const r = await fetch(url);
+    const url = 'https://api-adresse.data.gouv.fr/search/?limit=1&lat=43.31&lon=5.40&q=' + encodeURIComponent(adresse);
+    const ctl = new AbortController();
+    const tId = setTimeout(() => ctl.abort(), GEO_TIMEOUT_MS);
+    let r; try { r = await fetch(url, { signal: ctl.signal }); }
+    finally { clearTimeout(tId); }
     if (!r.ok) return null;
     const j = await r.json();
     const f = j.features && j.features[0];
@@ -11894,7 +11915,10 @@ if (!ORS_KEY) return distanceKm(a, b);
       + '?api_key=' + encodeURIComponent(ORS_KEY)
       + '&start=' + a.lng + ',' + a.lat
       + '&end=' + b.lng + ',' + b.lat;
-    const r = await fetch(url);
+    const ctl = new AbortController();
+    const tId = setTimeout(() => ctl.abort(), GEO_TIMEOUT_MS);
+    let r; try { r = await fetch(url, { signal: ctl.signal }); }
+    finally { clearTimeout(tId); }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
     const f = j.features && j.features[0];
@@ -11917,6 +11941,7 @@ function distanceKm(a, b) {
 
 // Recalcule les frais de livraison selon canal + client + adresse
 async function majFraisLivraison() {
+  const jeton = ++majFraisJeton;   // 🎫 toute exécution plus récente m'invalide
   // 🏪 Click & Collect : le client vient chercher → jamais de frais de livraison
   if (modeClientTel === 'cc') {
     fraisLivraisonManuel = null;
@@ -11951,12 +11976,18 @@ async function majFraisLivraison() {
     majTotal(); afficherBandeauClient(); afficherTicket();
     return;
   }
+  // 🗨️ Statut visible pendant le calcul (jusqu'à ~6 s par appel) :
+  //    le ticket parle au lieu de laisser un silence.
+  infoLivraison = { calc: true };
+  afficherTicket();
+
   // Raffine les coordonnées du resto une seule fois
   if (!restoGeocode) {
     const g = await geocoderAdresse(RESTO_ADRESSE_LIVRAISON);
     if (g) RESTO_COORDS = g;
     restoGeocode = true;
   }
+  if (jeton !== majFraisJeton) return;   // 🎫 une exécution plus récente a pris la main
   // Coordonnées client : cache (lat/lng) sinon géocodage + mémorisation
   let coords = (c.lat && c.lng) ? { lat: c.lat, lng: c.lng } : null;
   if (!coords) {
@@ -11966,6 +11997,7 @@ async function majFraisLivraison() {
       sb.from('clients').update({ lat: coords.lat, lng: coords.lng }).eq('id', c.id).then(() => {}, () => {});
     }
   }
+  if (jeton !== majFraisJeton) return;   // 🎫
   if (!coords) {
     fraisLivraison = 0; infoLivraison = { erreur: 'Adresse introuvable' };
     majTotal(); afficherBandeauClient(); afficherTicket();
@@ -11974,6 +12006,7 @@ async function majFraisLivraison() {
 // 🎯 Arrondi à 1 décimale AVANT tarification : le tarif repose sur le km
   //    AFFICHÉ (3,04 brut → « 3,0 km » → 2 €, cohérent avec la grille).
   const km = Math.round((await distanceRouteKm(RESTO_COORDS, coords)) * 10) / 10;
+  if (jeton !== majFraisJeton) return;   // 🎫 le km d'une VIEILLE adresse ne s'écrit jamais
   // 🛡️ Garde-fou : > 50 km = adresse mal localisée (homonyme d'une autre
   //    ville). On n'applique pas un tarif absurde — frais à régler à la main.
   if (km > 50) {
