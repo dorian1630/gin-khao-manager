@@ -5965,7 +5965,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-u</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-v</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -10116,8 +10116,12 @@ function preparerImpression(lignesTicket, venteLocale) {
   //    sushi + pièces + entrées de formule sur la bonne imprimante). Identique
   //    à la borne. Repli local (ancienne logique) si le noyau n'est pas chargé.
   let itemsSushi, itemsCuisine;
+  // 🩹 _imp HISSÉ hors du bloc : le bon LIVREUR (plus bas) lit
+  //    _imp.itemsLivraison — déclaré en const DANS le if, il n'existait
+  //    pas dehors → « _imp is not defined » sur toute vente livraison.
+  let _imp = null;
   if (window.NC) {
-    const _imp = NC.construireImpression(lignesTicket, { numero: venteLocale.numero });
+    _imp = NC.construireImpression(lignesTicket, { numero: venteLocale.numero });
     itemsCuisine = _imp.bonCuisine ? _imp.bonCuisine.items : [];
     itemsSushi   = _imp.bonSushi   ? _imp.bonSushi.items   : [];
   } else {
