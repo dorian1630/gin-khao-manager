@@ -266,6 +266,43 @@ verif('livreur : suppléments, frais et remises exclus',
 verif('livreur : bons cuisine INCHANGÉS (pas de coca/dessert)',
   (impLiv.bonCuisine.items || []).filter(i => /coca|coco/i.test(i.nom)).length, 0);
 
+// 🍤 pieces_formule : portion formule SANS variante carte (Tempura)
+NC.init({ produits: [
+  { id: 'F2', nom: 'Formule T', prix: 15.9, categorie_id: 'cf', est_formule: true },
+  { id: 'T1', nom: 'Tempura Crevettes', prix: 7.9, categorie_id: 'ce',
+    visible_formule: true, pieces_formule: 2,
+    variantes: [{ prix: 7.9, label: '4 pièces' }] } ],
+  categories: [
+  { id: 'cf', nom: 'Formules', station: 'cuisine' },
+  { id: 'ce', nom: 'Entrées', station: 'cuisine' } ] });
+const impT = NC.construireImpression([
+  { ligne_uid: 'f', produit_id: 'F2', nom: 'Formule T', prix: 15.9, quantite: 1,
+    categorie_id: 'cf', est_formule: true, formule_entree_id: 'T1' },
+  { ligne_uid: 'f1', produit_id: 'T1', nom: '  ↳ Tempura Crevettes (formule)',
+    prix: 0, quantite: 1, categorie_id: 'ce', lien_plat: 'f' } ], { numero: 2 });
+// 🧪 Né du test de MUTATION (audit 18) : la variante 2 pièces doit gagner
+//    MÊME si elle n'est pas en première position (ordre de saisie Supabase).
+NC.init({ produits: [
+  { id: 'F3', nom: 'Formule O', prix: 15.9, categorie_id: 'cf', est_formule: true },
+  { id: 'O1', nom: 'Samoussa Bœuf', prix: 6.9, categorie_id: 'ce',
+    visible_formule: true,
+    variantes: [{ prix: 6.9, pieces: 4 }, { prix: 3.9, pieces: 2 }] } ],
+  categories: [
+  { id: 'cf', nom: 'Formules', station: 'cuisine' },
+  { id: 'ce', nom: 'Entrées', station: 'cuisine' } ] });
+const impO = NC.construireImpression([
+  { ligne_uid: 'o', produit_id: 'F3', nom: 'Formule O', prix: 15.9, quantite: 1,
+    categorie_id: 'cf', est_formule: true, formule_entree_id: 'O1' },
+  { ligne_uid: 'o1', produit_id: 'O1', nom: '  ↳ Samoussa Bœuf (formule)',
+    prix: 0, quantite: 1, categorie_id: 'ce', lien_plat: 'o' } ], { numero: 3 });
+verif('formule : la variante 2 pièces gagne même en position non-première',
+  (impO.bonCuisine.items.find(i => /samoussa/i.test(i.nom)) || {}).nom,
+  'Samoussa Bœuf (2 pcs)');
+
+verif('pieces_formule : le bon dit (2 pcs) malgré une carte 4 pièces',
+  (impT.bonCuisine.items.find(i => /tempura/i.test(i.nom)) || {}).nom,
+  'Tempura Crevettes (2 pcs)');
+
 console.log('\n============================================');
 console.log(`  ${ok} réussis · ${ko} échoués`);
 console.log('============================================\n');
