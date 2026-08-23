@@ -204,7 +204,12 @@
   //   - sinon sa portion réelle       (Tempura : n'existe qu'en 4)
   //   - null si l'article n'est pas à la pièce (Riz Blanc, Dynamite)
   function piecesFormule(p) {
-    if (!p || !Array.isArray(p.variantes) || !p.variantes.length) return null;
+    if (!p) return null;
+    // 🎯 pieces_formule (colonne produit) : portion en formule SANS créer de
+    //    variante à la carte (ex. Tempura : carte = 4 pièces, formule = 2).
+    if (p.pieces_formule != null && Number(p.pieces_formule) > 0)
+      return Number(p.pieces_formule);
+    if (!Array.isArray(p.variantes) || !p.variantes.length) return null;
     var dispo = [];
     for (var i = 0; i < p.variantes.length; i++) {
       var n = piecesDeVariante(p.variantes[i]);
