@@ -3,8 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0A0908">
-<!-- VERSION 2026-06-26-v7-ACCUEIL -->
+<meta name="theme-color" content="#FFF8F2">
+<!-- VERSION 2026-08-20-v8-AUDIT — correctifs sécurité + bugs (voir rapport d'audit) -->
+<!--
+  ⚠️ RAPPEL SÉCURITÉ SERVEUR (rien de tout ceci n'est corrigeable dans ce fichier) :
+  1. /.netlify/functions/borne-enregistrer-vente DOIT recalculer chaque prix depuis
+     produit_id en base et IGNORER les prix envoyés par le client (fraude sinon).
+  2. RLS Supabase : la clé anon ne doit pouvoir qu'INSÉRER (jamais lire/modifier)
+     dans commandes_en_cours / impressions_borne, et ne JAMAIS lire la table clients.
+  3. RPC fid_solde : limiter le débit (rate-limit) — sinon énumération des numéros
+     de téléphone → fuite nom + points des clients.
+  4. Prévoir l'idempotence sur borne-enregistrer-vente via le champ commande_uid
+     envoyé par la borne (anti double-vente en cas de timeout réseau).
+-->
 <title>Gin Khao · Borne de commande</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1682,7 +1693,7 @@ body {
   font-weight: 700;
   border-radius: 999px;
   cursor: pointer;
-  font-family: var(--font);
+  font-family: var(--body);
   transition: all 0.2s;
 }
 .parcours-btn-retour:active {
@@ -1863,7 +1874,7 @@ body {
   font-weight: 800;
   border-radius: 999px;
   cursor: pointer;
-  font-family: var(--font);
+  font-family: var(--body);
   box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
   transition: all 0.2s;
 }
@@ -2905,21 +2916,7 @@ body {
   </div>
 </div>
 
-<!-- ===== ÉCRAN 4 bis : SCAN QR FIDELITE ===== -->
-<div class="ecran" id="ecran-scan-qr">
-  <div class="scan-head">
-    <h2>🎫 Carte de fidélité</h2>
-    <button class="btn-retour" onclick="fermerScanQR()">← Retour</button>
-  </div>
-  <div class="scan-instruction">
-    Présentez votre QR code Gin Khao devant la caméra
-  </div>
-  <div id="qr-reader" class="qr-reader-box"></div>
-  <div class="scan-aide">
-    Vous n'avez pas de carte fidélité ?
-    <a href="#" onclick="afficherInfoFidelite(); return false;">Inscrivez-vous</a>
-  </div>
-</div>
+<!-- 🧹 Écran scan QR supprimé : fonctionnalité désactivée (identification par téléphone) -->
 
 <!-- ===== ÉCRAN 5 : PAIEMENT ===== -->
 <div class="ecran" id="ecran-paiement">
@@ -2952,17 +2949,8 @@ body {
   </div>
 </div>
 
-<!-- ===== MODALE UPSELL ===== -->
-<div class="upsell-modal" id="modal-upsell">
-  <div class="upsell-content">
-    <div class="upsell-confirme" id="upsell-titre">Ajouté ! 🎉</div>
-    <div class="upsell-question">🎁 Et avec ça ?</div>
-    <div class="upsell-grille" id="upsell-liste">
-      <!-- Suggestions injectées par JS -->
-    </div>
-    <button class="upsell-skip" onclick="fermerUpsell()">Non merci, continuer →</button>
-  </div>
-</div>
+<!-- ===== MODALE UPSELL (contenu injecté par JS — afficherUpsellGrille) ===== -->
+<div class="upsell-modal" id="modal-upsell"></div>
 
 <!-- ===== MODALE PARCOURS PLAT (retirable / supp / sauce) ===== -->
 <div class="parcours-modal" id="modal-parcours">
@@ -2999,16 +2987,64 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.07-e</div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-c</div>
+<!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
+     silencieuse du CDN ne peut plus casser la borne pendant le service) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
 <script src="noyau-commande.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<!-- 🧹 html5-qrcode retiré : le scan QR est désactivé sur la borne (identification
+     par téléphone uniquement) — la lib ralentissait le démarrage pour rien. -->
 <script>
 // ===== CONFIG (même base que la caisse et l'appli) =====
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
 const RESTO_ID = 'gin-khao';
+// ⚠️ La clé anon est publique par nature : TOUTE la sécurité repose sur les
+//    politiques RLS Supabase et sur la validation serveur (voir commentaire en tête).
 const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ============================================================
+//  🛡️ HELPERS SÉCURITÉ / ROBUSTESSE (audit v8)
+// ============================================================
+// Échappe une chaîne avant injection dans du HTML (innerHTML / attributs).
+// Sans ça, un nom de produit contenant < > " ' & cassait l'affichage
+// (voire injectait du HTML depuis la base partagée avec le site).
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+// Échappe une chaîne destinée à un littéral JS DANS un attribut onclick="fn('…')".
+// Couvre \ ' " < et les retours à la ligne (l'ancien .replace(/'/g) ne couvrait
+// que l'apostrophe : un guillemet double cassait tout l'attribut).
+function escJs(s) {
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(/"/g, '\\x22').replace(/</g, '\\x3C').replace(/\r?\n/g, ' ');
+}
+// Valide une URL d'image avant de l'injecter dans style="background-image:url('…')".
+// Tout ce qui n'est pas une URL http(s) « propre » est traité comme « pas d'image ».
+function escUrl(u) {
+  u = String(u == null ? '' : u).trim();
+  return /^https?:\/\/[^'"()\s\\]+$/i.test(u) ? u : '';
+}
+// 🛒 UN produit est commandable si : actif, pas coupé depuis la caisse
+//    (indisponible), et pas en rupture de stock. Ce test doit être appliqué
+//    sur TOUS les chemins d'ajout (menu, upsell, formules, récompenses) —
+//    avant l'audit, seuls la grille menu (via CSS) et le stock l'étaient.
+function estCommandable(p) {
+  if (!p) return false;
+  if (p.actif === false) return false;
+  if (p.indisponible === true) return false;
+  if (p.stock_actif && !(p.stock > 0)) return false;
+  return true;
+}
+// Emoji cohérent pour un produit (via SA catégorie — avant, on passait parfois
+// le nom du produit à emojiCat, qui attend un nom de catégorie).
+function emojiProduit(p) {
+  const c = p ? categories.find(x => x.id === p.categorie_id) : null;
+  return emojiCat(c ? c.nom : '');
+}
 
 // Emojis par catégorie (cosmétique, basé sur le nom)
 function emojiCat(nomCat) {
@@ -3067,6 +3103,11 @@ const SUPPLEMENT_BOISSON = 1;
 const PRIX_BOISSON_INCLUSE_MAX = 1.50;
 function prixBoissonFormule(b) {
   if (!b) return 0;
+  // ✅ Priorité à un flag explicite en base s'il existe (plus robuste qu'un
+  //    seuil de prix : une hausse tarifaire ne bascule plus une boisson
+  //    incluse en « +1 € » silencieusement). Repli : l'ancien seuil.
+  if (b.incluse_formule === true) return 0;
+  if (b.incluse_formule === false) return SUPPLEMENT_BOISSON;
   return (parseFloat(b.prix) || 0) <= PRIX_BOISSON_INCLUSE_MAX ? 0 : SUPPLEMENT_BOISSON;
 }
 
@@ -3075,7 +3116,11 @@ function aDesVariantes(p) {
 }
 function prixMinVariantes(p) {
   if (!aDesVariantes(p)) return parseFloat(p.prix);
-  return Math.min(...p.variantes.map(v => parseFloat(v.prix)));
+  // 🛡️ On ignore les variantes sans prix valide (sinon Math.min renvoie NaN
+  //    et tout l'affichage du prix devenait « NaN € »).
+  const prix = p.variantes.map(v => parseFloat(v.prix)).filter(Number.isFinite);
+  if (prix.length === 0) return parseFloat(p.prix) || 0;
+  return Math.min(...prix);
 }
 
 // ===== ÉTAT =====
@@ -3088,7 +3133,19 @@ let modeService = 'sur_place';
 // deux formules identiques partageraient le même id et se voleraient leurs
 // sous-lignes (entrée/boisson) à la suppression ou au changement de quantité.
 function bUid() { return 'B' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-let clientFid = null;     // 🎫 Client attaché via QR code fidélité {id, nom, points, ...}
+let clientFid = null;     // 🎫 Client attaché via téléphone fidélité {id, nom, points, ...}
+
+// 🛡️ (audit v8) Verrou anti double-tap : sur borne tactile, un double appui
+//    involontaire déclenchait deux transitions → étapes du parcours sautées.
+let transitionEnCours = false;
+function transitionUnique(delai, fn) {
+  if (transitionEnCours) return;
+  transitionEnCours = true;
+  setTimeout(function () { transitionEnCours = false; fn(); }, delai);
+}
+// ✨ La séquence d'upsells (Entrées → Boissons → Desserts) n'est proposée
+//    qu'UNE fois par commande — avant, chaque « Voir le panier » la rejouait.
+let upsellSequenceFaite = false;
 
 // ===== NAVIGATION ENTRE ÉCRANS =====
 function allerEcran(id) {
@@ -3135,28 +3192,67 @@ function borneConfirm(msg, onOk, opts) {
 // ============================================================
 //  🏠 RETOUR ACCUEIL (avec confirmation si commande en cours)
 // ============================================================
+// 🧼 Remise à zéro COMPLÈTE de la borne (panier, fidélité, parcours, modales,
+//    minuteurs). Une seule fonction partagée par : retour accueil, fin de
+//    commande (timerFin) et minuteur d'inactivité — avant, chaque chemin
+//    purgeait une liste différente et oubliait des choses (ex. le compte
+//    fidélité du client précédent restait attaché).
+function resetBorne() {
+  panier = [];
+  clientFid = null;
+  recompenseEnAttente = null;
+  recompensePendingAjout = null;
+  recompenseVientDEtreAppliquee = false;
+  parcoursPlatEnCours = null;
+  formuleEnCours = null;
+  upsellSequenceFaite = false;
+  derniereVente = null;
+  envoiEnCours = false;
+  commandeUid = null;
+  if (timerFin) { clearTimeout(timerFin); timerFin = null; }
+  fermerModaleParcours();
+  fermerUpsellModal();
+  fermerFidelite();
+  fermerBorneDialog();
+  majBarrePanier();
+  afficherFidelite();
+  allerEcran('ecran-accueil');
+}
+
 function retourAccueil() {
-  const reset = function () {
-    panier = [];
-    clientFid = null;
-    recompenseEnAttente = null;
-    recompensePendingAjout = null;
-    parcoursPlatEnCours = null;
-    formuleEnCours = null;
-    fermerModaleParcours();
-    if (typeof fermerUpsellModal === 'function') fermerUpsellModal();
-    if (typeof fermerFidelite === 'function') fermerFidelite();
-    majBarrePanier();
-    afficherFidelite();
-    allerEcran('ecran-accueil');
-  };
   if (panier.length > 0 || clientFid) {
-    borneConfirm('Abandonner la commande en cours<br>et revenir à l\'accueil ?', reset,
+    borneConfirm('Abandonner la commande en cours<br>et revenir à l\'accueil ?', resetBorne,
       { ic: '🏠', okLabel: 'Oui, recommencer', nonLabel: 'Rester' });
   } else {
-    reset();
+    resetBorne();
   }
 }
+
+// ============================================================
+//  ⏳ MINUTEUR D'INACTIVITÉ GLOBAL (audit v8 — indispensable sur une borne)
+//  Si personne ne touche l'écran pendant 90 s, on repart à l'accueil et on
+//  purge TOUT (panier + compte fidélité). Sans ça, le client suivant héritait
+//  du panier ET des points fidélité du client précédent.
+//  Exceptions : écran d'accueil (rien à perdre), paiement SumUp en cours,
+//  enregistrement de vente en cours.
+// ============================================================
+const DELAI_INACTIVITE = 90000;
+let timerInactivite = null;
+function armerTimerInactivite() {
+  if (timerInactivite) clearTimeout(timerInactivite);
+  timerInactivite = setTimeout(function () {
+    const surAccueil = document.getElementById('ecran-accueil').classList.contains('actif');
+    const surSumUp = document.getElementById('ecran-paiement-sumup').classList.contains('actif');
+    if (surAccueil || surSumUp || envoiEnCours) { armerTimerInactivite(); return; }
+    resetBorne();
+  }, DELAI_INACTIVITE);
+}
+// 🛡️ Réarmement à CHAQUE interaction : sans ça, un client qui composait
+//    tranquillement sa commande voyait son panier effacé à la 90e seconde
+//    (timer armé une seule fois au démarrage). Prouvé par exécution.
+['touchstart', 'pointerdown', 'click', 'keydown'].forEach(function (ev) {
+  document.addEventListener(ev, armerTimerInactivite, { passive: true });
+});
 
 function allerMode() { allerEcran('ecran-mode'); }
 
@@ -3207,21 +3303,24 @@ function afficherAccueilCats() {
   zone.innerHTML = catsAvecContenu.map(c => {
     const sousCats = categories.filter(sc => sc.parent_id === c.id);
     const aSousCats = sousCats.length > 0;
-    // Compter les produits : directs OU dans les sous-catégories
+    // Compter les produits VISIBLES sur la borne (avant : le compte incluait
+    // les produits masqués → « 6 produits » affichés, 4 à l'ouverture)
+    const compte = (p) => p.actif !== false && visibleSurBorne(p);
     let nb;
     if (aSousCats) {
       const idsSousCats = sousCats.map(sc => sc.id);
-      nb = produits.filter(p => idsSousCats.includes(p.categorie_id)).length;
+      nb = produits.filter(p => idsSousCats.includes(p.categorie_id) && compte(p)).length;
     } else {
-      nb = produits.filter(p => p.categorie_id === c.id).length;
+      nb = produits.filter(p => p.categorie_id === c.id && compte(p)).length;
     }
     const emoji = emojiPourCategorie(c.nom);
-    const hasImage = c.image_url && c.image_url.trim() !== '';
+    const imgUrl = escUrl(c.image_url);
+    const hasImage = imgUrl !== '';
     return `
-      <div class="ac-cat-card ${hasImage?'has-image':''}" onclick="filtrerCatEtAller('${c.id}')" ${hasImage?`style="background-image:url('${c.image_url}')"`:''}>
+      <div class="ac-cat-card ${hasImage?'has-image':''}" onclick="filtrerCatEtAller('${c.id}')" ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
         ${!hasImage ? `<div class="ac-cat-emoji">${emoji}</div>` : ''}
         <div class="ac-cat-bandeau">
-          <div class="ac-cat-nom">${c.nom}</div>
+          <div class="ac-cat-nom">${esc(c.nom)}</div>
           <div class="ac-cat-count">${nb} produit${nb > 1 ? 's' : ''}${aSousCats ? ' · ' + sousCats.length + ' sous-cat.' : ''}</div>
         </div>
       </div>
@@ -3315,19 +3414,21 @@ function afficherSousCategories(parentId) {
         <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
         <button class="btn-retour-cats" onclick="allerEcran('ecran-accueil-cats')">← Catégories</button>
       </div>
-      <div class="logo">${parent.nom}</div>
+      <div class="logo">${esc(parent.nom)}</div>
       <div></div>
     </div>
     <div class="sc-grille">
       ${sousCats.map(sc => {
-        const nb = produits.filter(p => p.categorie_id === sc.id).length;
+        // Même filtre que l'affichage (avant : le compte incluait les produits masqués)
+        const nb = produits.filter(p => p.categorie_id === sc.id && p.actif !== false && visibleSurBorne(p)).length;
         const emoji = emojiPourCategorie(sc.nom);
-        const hasImage = sc.image_url && sc.image_url.trim() !== '';
+        const imgUrl = escUrl(sc.image_url);
+        const hasImage = imgUrl !== '';
         return `
-          <div class="ac-cat-card ${hasImage?'has-image':''}" onclick="filtrerCatEtAller('${sc.id}')" ${hasImage?`style="background-image:url('${sc.image_url}')"`:''}>
+          <div class="ac-cat-card ${hasImage?'has-image':''}" onclick="filtrerCatEtAller('${sc.id}')" ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
             ${!hasImage ? `<div class="ac-cat-emoji">${emoji}</div>` : ''}
             <div class="ac-cat-bandeau">
-              <div class="ac-cat-nom">${sc.nom}</div>
+              <div class="ac-cat-nom">${esc(sc.nom)}</div>
               <div class="ac-cat-count">${nb} produit${nb > 1 ? 's' : ''}</div>
             </div>
           </div>
@@ -3347,13 +3448,18 @@ function animationAjout(el) {
 
 function allerPanier() {
   if (panier.length === 0) return;
-  
-  // ✨ NOUVEAU : Avant d'aller au panier, on déclenche la séquence d'upsells
-  // Ordre : 1. Entrées → 2. Boissons → 3. Panier final
+
+  // ✨ Séquence d'upsells (Entrées → Boissons → Desserts) UNE seule fois par
+  //    commande — avant, chaque retour au panier rejouait toute la séquence.
+  if (upsellSequenceFaite) { ouvrirPanierFinal(); return; }
+  upsellSequenceFaite = true;
   declencherUpsellEntrees();
 }
 
 function ouvrirPanierFinal() {
+  // 🛡️ Toujours refermer la modale upsell : l'avance automatique après le
+  //    dernier écran (Desserts) laissait la modale affichée PAR-DESSUS le panier.
+  fermerUpsellModal();
   afficherPanier();
   afficherFidelite();
   allerEcran('ecran-panier');
@@ -3361,6 +3467,15 @@ function ouvrirPanierFinal() {
 
 function allerPaiement() {
   if (panier.length === 0) return;
+  // 🛡️ La remise fidélité est revalidée avant d'afficher le montant
+  verifierRecompenseValide();
+  const t = Math.round(totalPanier() * 100) / 100;
+  if (t < 0 || (t === 0 && !recompenseEnAttente)) {
+    borneAlert('Le montant de la commande est invalide.<br>Vérifiez votre panier.', '🛒');
+    afficherPanier();
+    majBarrePanier();
+    return;
+  }
   document.getElementById('paie-montant').textContent = fmt(totalPanier());
   allerEcran('ecran-paiement');
 }
@@ -3374,14 +3489,20 @@ async function init() {
     await chargerMenu();
     gate.classList.add('hidden');
   } catch (e) {
-    gateMsg.textContent = 'Erreur de connexion : ' + e.message;
+    // 🛡️ Bouton « Réessayer » : avant, une coupure réseau au démarrage
+    //    laissait la borne bloquée sur l'erreur jusqu'à intervention manuelle.
+    gateMsg.innerHTML = 'Erreur de connexion : ' + esc(e.message)
+      + '<br><br><button onclick="location.reload()" style="padding:14px 32px;border:none;border-radius:999px;background:var(--orange);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:var(--body);">Réessayer</button>';
     gate.querySelector('.spinner').style.display = 'none';
   }
 }
 
 async function chargerMenu() {
-  const { data: cats } = await sb.from('categories')
+  const { data: cats, error: eCats } = await sb.from('categories')
     .select('*').eq('restaurant_id', RESTO_ID).order('ordre');
+  // 🛡️ Erreur catégories désormais bloquante (avant : ignorée en silence →
+  //    borne « ouverte » avec un menu totalement vide)
+  if (eCats) throw eCats;
   // ✨ Filtrer les catégories cachées de la borne (Sauces, Suppléments, Extras)
   categories = (cats || []).filter(c => c.visible_borne !== false);
 
@@ -3421,7 +3542,7 @@ function afficherCats() {
   });
   let html = '';
   catsAvecProduits.forEach(c => {
-    html += `<div class="menu-cat ${catActive===c.id?'actif':''}" onclick="filtrerCat('${c.id}')">${c.nom}</div>`;
+    html += `<div class="menu-cat ${catActive===c.id?'actif':''}" onclick="filtrerCat('${c.id}')">${esc(c.nom)}</div>`;
   });
   zone.innerHTML = html;
 }
@@ -3441,7 +3562,9 @@ function filtrerCat(id) {
 function afficherMenu() {
   const grille = document.getElementById('menu-grille');
   // ✨ Toujours filtrer par catégorie (plus de "Tout")
-  const liste = produits.filter(p => p.categorie_id === catActive && visibleSurBorne(p));
+  // 🛡️ + filtre actif : la synchro 30 s peut désactiver un produit depuis la
+  //    caisse — avant, il restait affiché ET commandable jusqu'au rechargement.
+  const liste = produits.filter(p => p.categorie_id === catActive && p.actif !== false && visibleSurBorne(p));
 
   if (liste.length === 0) {
     grille.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-mute);">Aucun produit dans cette catégorie</div>';
@@ -3453,20 +3576,22 @@ function afficherMenu() {
     const emoji = emojiCat(cat ? cat.nom : '');
     const rupture = p.stock_actif && p.stock <= 0;
     const indispo = p.indisponible === true;
-    const hasImage = p.image_url && p.image_url.trim() !== '';
-    // ✨ Prix affiché : "dès X €" si le produit a plusieurs variantes (nombres de pièces)
-    const multiVariantes = aDesVariantes(p) && p.variantes.length > 1;
-    const prixAffiche = multiVariantes ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(p.prix);
+    const imgUrl = escUrl(p.image_url);
+    const hasImage = imgUrl !== '';
+    // ✨ Prix affiché : le prix de la variante si une seule, "dès X €" si plusieurs
+    const prixAffiche = aDesVariantes(p)
+      ? (p.variantes.length > 1 ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(prixMinVariantes(p)))
+      : fmt(p.prix);
     return `
       <div class="plat-wrapper">
         <div class="plat-prix-top">${prixAffiche}</div>
-        <div class="plat-card ${rupture?'rupture':''} ${indispo?'indispo':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}')" ${hasImage?`style="background-image:url('${p.image_url}')"`:''}>
+        <div class="plat-card ${rupture?'rupture':''} ${indispo?'indispo':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}')" ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
           ${indispo ? '<div class="plat-indispo-badge">VICTIME DE<br>SON SUCCÈS</div>' : ''}
           ${rupture ? '<div class="plat-rupture-badge">Épuisé</div>' : ''}
           ${!hasImage ? `
             <div class="plat-emoji-bg">${emoji}</div>
             <div class="plat-bandeau-fallback">
-              <div class="plat-nom-fallback">${p.nom}</div>
+              <div class="plat-nom-fallback">${esc(p.nom)}</div>
             </div>
           ` : ''}
         </div>
@@ -3478,6 +3603,8 @@ function afficherMenu() {
 function ajouter(produitId) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
+  // 🛡️ Vrai garde-fou de disponibilité (le blocage n'était que visuel via CSS)
+  if (!estCommandable(p)) return;
 
   // ✨ Si le plat a des options de personnalisation OU des variantes (nb de pièces),
   //    lancer le parcours modal
@@ -3501,6 +3628,9 @@ function ajouterDirect(p, options) {
   const cat = categories.find(c => c.id === p.categorie_id);
   const emoji = emojiCat(cat ? cat.nom : '');
 
+  // 🛡️ Disponibilité revérifiée ICI aussi : la synchro 30 s peut couper un
+  //    produit pendant que le client est en plein parcours d'options.
+  if (!estCommandable(p)) return;
   if (p.stock_actif) {
     const dejaTotal = panier.filter(l => l.produit_id === p.id).reduce((s, l) => s + l.quantite, 0);
     if (dejaTotal >= p.stock) return;
@@ -3521,7 +3651,13 @@ function ajouterDirect(p, options) {
     options.sauce ||  // compat ancienne version
     (options.options_base && Object.keys(options.options_base).length > 0)
   );
-  if (!aDesOptions) {
+  // 🛡️ JAMAIS de fusion pour une formule ou une box : chaque exemplaire doit
+  //    garder SON ligne_uid et SES sous-lignes (entrée/boisson). Avant, deux
+  //    formules identiques sans options fusionnaient sur un seul uid → changer
+  //    la quantité de la formule multipliait TOUTES les boissons/entrées liées
+  //    (2 formules + 2 boissons devenaient 2 formules + 4 boissons).
+  const estFormuleOuBox = p.est_formule === true || estBox(p);
+  if (!aDesOptions && !estFormuleOuBox) {
     // Regroupe si même produit + même variante + pas d'options.
     // ⚠️ JAMAIS avec une sous-ligne (!l.lien_plat) : sinon un Coca commandé
     //    seul incrémentait le Coca à 0 € d'une formule → gratuit + désynchro.
@@ -3574,24 +3710,13 @@ function ajouterDirect(p, options) {
 
   majBarrePanier();
 
-  // ⚠️ NE PAS déclencher l'upsell ici (il est déjà appelé dans finaliserParcoursPlat)
-  // pour éviter le double appel
-  if (!options || (!options.retirable && !options.supplements && !options.sauces && !options.options_base)) {
-    declencherUpsell(p);
-  }
   return _ligneAjoutee;   // ← les sous-lignes se rattachent à SON ligne_uid
 }
 
-// ============================================================
-//  💰 UPSELL — DÉSACTIVÉ (on déclenche maintenant via allerPanier)
-//  L'ancien système est remplacé par declencherUpsellEntrees + Boissons
-// ============================================================
-let upsellDejaProposees = new Set();
-
-function declencherUpsell(produitAjoute) {
-  // ✨ DÉSACTIVÉ : remplacé par la séquence Entrées → Boissons via allerPanier
-  return;
-}
+// 🧹 (audit v8) Ancien système d'upsell "déclenché à chaque ajout" supprimé
+//    (declencherUpsell / afficherUpsell / fermerUpsell / upsellDejaProposees) :
+//    il était désactivé mais toujours appelé — code mort remplacé par la
+//    séquence Entrées → Boissons → Desserts via allerPanier.
 
 // ============================================================
 //  🥟 UPSELL ENTRÉES (avant boissons)
@@ -3602,7 +3727,7 @@ function declencherUpsellEntrees() {
     declencherUpsellBoissons();
     return;
   }
-  const entrees = produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p) && visibleEnFormule(p));
+  const entrees = produits.filter(p => p.categorie_id === cat.id && estCommandable(p) && visibleSurBorne(p) && visibleEnFormule(p));
   if (entrees.length === 0) {
     declencherUpsellBoissons();
     return;
@@ -3626,7 +3751,7 @@ function declencherUpsellBoissons() {
     declencherUpsellDesserts();
     return;
   }
-  const boissons = produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p));
+  const boissons = produits.filter(p => p.categorie_id === cat.id && estCommandable(p) && visibleSurBorne(p));
   if (boissons.length === 0) {
     declencherUpsellDesserts();
     return;
@@ -3648,7 +3773,7 @@ function declencherUpsellDesserts() {
     ouvrirPanierFinal();
     return;
   }
-  const desserts = produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p));
+  const desserts = produits.filter(p => p.categorie_id === cat.id && estCommandable(p) && visibleSurBorne(p));
   if (desserts.length === 0) {
     ouvrirPanierFinal();
     return;
@@ -3668,7 +3793,6 @@ function declencherUpsellDesserts() {
 // ============================================================
 function afficherUpsellGrille(config) {
   const modal = document.getElementById('modal-upsell') || creerModaleUpsell();
-  modal.classList.add('actif');
 
   const html = `
     <div class="upsell-content-v2">
@@ -3682,16 +3806,22 @@ function afficherUpsellGrille(config) {
       </div>
       <div class="upsell-grille-v2">
         ${config.items.map(p => {
-          const hasImage = p.image_url && p.image_url.trim() !== '';
-          const aVariantes = p.variantes && Array.isArray(p.variantes) && p.variantes.length > 1;
-          const prixAffiche = aVariantes ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(p.prix);
+          const imgUrl = escUrl(p.image_url);
+          const hasImage = imgUrl !== '';
+          const multiVariantes = aDesVariantes(p) && p.variantes.length > 1;
+          // ✅ Prix affiché : celui de la variante s'il n'y en a qu'une (avant,
+          //    un produit à variante unique affichait ET facturait p.prix,
+          //    potentiellement faux, au lieu du prix de sa variante)
+          const prixAffiche = aDesVariantes(p)
+            ? (multiVariantes ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(prixMinVariantes(p)))
+            : fmt(p.prix);
           return `
-            <div class="upsell-card-v2 ${hasImage ? 'has-image' : ''}" 
-                 onclick="${aVariantes ? `ouvrirVariantesUpsell('${p.id}', '${config.type}')` : `ajouterUpsell('${p.id}', '${config.type}')`}"
-                 ${hasImage ? `style="background-image:url('${p.image_url}')"` : ''}>
-              ${!hasImage ? `<div class="upsell-emoji-v2">${emojiCat(p.nom)}</div>` : ''}
+            <div class="upsell-card-v2 ${hasImage ? 'has-image' : ''}"
+                 onclick="${multiVariantes ? `ouvrirVariantesUpsell('${p.id}', '${config.type}')` : `ajouterUpsell('${p.id}', '${config.type}', event)`}"
+                 ${hasImage ? `style="background-image:url('${imgUrl}')"` : ''}>
+              ${!hasImage ? `<div class="upsell-emoji-v2">${emojiProduit(p)}</div>` : ''}
               <div class="upsell-bandeau-v2">
-                <div class="upsell-nom-v2">${p.nom}</div>
+                <div class="upsell-nom-v2">${esc(p.nom)}</div>
                 <div class="upsell-prix-v2">${prixAffiche}</div>
               </div>
             </div>
@@ -3704,10 +3834,12 @@ function afficherUpsellGrille(config) {
       </div>
     </div>
   `;
+  // Contenu injecté AVANT d'afficher (sinon flash de l'ancien contenu)
   modal.innerHTML = html;
-  
-  // Stocker le callback dans la modale
-  modal.dataset.onNext = '';
+  modal.classList.add('actif');
+
+  // Mémoriser la config : callbacks + retour depuis l'écran de variantes
+  window._upsellConfig = config;
   window._upsellOnNext = config.onNext;
   window._upsellOnSkip = config.onSkip;
 }
@@ -3718,82 +3850,136 @@ function creerModaleUpsell() {
   if (modal) return modal;
   modal = document.createElement('div');
   modal.id = 'modal-upsell';
-  modal.className = 'parcours-modal';
+  modal.className = 'upsell-modal';
   document.body.appendChild(modal);
   return modal;
 }
 
-function ajouterUpsell(produitId, type) {
+// ⏭️ Avance vers l'écran suivant, DÉBOUNCÉE : plusieurs ajouts rapides ne
+//    programment qu'UNE seule avance (avant, chaque tap empilait un setTimeout
+//    → 2 ajouts rapides sautaient l'écran Boissons, 3 sautaient les Desserts).
+let upsellAdvanceTimer = null;
+function programmerAvanceUpsell(delai) {
+  if (upsellAdvanceTimer) clearTimeout(upsellAdvanceTimer);
+  upsellAdvanceTimer = setTimeout(() => {
+    upsellAdvanceTimer = null;
+    if (window._upsellOnNext) window._upsellOnNext();
+  }, delai);
+}
+function annulerAvanceUpsell() {
+  if (upsellAdvanceTimer) { clearTimeout(upsellAdvanceTimer); upsellAdvanceTimer = null; }
+}
+
+function ajouterUpsell(produitId, type, ev) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
-  
-  // Ajout direct au panier
-  // ⚠️ !l.lien_plat : sans lui, l'upsell d'un Coca incrémentait le Coca à 0 €
-  //    d'une formule déjà au panier → 2e Coca gratuit + quantités désynchronisées.
-  const ligne = panier.find(l => l.produit_id === p.id && !l.options && !l.variante
-    && !l.lien_plat && Number(l.prix) === parseFloat(p.prix));
-  if (ligne) {
-    ligne.quantite++;
+  // 🛡️ Un produit coupé/épuisé ne doit pas être ajoutable depuis l'upsell
+  if (!estCommandable(p)) return;
+
+  // ✅ Produit à variante UNIQUE : facturer le prix de la variante (avant,
+  //    on facturait p.prix, potentiellement différent du vrai prix)
+  if (aDesVariantes(p) && p.variantes.length === 1) {
+    const v = p.variantes[0];
+    const vLabel = labelVariante(v);
+    const vPrix = parseFloat(v.prix);
+    const ligneV = panier.find(l => l.produit_id === p.id && !l.options
+      && (l.variante || null) === (vLabel || null) && !l.lien_plat && Number(l.prix) === vPrix);
+    if (ligneV) {
+      ligneV.quantite++;
+    } else {
+      panier.push({
+        ligne_uid: bUid(),
+        produit_id: p.id,
+        nom: p.nom + (vLabel ? ' (' + vLabel + ')' : ''),
+        prix: vPrix,
+        quantite: 1,
+        emoji: emojiProduit(p),
+        variante: vLabel || undefined
+      });
+    }
   } else {
-    panier.push({
-      ligne_uid: bUid(),
-      produit_id: p.id,
-      nom: p.nom,
-      prix: parseFloat(p.prix),
-      quantite: 1,
-      emoji: emojiCat(p.nom)
-    });
+    // Ajout direct au panier
+    // ⚠️ !l.lien_plat : sans lui, l'upsell d'un Coca incrémentait le Coca à 0 €
+    //    d'une formule déjà au panier → 2e Coca gratuit + quantités désynchronisées.
+    const ligne = panier.find(l => l.produit_id === p.id && !l.options && !l.variante
+      && !l.lien_plat && Number(l.prix) === parseFloat(p.prix));
+    if (ligne) {
+      ligne.quantite++;
+    } else {
+      panier.push({
+        ligne_uid: bUid(),
+        produit_id: p.id,
+        nom: p.nom,
+        prix: parseFloat(p.prix),
+        quantite: 1,
+        emoji: emojiProduit(p)
+      });
+    }
   }
   majBarrePanier();
-  
-  // Animation de feedback
-  const card = event.target.closest('.upsell-card-v2');
+
+  // Animation de feedback (event passé explicitement — plus de window.event)
+  const card = ev && ev.target ? ev.target.closest('.upsell-card-v2') : null;
   if (card) {
     card.classList.add('ajoute');
   }
-  
-  // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout
-  setTimeout(() => {
-    if (window._upsellOnNext) {
-      window._upsellOnNext();
-    }
-  }, 500);
+
+  // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout (débouncé : voir plus haut)
+  programmerAvanceUpsell(600);
 }
 
 function ouvrirVariantesUpsell(produitId, type) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
-  
+  // 🛡️ Annuler une avance auto en attente (ajout précédent) : sans ça,
+  //    l'écran de variantes était remplacé par l'écran suivant en plein choix.
+  annulerAvanceUpsell();
+
   const modal = document.getElementById('modal-upsell');
   const html = `
     <div class="upsell-content-v2">
       <div class="upsell-head-v2">
-        <h2 class="upsell-titre-v2">${p.nom}</h2>
+        <h2 class="upsell-titre-v2">${esc(p.nom)}</h2>
         <p class="upsell-sous-v2">Choisissez la quantité</p>
       </div>
       <div class="upsell-variantes-v2">
         ${p.variantes.map((v, i) => `
           <div class="upsell-variante-v2" onclick="choisirVarianteUpsell('${p.id}', ${i})">
-            <span class="upsell-variante-label">${labelVariante(v)}</span>
+            <span class="upsell-variante-label">${esc(labelVariante(v))}</span>
             <span class="upsell-variante-prix">${fmt(v.prix)}</span>
           </div>
         `).join('')}
       </div>
       <div class="upsell-actions-v2">
-        <button class="upsell-btn-skip-v2" onclick="declencherUpsellEntrees()">← Retour</button>
+        <button class="upsell-btn-skip-v2" onclick="retourGrilleUpsell()">← Retour</button>
       </div>
     </div>
   `;
   modal.innerHTML = html;
 }
 
+// ← Retour depuis l'écran de variantes : ré-affiche la grille EN COURS.
+//   (Avant : retour codé en dur vers les Entrées — depuis l'upsell Boissons ou
+//    Desserts, on repartait au début de toute la séquence.)
+function retourGrilleUpsell() {
+  annulerAvanceUpsell();   // 🛡️ pas d'avance fantôme après le retour
+  if (window._upsellConfig) {
+    afficherUpsellGrille(window._upsellConfig);
+  } else {
+    fermerUpsellModal();
+    ouvrirPanierFinal();
+  }
+}
+
 function choisirVarianteUpsell(produitId, indexVariante) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
+  // 🛡️ Disponibilité revérifiée au moment du choix
+  if (!estCommandable(p)) return;
   const variante = p.variantes[indexVariante];
   if (!variante) return;
   const vLabel = labelVariante(variante);
-  
+
   // Ajout au panier (regroupe si même produit + même variante déjà présent sans options)
   // ⚠️ !l.lien_plat + prix identique : jamais de fusion avec une sous-ligne de formule
   const ligne = panier.find(l => l.produit_id === p.id && !l.options && l.variante === vLabel
@@ -3807,22 +3993,23 @@ function choisirVarianteUpsell(produitId, indexVariante) {
       nom: p.nom + ' (' + vLabel + ')',
       prix: parseFloat(variante.prix),
       quantite: 1,
-      emoji: emojiCat(p.nom),
+      emoji: emojiProduit(p),
       variante: vLabel
     });
   }
   majBarrePanier();
-  
-  // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout
-  if (window._upsellOnNext) {
-    window._upsellOnNext();
-  }
+
+  // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout (débouncé)
+  programmerAvanceUpsell(300);
 }
 
 function fermerUpsellEtContinuer(type, action) {
+  // 🛡️ Annuler toute avance auto en attente : sinon un tap produit suivi d'un
+  //    tap « Suivant » déclenchait DEUX avances → écran sauté.
+  annulerAvanceUpsell();
   const modal = document.getElementById('modal-upsell');
   if (modal) modal.classList.remove('actif');
-  
+
   if (action === 'skip' && window._upsellOnSkip) {
     window._upsellOnSkip();
   } else if (action === 'next' && window._upsellOnNext) {
@@ -3888,6 +4075,9 @@ function etapeAffichable(etape, p) {
 }
 
 function passerEtapeSuivante() {
+  // 🛡️ Garde : un double-tap ou un timeout tardif pouvait rappeler cette
+  //    fonction après la finalisation (parcoursPlatEnCours remis à null) → crash.
+  if (!parcoursPlatEnCours) return;
   const p = parcoursPlatEnCours.produit;
   const estFormule = parcoursPlatEnCours.est_formule;
   const etapeActuelle = parcoursPlatEnCours.etape;
@@ -3960,7 +4150,7 @@ function afficherModaleVariantes() {
           const actif = dejaChoisie === vLabel;
           return `
             <div class="parcours-option-radio ${actif ? 'actif' : ''}" onclick="selectionnerVariante(${i}, this)">
-              <span class="parcours-option-label">${vLabel}</span>
+              <span class="parcours-option-label">${esc(vLabel)}</span>
               <span class="parcours-option-prix">${fmt(v.prix)}</span>
             </div>
           `;
@@ -3983,10 +4173,9 @@ function selectionnerVariante(index, element) {
   parcoursPlatEnCours.variante_label = labelVariante(v);
   parcoursPlatEnCours.variante_prix = parseFloat(v.prix);
 
-  // Petite pause pour montrer la sélection puis étape suivante
-  setTimeout(() => {
-    passerEtapeSuivante();
-  }, 350);
+  // Petite pause pour montrer la sélection puis étape suivante.
+  // 🛡️ transitionUnique : un double-tap déclenchait DEUX avances → étape sautée.
+  transitionUnique(350, passerEtapeSuivante);
 }
 
 function finaliserParcoursPlat() {
@@ -4005,13 +4194,24 @@ function finaliserParcoursPlat() {
   // rattacher les sous-lignes à son uid (jamais au produit_id : deux formules
   // identiques se volaient leurs entrées à la suppression / changement de qté).
   const lignePlat = ajouterDirect(p, options);
-  const uidPlat = lignePlat ? lignePlat.ligne_uid : bUid();
+  // 🛡️ Si l'ajout a été REFUSÉ (produit devenu indisponible / plafond de stock
+  //    atteint pendant le parcours), on s'arrête là. Avant, les sous-lignes
+  //    (boisson, entrée, suppléments) étaient quand même poussées, rattachées
+  //    à un plat inexistant → lignes orphelines facturées sans plat.
+  if (!lignePlat) {
+    fermerModaleParcours();
+    parcoursPlatEnCours = null;
+    borneAlert('Cet article vient de devenir indisponible.<br>Merci de choisir un autre plat.', '😔');
+    return;
+  }
+  const uidPlat = lignePlat.ligne_uid;
 
   // 🌶️ "Sauce Piquante" (groupe Sauce Riz) est facturée +0,50 € :
   //    les choix d'options n'ayant pas de prix, on ajoute une sous-ligne liée.
   const choixSauceRiz = options.options_base && options.options_base['Sauce Riz'];
   if (choixSauceRiz && /piquante/i.test(String(choixSauceRiz))) {
     panier.push({
+      ligne_uid: bUid(),
       produit_id: null,
       nom: '  ↳ Sauce Piquante',
       prix: 0.50,
@@ -4021,15 +4221,20 @@ function finaliserParcoursPlat() {
     });
   }
 
-  // Ajouter chaque supplément comme ligne séparée
+  // Ajouter chaque supplément comme ligne séparée.
+  // qte_unitaire = quantité PAR plat : quand la quantité du plat change,
+  // la sous-ligne devient plat.quantite × qte_unitaire (2x crevettes sur
+  // 2 plats = 4 crevettes), au lieu d'écraser bêtement à plat.quantite.
   grouperIds(options.supplements).forEach(g => {
     const supp = produits.find(pp => pp.id === g.id);
     if (supp) {
       panier.push({
+        ligne_uid: bUid(),
         produit_id: supp.id,
         nom: '  ↳ ' + supp.nom,
         prix: parseFloat(supp.prix),
         quantite: g.qte,
+        qte_unitaire: g.qte,
         emoji: '➕',
         lien_plat: uidPlat
       });
@@ -4043,6 +4248,7 @@ function finaliserParcoursPlat() {
       const sauce = produits.find(pp => pp.id === sauceId);
       if (sauce && parseFloat(sauce.prix) > 0) {
         panier.push({
+          ligne_uid: bUid(),
           produit_id: sauce.id,
           nom: '  ↳ ' + sauce.nom,
           prix: parseFloat(sauce.prix),
@@ -4061,6 +4267,7 @@ function finaliserParcoursPlat() {
       if (boisson) {
         const pB = prixBoissonFormule(boisson);   // 33cl incluse, autres +1 €
         panier.push({
+          ligne_uid: bUid(),
           produit_id: boisson.id,
           nom: '  ↳ ' + boisson.nom + (pB > 0 ? ' (supplément)' : ' (formule)'),
           prix: pB,
@@ -4075,6 +4282,7 @@ function finaliserParcoursPlat() {
       if (entree) {
         const label = parcoursPlatEnCours.formule_entree_label || entree.nom;
         panier.push({
+          ligne_uid: bUid(),
           produit_id: entree.id,
           nom: '  ↳ ' + label + ' (formule)',
           prix: 0,  // OFFERT, prix dans la formule
@@ -4123,7 +4331,7 @@ function declencherMiniUpsellBoisson(produitAjoute) {
   }
   
   if (!catBoisson) return;
-  const boissons = produits.filter(p => p.categorie_id === catBoisson.id && p.actif !== false && visibleSurBorne(p));
+  const boissons = produits.filter(p => p.categorie_id === catBoisson.id && estCommandable(p) && visibleSurBorne(p));
   if (boissons.length === 0) return;
   
   afficherUpsellGrille({
@@ -4159,7 +4367,7 @@ function lancerParcoursFormule(sousCatFormule) {
   const nomSource = sousCatFormule.nom.replace(/^Formule\s+/, '');
   const catSource = categories.find(c => c.nom === nomSource && !c.parent_id);
   if (!catSource) {
-    borneAlert('Catégorie source introuvable : ' + nomSource, '⚠️');
+    borneAlert('Catégorie source introuvable : ' + esc(nomSource), '⚠️');
     return;
   }
   
@@ -4195,22 +4403,44 @@ function barrePanierFormule() {
   `;
 }
 
+// 🏷️ Libellé d'une entrée de formule (« Nems (2 pièces) »).
+//    Calculé au moment du CLIC (plus de libellé transporté dans l'attribut
+//    onclick, qui cassait dès qu'un nom contenait un guillemet).
+//    Regex \b2\s*pi : « 2 pièces » sans matcher « 12 pièces » (l'ancien
+//    .includes('2 pi') attrapait aussi 12/22 pièces).
+function labelEntreeFormuleBorne(e) {
+  if (!e) return '';
+  if (e.pieces_formule != null && Number(e.pieces_formule) > 0)
+    return e.nom + ' (' + e.pieces_formule + ' pièces)';
+  if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
+    const variante2p = e.variantes.find(v => /(^|[^0-9])2\s*pi/i.test(labelVariante(v)));
+    const lbl2p = variante2p ? labelVariante(variante2p) : '2 pièces';
+    return e.nom + ' (' + lbl2p + ')';
+  }
+  return e.nom;
+}
+
 function afficherEcranFormuleEntree() {
   const catEntrees = categories.find(c => c.nom === 'Entrées');
   if (!catEntrees) {
     borneAlert('Catégorie Entrées introuvable', '⚠️');
     return;
-  }const entrees = produits.filter(p => p.categorie_id === catEntrees.id && p.actif !== false && p.visible_formule !== false);
-  
-  // Pour chaque entrée, prendre la variante 2 pièces ou label par défaut
-  const items = entrees.map(e => {
-    if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
-      const variante2p = e.variantes.find(v => labelVariante(v).includes('2 pi'));
-      const lbl2p = variante2p ? labelVariante(variante2p) : '2 pièces';
-      return { id: e.id, nom: e.nom, label: e.nom + ' (' + lbl2p + ')', image_url: e.image_url };
-    }
-    return { id: e.id, nom: e.nom, label: e.nom, image_url: e.image_url };
-  });
+  }
+  // 🛡️ Mêmes règles de disponibilité que partout ailleurs (avant : un produit
+  //    coupé depuis la caisse ou masqué de la borne restait proposé en formule)
+  const entrees = produits.filter(p => p.categorie_id === catEntrees.id
+    && estCommandable(p) && visibleSurBorne(p) && p.visible_formule !== false);
+
+  const items = entrees.map(e => ({ id: e.id, label: labelEntreeFormuleBorne(e), image_url: e.image_url }));
+
+  // 🛡️ Toutes les entrées épuisées → on saute l'étape au lieu d'afficher une
+  //    grille vide sans issue (la formule continue sans entrée)
+  if (items.length === 0) {
+    formuleEnCours.entree_id = null;
+    formuleEnCours.entree_label = null;
+    afficherEcranFormulePlat();
+    return;
+  }
   
   let ecran = document.getElementById('ecran-formule-step');
   if (!ecran) {
@@ -4226,7 +4456,7 @@ function afficherEcranFormuleEntree() {
         <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
         <button class="btn-retour-cats" onclick="annulerFormule()">← Annuler</button>
       </div>
-      <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
+      <div class="logo">${esc(formuleEnCours.sousCatFormule.nom)}</div>
       <div class="formule-step-num">Étape 1/3</div>
     </div>
     <div class="formule-step-titre">
@@ -4235,13 +4465,14 @@ function afficherEcranFormuleEntree() {
     </div>
     <div class="formule-grille">
       ${items.map(it => {
-        const hasImage = it.image_url && it.image_url.trim() !== '';
+        const imgUrl = escUrl(it.image_url);
+        const hasImage = imgUrl !== '';
         return `
-          <div class="formule-card ${hasImage?'has-image':''}" onclick="choisirFormuleEntree('${it.id}', '${it.label.replace(/'/g, "\\'")}')"
-               ${hasImage?`style="background-image:url('${it.image_url}')"`:''}>
+          <div class="formule-card ${hasImage?'has-image':''}" onclick="choisirFormuleEntree('${it.id}')"
+               ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
             ${!hasImage ? `<div class="formule-card-emoji">🥟</div>` : ''}
             <div class="formule-card-bandeau">
-              <div class="formule-card-nom">${it.label}</div>
+              <div class="formule-card-nom">${esc(it.label)}</div>
             </div>
           </div>
         `;
@@ -4253,25 +4484,40 @@ function afficherEcranFormuleEntree() {
   allerEcran('ecran-formule-step');
 }
 
-function choisirFormuleEntree(entreeId, label) {
+function choisirFormuleEntree(entreeId) {
+  if (!formuleEnCours) return;
+  const entree = produits.find(p => p.id === entreeId);
+  if (!estCommandable(entree)) return;
   formuleEnCours.entree_id = entreeId;
-  formuleEnCours.entree_label = label;
-  // Petite anim feedback
-  setTimeout(() => afficherEcranFormulePlat(), 200);
+  formuleEnCours.entree_label = labelEntreeFormuleBorne(entree);
+  // Petite anim feedback (transitionUnique = anti double-tap)
+  transitionUnique(200, afficherEcranFormulePlat);
 }
 
 function afficherEcranFormulePlat() {
+  if (!formuleEnCours) return;
   // Lister les plats de la sous-cat formule (les versions "(Formule)")
-  const platsFormule = produits.filter(p => p.categorie_id === formuleEnCours.sousCatFormule.id && p.actif !== false);
-  
-  const ecran = document.getElementById('ecran-formule-step');
+  // 🛡️ estCommandable + visibleSurBorne : plus de plat coupé/masqué proposé
+  const platsFormule = produits.filter(p => p.categorie_id === formuleEnCours.sousCatFormule.id
+    && estCommandable(p) && visibleSurBorne(p));
+
+  // 🛡️ Créer l'écran s'il n'existe pas encore : quand l'étape Entrée est
+  //    auto-sautée (toutes épuisées), on arrive ici SANS être passé par
+  //    afficherEcranFormuleEntree qui le créait — sinon crash sur innerHTML.
+  let ecran = document.getElementById('ecran-formule-step');
+  if (!ecran) {
+    ecran = document.createElement('div');
+    ecran.id = 'ecran-formule-step';
+    ecran.className = 'ecran';
+    document.body.appendChild(ecran);
+  }
   ecran.innerHTML = `
     <div class="formule-step-header">
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
         <button class="btn-retour-cats" onclick="afficherEcranFormuleEntree()">← Retour</button>
       </div>
-      <div class="logo">${formuleEnCours.sousCatFormule.nom}</div>
+      <div class="logo">${esc(formuleEnCours.sousCatFormule.nom)}</div>
       <div class="formule-step-num">Étape 2/3</div>
     </div>
     <div class="formule-step-titre">
@@ -4280,27 +4526,33 @@ function afficherEcranFormulePlat() {
     </div>
     <div class="formule-grille">
       ${platsFormule.map(p => {
-        const hasImage = p.image_url && p.image_url.trim() !== '';
+        const imgUrl = escUrl(p.image_url);
+        const hasImage = imgUrl !== '';
         const nomPropre = p.nom.replace(/ \(Formule\)$/, '');
         return `
           <div class="formule-card ${hasImage?'has-image':''}" onclick="choisirFormulePlat('${p.id}')"
-               ${hasImage?`style="background-image:url('${p.image_url}')"`:''}>
+               ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
             ${!hasImage ? `<div class="formule-card-emoji">🍜</div>` : ''}
             <div class="formule-card-bandeau">
-              <div class="formule-card-nom">${nomPropre}</div>
-              <div class="formule-card-prix">${parseFloat(p.prix).toFixed(2).replace('.', ',')} €</div>
+              <div class="formule-card-nom">${esc(nomPropre)}</div>
+              <div class="formule-card-prix">${fmt(p.prix)}</div>
             </div>
           </div>
         `;
       }).join('')}
+      ${platsFormule.length === 0 ? '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-mute);">Aucun plat disponible dans cette formule pour le moment</div>' : ''}
     </div>
     ${barrePanierFormule()}
   `;
+  // 🛡️ Activer l'écran : nécessaire quand on arrive ici directement
+  //    (étape Entrée auto-sautée) — sans ça, l'écran restait invisible.
+  allerEcran('ecran-formule-step');
 }
 
 function choisirFormulePlat(platId) {
+  if (!formuleEnCours) return;
   const plat = produits.find(p => p.id === platId);
-  if (!plat) return;
+  if (!plat || !estCommandable(plat)) return;
   formuleEnCours.plat = plat;
   
   // Démarrer le parcours classique du plat (Spicy/Normal, sauces, suppléments)
@@ -4343,7 +4595,14 @@ function afficherEcranFormuleBoisson() {
     return;
   }
   // Toutes les boissons : 33cl incluses, les autres +1 €
-  const boissons = produits.filter(p => p.categorie_id === catBoissons.id && p.actif !== false);
+  // 🛡️ estCommandable + visibleSurBorne : plus de boisson coupée/masquée proposée
+  const boissons = produits.filter(p => p.categorie_id === catBoissons.id
+    && estCommandable(p) && visibleSurBorne(p));
+  // 🛡️ Aucune boisson disponible → finaliser sans boisson plutôt qu'une grille vide
+  if (boissons.length === 0) {
+    finaliserFormule();
+    return;
+  }
   
   // Titre : nom de la formule en cours, sinon nom de la box
   const platBox = parcoursPlatEnCours ? parcoursPlatEnCours.produit : null;
@@ -4371,7 +4630,7 @@ function afficherEcranFormuleBoisson() {
         <button class="btn-home" onclick="retourAccueil()" title="Accueil">🏠</button>
         <button class="btn-retour-cats" onclick="${formuleEnCours ? 'afficherEcranFormulePlat()' : 'annulerParcoursPlat(); allerEcran(\'ecran-menu\')'}">← Retour</button>
       </div>
-      <div class="logo">${titreEcran}</div>
+      <div class="logo">${esc(titreEcran)}</div>
       <div class="formule-step-num">${etapeLbl}</div>
     </div>
     <div class="formule-step-titre">
@@ -4380,13 +4639,14 @@ function afficherEcranFormuleBoisson() {
     </div>
     <div class="formule-grille">
       ${boissons.map(b => {
-        const hasImage = b.image_url && b.image_url.trim() !== '';
+        const imgUrl = escUrl(b.image_url);
+        const hasImage = imgUrl !== '';
         return `
           <div class="formule-card ${hasImage?'has-image':''}" onclick="choisirFormuleBoissonEcran('${b.id}')"
-               ${hasImage?`style="background-image:url('${b.image_url}')"`:''}>
+               ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
             ${!hasImage ? `<div class="formule-card-emoji">🍹</div>` : ''}
             <div class="formule-card-bandeau">
-              <div class="formule-card-nom">${b.nom.replace(' 33cl','')}</div>
+              <div class="formule-card-nom">${esc(b.nom.replace(' 33cl',''))}</div>
               ${prixBoissonFormule(b) > 0 ? `<div class="formule-card-prix">+${fmt(prixBoissonFormule(b))}</div>` : ''}
             </div>
           </div>
@@ -4400,17 +4660,20 @@ function afficherEcranFormuleBoisson() {
 }
 
 function choisirFormuleBoissonEcran(boissonId) {
+  const boisson = produits.find(p => p.id === boissonId);
+  if (!estCommandable(boisson)) return;
   // ⚠️ Pour une BOX, formuleEnCours est null (on n'est pas passé par le parcours
   //    Entrée → Plat → Boisson) : sans ce garde, le clic plantait en silence.
   if (formuleEnCours) {
     formuleEnCours.boisson_id = boissonId;
-    formuleEnCours.boisson_obj = produits.find(p => p.id === boissonId);
+    formuleEnCours.boisson_obj = boisson;
   }
   // Synchroniser avec parcoursPlatEnCours pour la finalisation
   if (parcoursPlatEnCours) {
     parcoursPlatEnCours.formule_boisson_id = boissonId;
   }
-  setTimeout(() => finaliserFormule(), 200);
+  // 🛡️ transitionUnique : anti double-tap (double finalisation)
+  transitionUnique(200, finaliserFormule);
 }
 
 function finaliserFormule() {
@@ -4430,6 +4693,10 @@ function annulerFormule() {
   borneConfirm('Annuler la formule en cours ?', function () {
     formuleEnCours = null;
     parcoursPlatEnCours = null;
+    // 🛡️ Une « formule offerte » (300 pts) en attente est annulée aussi —
+    //    avant, le flag restait armé et la PROCHAINE formule ajoutée (même
+    //    payante, bien plus tard) devenait gratuite par surprise.
+    recompensePendingAjout = null;
     fermerModaleParcours();
     // Retour à l'accueil catégories
     const formulesCat = categories.find(c => c.nom === 'Formules' && !c.parent_id);
@@ -4470,8 +4737,8 @@ function afficherModaleOptionsBase() {
       ${headerParcours(groupeEnCours.groupe, 'Personnalisation', groupeEnCours.obligatoire ? 'Sélection obligatoire' : 'Optionnel')}
       <div class="parcours-options">
         ${groupeEnCours.choix.map(choix => `
-          <div class="parcours-option-radio" onclick="selectionnerOptionBase('${groupeEnCours.groupe.replace(/'/g, "\\'")}', '${choix.replace(/'/g, "\\'")}', this)">
-            <span class="parcours-option-label">${choix}</span>
+          <div class="parcours-option-radio" onclick="selectionnerOptionBase('${escJs(groupeEnCours.groupe)}', '${escJs(choix)}', this)">
+            <span class="parcours-option-label">${esc(choix)}</span>
             ${/piquante/i.test(choix) ? '<span class="parcours-option-prix">+0,50 €</span>' : ''}
           </div>
         `).join('')}
@@ -4488,10 +4755,9 @@ function selectionnerOptionBase(groupe, choix, element) {
   element.classList.add('actif');
   parcoursPlatEnCours.options_base[groupe] = choix;
 
-  // Attendre 400ms pour montrer la sélection puis passer au groupe suivant
-  setTimeout(() => {
-    afficherModaleOptionsBase();
-  }, 400);
+  // Attendre 400ms pour montrer la sélection puis passer au groupe suivant.
+  // 🛡️ transitionUnique : un double-tap empilait deux transitions → étape sautée.
+  transitionUnique(400, afficherModaleOptionsBase);
 }
 
 // ============================================================
@@ -4508,9 +4774,9 @@ function afficherModaleRetirables() {
       ${headerParcours('🌿 Personnaliser votre ' + p.nom, 'Personnalisation', 'Décochez les ingrédients que vous ne voulez pas')}
       <div class="parcours-options">
         ${p.ingredients_retirable.map(ing => `
-          <label class="parcours-option" data-ing="${ing}">
-            <input type="checkbox" checked onchange="toggleRetirable('${ing.replace(/'/g, "\\'")}', this.checked)">
-            <span class="parcours-option-label">${ing}</span>
+          <label class="parcours-option" data-ing="${esc(ing)}">
+            <input type="checkbox" checked onchange="toggleRetirable('${escJs(ing)}', this.checked)">
+            <span class="parcours-option-label">${esc(ing)}</span>
           </label>
         `).join('')}
       </div>
@@ -4549,8 +4815,8 @@ function afficherModaleSupplements() {
       <div class="parcours-options">
         ${supps.map(s => `
           <div class="parcours-option-pay" data-supp="${s.id}">
-            <span class="parcours-option-label">${s.nom.replace('Suppl. ', '')}</span>
-            <span class="parcours-option-prix">+${parseFloat(s.prix).toFixed(2).replace('.', ',')} €</span>
+            <span class="parcours-option-label">${esc(s.nom.replace('Suppl. ', ''))}</span>
+            <span class="parcours-option-prix">+${fmt(s.prix)}</span>
             <div class="pl-qte" style="margin-left:14px;">
               <button class="pl-qbtn" onclick="majSupplementQte('${s.id}', -1)">−</button>
               <span class="pl-qval" id="suppq-${s.id}">${qteSupplement(s.id)}</span>
@@ -4640,18 +4906,18 @@ function afficherModaleSauces() {
         ${sauces.map(s => {
           const dejaChoisie = dejaChoisies.includes(s.id);
           const prixAffiche = (!incluses && parseFloat(s.prix) > 0)
-            ? '+' + parseFloat(s.prix).toFixed(2).replace('.', ',') + ' €'
+            ? '+' + fmt(s.prix)
             : 'inclus';
           return `
             <div class="parcours-option-radio ${dejaChoisie ? 'actif' : ''}" onclick="toggleSauce('${s.id}', this)">
-              <span class="parcours-option-label">${s.nom.replace('Sauce ', '')}</span>
+              <span class="parcours-option-label">${esc(s.nom.replace('Sauce ', ''))}</span>
               <span class="parcours-option-prix">${prixAffiche}</span>
             </div>
           `;
         }).join('')}
       </div>
       <div class="parcours-actions">
-        <button class="parcours-btn-passer" onclick="parcoursPlatEnCours.sauces = []; passerEtapeSuivante()">Passer (aucune sauce) →</button>
+        ${obligatoire ? '' : `<button class="parcours-btn-passer" onclick="parcoursPlatEnCours.sauces = []; passerEtapeSuivante()">Passer (aucune sauce) →</button>`}
         <button class="parcours-btn-valider" id="parcours-btn-valider" ${(obligatoire && dejaChoisies.length === 0) ? 'disabled' : ''} onclick="passerEtapeSuivante()">Valider ✓</button>
       </div>
     </div>
@@ -4691,8 +4957,10 @@ function toggleSauce(sauceId, element) {
   }
 
   // Mettre à jour le compteur et l'état du bouton
+  // 🛠️ Correction : l'ancien code visait un id « parcours-sauces-compteur »
+  //    qui n'existait nulle part → le compteur X/X ne se mettait jamais à jour.
   const dejaChoisies2 = parcoursPlatEnCours.sauces;
-  const compteur = document.getElementById('parcours-sauces-compteur');
+  const compteur = document.querySelector('#modal-parcours .parcours-sous');
   if (compteur && multiChoix) {
     compteur.textContent = `Jusqu'à ${max} sauce${max > 1 ? 's' : ''} · ${dejaChoisies2.length}/${max} sélectionnée${dejaChoisies2.length > 1 ? 's' : ''}`;
   }
@@ -4757,9 +5025,13 @@ function revenirEtapePrecedente() {
   else if (etapePrecedente === 'retirables') afficherModaleRetirables();
   else if (etapePrecedente === 'supplements') afficherModaleSupplements();
   else if (etapePrecedente === 'sauces') afficherModaleSauces();
-  else if (etapePrecedente === 'formule_entree') afficherModaleFormuleEntree();
-  else if (etapePrecedente === 'formule_plat') afficherEcranFormulePlat();
-  else if (etapePrecedente === 'formule_boisson') afficherModaleFormuleBoisson();
+  // 🛠️ Correction : ces deux branches appelaient afficherModaleFormuleEntree /
+  //    afficherModaleFormuleBoisson, deux fonctions qui N'EXISTENT PAS
+  //    (ReferenceError garanti si l'étape était empilée un jour). On pointe
+  //    vers les vrais écrans plein-écran, avec garde si le contexte a disparu.
+  else if (etapePrecedente === 'formule_entree') { formuleEnCours ? afficherEcranFormuleEntree() : annulerParcoursPlat(); }
+  else if (etapePrecedente === 'formule_plat') { formuleEnCours ? afficherEcranFormulePlat() : annulerParcoursPlat(); }
+  else if (etapePrecedente === 'formule_boisson') afficherEcranFormuleBoisson();
 }
 
 // Helper : génère le header avec ← Retour et ✕ Fermer
@@ -4775,9 +5047,9 @@ function headerParcours(titre, etape, sousTitre = '') {
       </button>
     </div>
     <div class="parcours-head">
-      <div class="parcours-etape">${etape}</div>
-      <h2 class="parcours-titre">${titre}</h2>
-      ${sousTitre ? '<p class="parcours-sous">' + sousTitre + '</p>' : ''}
+      <div class="parcours-etape">${esc(etape)}</div>
+      <h2 class="parcours-titre">${esc(titre)}</h2>
+      ${sousTitre ? '<p class="parcours-sous">' + esc(sousTitre) + '</p>' : ''}
     </div>`;
 }
 
@@ -4812,32 +5084,8 @@ function declencherConfettis() {
   }, 5000);
 }
 
-function afficherUpsell(produitAjoute, suggestions) {
-  const modal = document.getElementById('modal-upsell');
-  const titre = document.getElementById('upsell-titre');
-  const liste = document.getElementById('upsell-liste');
-
-  titre.textContent = produitAjoute.nom + ' ajouté ! 🎉';
-
-  liste.innerHTML = suggestions.map(p => {
-    const cat = categories.find(c => c.id === p.categorie_id);
-    const emoji = emojiCat(cat ? cat.nom : '');
-    return `
-      <div class="upsell-card" onclick="ajouterUpsell('${p.id}', this)">
-        <div class="upsell-emoji">${emoji}</div>
-        <div class="upsell-nom">${p.nom}</div>
-        <div class="upsell-prix">${fmt(p.prix)}</div>
-        <div class="upsell-plus">+</div>
-      </div>
-    `;
-  }).join('');
-
-  modal.classList.add('actif');
-}
-
-function fermerUpsell() {
-  document.getElementById('modal-upsell').classList.remove('actif');
-}
+// 🧹 (audit v8) afficherUpsell / fermerUpsell supprimés : ancienne modale
+//    d'upsell jamais affichée depuis la refonte v2 (code mort).
 
 // ✨ modifierQte travaille maintenant par INDEX de ligne (et non produit_id)
 //    → indispensable car un même produit peut avoir plusieurs lignes
@@ -4845,6 +5093,14 @@ function fermerUpsell() {
 function modifierQte(index, delta) {
   const ligne = panier[index];
   if (!ligne) return;
+  // 🛡️ (audit v8) Les lignes VERROUILLÉES ne se modifient jamais ici :
+  //    - ligne 🎁 récompense : appuyer sur « + » multipliait la remise
+  //      négative → total négatif ; « − » la retirait en laissant les points
+  //      partir quand même. Elle se retire via retirerRecompenseDepuisPanier.
+  //    - sous-ligne liée (lien_plat) : sa quantité suit son plat parent ;
+  //      la retirer seule laissait le supplément parti en cuisine mais
+  //      plus facturé.
+  if (ligne.recompense || ligne.lien_plat) return;
   if (delta > 0) {
     const p = produits.find(x => x.id === ligne.produit_id);
     if (p && p.stock_actif) {
@@ -4853,30 +5109,33 @@ function modifierQte(index, delta) {
     }
   }
   ligne.quantite += delta;
-  // 🍱 Formule : l'entrée et la boisson liées suivent la même quantité.
+  // 🍱 Les sous-lignes liées (entrée/boisson de formule, suppléments, sauces)
+  //    suivent la quantité de leur parent — pour TOUS les parents désormais
+  //    (avant : formules uniquement → 2 plats facturés mais 1 seul supplément
+  //    compté alors que la cuisine le mettait sur les deux).
   //    ⚠️ Rattachement par ligne_uid : avant (par produit_id), supprimer une
-  //    formule emportait les sous-lignes de TOUTES les formules identiques →
-  //    l'autre client gardait sa formule facturée mais SANS entrée en cuisine.
-  const prodQte = produits.find(x => x.id === ligne.produit_id);
-  // ⚠️ GARDE-FOU CRITIQUE : ne JAMAIS comparer l.lien_plat à un uid absent.
-  //    Si ligne.ligne_uid est undefined, "l.lien_plat !== undefined" est FAUX
-  //    pour toute ligne principale → supprimer UNE ligne sans uid VIDAIT tout
-  //    le panier. D'où le test "ligne.ligne_uid &&" ci-dessous.
+  //    formule emportait les sous-lignes de TOUTES les formules identiques.
+  //    GARDE-FOU : ne JAMAIS comparer l.lien_plat à un uid absent — d'où uidL.
   const uidL = ligne.ligne_uid || null;
-  if (!ligne.lien_plat && prodQte && prodQte.est_formule === true) {
-    if (ligne.quantite <= 0) {
-      panier = panier.filter(l => l !== ligne && !(uidL && l.lien_plat === uidL));
-    } else {
-      panier.forEach(l => { if (uidL && l.lien_plat === uidL) l.quantite = ligne.quantite; });
-    }
-  } else if (ligne.quantite <= 0) {
-    // Tout parent qui part emporte ses sous-lignes (suppléments, sauces) —
-    // sinon elles restaient orphelines et facturées.
+  if (ligne.quantite <= 0) {
+    // Tout parent qui part emporte ses sous-lignes — sinon elles restaient
+    // orphelines et facturées.
     panier = panier.filter(l => l !== ligne && !(uidL && l.lien_plat === uidL));
+  } else if (uidL) {
+    // Sous-ligne = quantité du parent × sa quantité par plat (qte_unitaire,
+    // ex. « 2x crevettes » par plat → 2 plats = 4 crevettes)
+    panier.forEach(l => { if (l.lien_plat === uidL) l.quantite = ligne.quantite * (l.qte_unitaire || 1); });
   }
+  // 🎁 La remise fidélité doit rester valable après CHAQUE modification :
+  //    si l'article offert a disparu, la remise saute aussi (avant : la ligne
+  //    négative restait seule → total négatif + points débités pour rien).
+  verifierRecompenseValide();
   afficherPanier();
   majBarrePanier();
-  if (panier.length === 0) allerEcran('ecran-menu');
+  if (panier.length === 0) {
+    upsellSequenceFaite = false;   // nouvelle séquence d'upsell pour le prochain passage
+    allerEcran('ecran-accueil-cats');
+  }
 }
 
 function totalPanier() {
@@ -4925,12 +5184,12 @@ function afficherPanier() {
       // Options de base (Spicy/Normal, Riz/Nouilles)
       if (l.options.options_base) {
         Object.entries(l.options.options_base).forEach(([groupe, choix]) => {
-          optionsHtml += `<div class="pl-options">${groupe} : <b>${choix}</b></div>`;
+          optionsHtml += `<div class="pl-options">${esc(groupe)} : <b>${esc(choix)}</b></div>`;
         });
       }
       // Retirables
       if (l.options.retirable && l.options.retirable.length > 0) {
-        optionsHtml += `<div class="pl-options">🚫 Sans : ${l.options.retirable.join(', ')}</div>`;
+        optionsHtml += `<div class="pl-options">🚫 Sans : ${esc(l.options.retirable.join(', '))}</div>`;
       }
       // Sauces (si incluses, sinon elles sont en lignes séparées payantes)
       if (l.options.sauces && l.options.sauces.length > 0) {
@@ -4941,27 +5200,31 @@ function afficherPanier() {
           })
           .filter(n => n);
         if (sauceNoms.length > 0) {
-          optionsHtml += `<div class="pl-options">🌶️ ${sauceNoms.join(', ')}</div>`;
+          optionsHtml += `<div class="pl-options">🌶️ ${esc(sauceNoms.join(', '))}</div>`;
         }
       }
     }
    // Style spécial pour les lignes liées (supplément, sauce sous un plat)
     const classe = l.lien_plat ? 'panier-ligne pl-lie' : 'panier-ligne';
-    // 🍱 Sous-lignes de formule (entrée, boisson) : leur quantité est pilotée
-    //    par la formule elle-même → pas de boutons +/- (elles suivent).
-    const ligneParent = l.lien_plat ? panier.find(x => x.ligne_uid === l.lien_plat) : null;
-    const prodParent = ligneParent ? produits.find(pp => pp.id === ligneParent.produit_id) : null;
-    const sousLigneFormule = prodParent && prodParent.est_formule === true;
-    const qteHtml = sousLigneFormule
-      ? `<span class="pl-qval">${l.quantite}</span>`
-      : `<button class="pl-qbtn" onclick="modifierQte(${idx}, -1)">−</button>
+    // 🛡️ (audit v8) Lignes SANS boutons +/- :
+    //    - toute sous-ligne liée (elle suit la quantité de son plat parent),
+    //    - la ligne 🎁 récompense (un « + » multipliait la remise négative !)
+    //      → remplacée par un bouton « Retirer » explicite.
+    let qteHtml;
+    if (l.recompense) {
+      qteHtml = `<button class="pl-qbtn" style="width:auto;border-radius:999px;padding:0 16px;font-size:13px;" onclick="retirerRecompenseDepuisPanier()">Retirer</button>`;
+    } else if (l.lien_plat) {
+      qteHtml = `<span class="pl-qval">${l.quantite}</span>`;
+    } else {
+      qteHtml = `<button class="pl-qbtn" onclick="modifierQte(${idx}, -1)">−</button>
         <span class="pl-qval">${l.quantite}</span>
         <button class="pl-qbtn" onclick="modifierQte(${idx}, 1)">+</button>`;
+    }
     return `
     <div class="${classe}">
       <div class="pl-emoji">${l.emoji}</div>
       <div class="pl-info">
-        <div class="pl-nom">${l.nom}</div>
+        <div class="pl-nom">${esc(l.nom)}</div>
         ${optionsHtml}
         <div class="pl-prix">${fmt(l.prix)} / unité</div>
       </div>
@@ -4977,7 +5240,10 @@ function afficherPanier() {
 
 // ===== FORMAT =====
 function fmt(n) {
-  return parseFloat(n).toFixed(2).replace('.', ',') + ' €';
+  const v = parseFloat(n);
+  // 🛡️ Un produit sans prix valide affichait « NaN € » partout — repli propre.
+  if (!Number.isFinite(v)) return '—';
+  return v.toFixed(2).replace('.', ',') + ' €';
 }
 
 // ============================================================
@@ -5271,7 +5537,6 @@ async function envoyerImpressionCuisine(numero, methode) {
 // ============================================================
 //  🎫 FIDÉLITÉ — Scan QR + attache client
 // ============================================================
-let qrScanner = null;
 
 function afficherFidelite() {
   const pasConnecte = document.getElementById('fid-pas-connecte');
@@ -5302,8 +5567,9 @@ function majFidHeader() {
       (clientFid.telephone ? clientFid.telephone.replace(/(\d{2})(?=\d)/g, '$1 ') : 'Mon compte');
     const pts = clientFid.points != null ? clientFid.points : 0;
     el.className = 'ac-fid ac-fid-connecte';
+    // esc() : le nom peut venir d'une inscription faite sur le site web
     el.innerHTML = `
-      <div class="ac-fid-nom">👋 ${prenom}</div>
+      <div class="ac-fid-nom">👋 ${esc(prenom)}</div>
       <div class="ac-fid-sous">Voir mes points (${pts})</div>`;
   } else {
     el.className = 'ac-fid';
@@ -5363,69 +5629,11 @@ function majFidProgress() {
   }
 }
 
-// ⛔ Scan QR désactivé sur la borne : identification par téléphone uniquement.
-function ouvrirScanQR() {
-  ouvrirFidelite(); return;
-  scanRetourEcran = 'ecran-panier';
-  allerEcran('ecran-scan-qr');
-  demarrerScanner();
-}
-
-function fermerScanQR() {
-  arreterScanner();
-  allerEcran(scanRetourEcran);
-}
-
-function demarrerScanner() {
-  if (qrScanner) return;
-  try {
-    qrScanner = new Html5Qrcode('qr-reader');
-    qrScanner.start(
-      { facingMode: 'user' },
-      { fps: 10, qrbox: { width: 260, height: 260 } },
-      (decodedText) => { traiterScanFidelite(decodedText); },
-      () => {}
-    ).catch(err => {
-      document.getElementById('qr-reader').innerHTML =
-        '<div style="padding:40px;text-align:center;color:var(--text-mute);">Caméra indisponible<br><small>' + err + '</small></div>';
-      qrScanner = null;
-    });
-  } catch (e) {
-    document.getElementById('qr-reader').innerHTML =
-      '<div style="padding:40px;text-align:center;color:var(--text-mute);">Scanner non disponible</div>';
-    qrScanner = null;
-  }
-}
-
-function arreterScanner() {
-  if (qrScanner) {
-    try { qrScanner.stop().then(() => { qrScanner.clear(); }); } catch (e) {}
-    qrScanner = null;
-  }
-}
-
-async function traiterScanFidelite(code) {
-  arreterScanner();
-  // Le QR contient l'UUID du client (carte fidélité Gin Khao)
-  const clientId = (code || '').trim();
-  try {
-    const { data, error } = await sb.from('clients')
-      .select('id, nom, telephone, points, nb_visites')
-      .eq('id', clientId)
-      .single();
-    if (error || !data) {
-      borneAlert('Carte non reconnue.<br>Demandez au comptoir.', '🎫');
-      allerEcran(scanRetourEcran);
-      return;
-    }
-    clientFid = data;
-    afficherFidelite();
-    allerEcran(scanRetourEcran);
-  } catch (e) {
-    borneAlert('Erreur de lecture : ' + e.message, '⚠️');
-    allerEcran(scanRetourEcran);
-  }
-}
+// 🧹 (audit v8) Tout le code du scanner QR a été supprimé (ouvrirScanQR,
+//    demarrerScanner, arreterScanner, traiterScanFidelite, fermerScanQR) :
+//    la fonctionnalité était désactivée mais son code — et la lecture DIRECTE
+//    de la table `clients` avec la clé anon — restait chargé. L'identification
+//    fidélité passe uniquement par téléphone (RPC fid_solde).
 
 function detacherClient() {
   clientFid = null;
@@ -5438,9 +5646,7 @@ function detacherClient() {
   afficherFidelite();
 }
 
-function afficherInfoFidelite() {
-  borneAlert('Demandez votre carte de fidélité au comptoir !<br>Cumulez des points à chaque commande.', '🎫');
-}
+// 🧹 afficherInfoFidelite supprimée (n'était appelée que par l'écran scan QR retiré)
 
 // ============================================================
 //  🎫 FIDÉLITÉ TÉLÉPHONE — solde, inscription, récompenses
@@ -5505,15 +5711,7 @@ function ouvrirFideliteAccueil() {
     </div>`;
 }
 
-// Scan QR lancé depuis l'accueil : retour vers les catégories après scan
-let scanRetourEcran = 'ecran-panier';
-// ⛔ Scan QR désactivé sur la borne : identification par téléphone uniquement.
-function ouvrirScanQRDepuisAccueil() {
-  ouvrirFideliteAccueil(); return;
-  scanRetourEcran = 'ecran-accueil-cats';
-  allerEcran('ecran-scan-qr');
-  demarrerScanner();
-}
+// 🧹 ouvrirScanQRDepuisAccueil / scanRetourEcran supprimés (scan QR retiré)
 
 // --- Étape 1 : clavier téléphone (custom, pas de clavier système) ---
 function ouvrirClavierTel(apresVente) {
@@ -5581,7 +5779,7 @@ async function validerTelFidelite() {
       afficherEcranInscriptionFid();
     }
   } catch (e) {
-    borneAlert('Erreur fidélité : ' + (e.message || e), '⚠️');
+    borneAlert('Erreur fidélité : ' + esc(e.message || e), '⚠️');
     fermerFidelite();
   }
 }
@@ -5669,6 +5867,8 @@ async function inscrireFidelite() {
     });
     if (error) throw error;
     const c = data && data[0];
+    // 🛡️ Réponse inattendue du RPC → message propre plutôt qu'un crash
+    if (!c || !c.client_id) throw new Error('réponse serveur invalide');
     clientFid = { id: c.client_id, nom: (prenom && prenom.length >= 2) ? prenom : null, telephone: fidTelSaisi, points: c.points, nb_visites: 0 };
     if (fidModeApresVente) {
       await crediterApresVente();
@@ -5677,7 +5877,7 @@ async function inscrireFidelite() {
       afficherEcranSoldeFid(true);
     }
   } catch (e) {
-    borneAlert('Inscription impossible : ' + (e.message || e), '⚠️');
+    borneAlert('Inscription impossible : ' + esc(e.message || e), '⚠️');
     fermerFidelite();
   }
 }
@@ -5730,9 +5930,9 @@ function afficherEcranSoldeFid(vientDeSInscrire) {
   }).join('');
   m.innerHTML = `
     <div class="fid-box">
-      <h3>${vientDeSInscrire ? '🎉 Compte créé !' : '👋 ' + (clientFid.nom || 'Bonjour !')}</h3>
+      <h3>${vientDeSInscrire ? '🎉 Compte créé !' : '👋 ' + esc(clientFid.nom || 'Bonjour !')}</h3>
       <div class="fid-solde-box">
-        <div class="fid-solde-nom">${clientFid.nom || clientFid.telephone.replace(/(\d{2})(?=\d)/g, '$1 ')}</div>
+        <div class="fid-solde-nom">${esc(clientFid.nom || clientFid.telephone.replace(/(\d{2})(?=\d)/g, '$1 '))}</div>
         <div class="fid-solde-pts">${pts}</div>
         <div class="fid-solde-lbl">point${pts > 1 ? 's' : ''} fidélité</div>
       </div>
@@ -5804,20 +6004,22 @@ function ouvrirChoixRecompense(palier) {
   }
 
   // Liste des produits proposés selon le palier
+  // 🛡️ estCommandable partout : plus d'article épuisé/coupé offert en récompense
   let items = [];
   if (palier === 50) {
     const cat = categories.find(c => c.nom === 'Desserts');
-    items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p)) : [];
+    items = cat ? produits.filter(p => p.categorie_id === cat.id && estCommandable(p) && visibleSurBorne(p)) : [];
   } else if (palier === 100) {
     const cat = categories.find(c => c.nom === 'Entrées');
     // Entrée offerte : exclure Dynamite et Tempura (poulet/crevettes).
     // Le filtre cible les noms COMMENÇANT par "dynamite"/"tempura", pour ne
     // pas exclure la brochette "Bœuf Fromage Tempura".
-    items = cat ? produits.filter(p => p.categorie_id === cat.id && p.actif !== false && visibleSurBorne(p)
-&& !/^\s*(dynamite|tempura)\b/.test((p.nom || '').toLowerCase())) : [];  } else if (palier === 200) {
+    items = cat ? produits.filter(p => p.categorie_id === cat.id && estCommandable(p) && visibleSurBorne(p)
+      && !/^\s*(dynamite|tempura)\b/.test((p.nom || '').toLowerCase())) : [];
+  } else if (palier === 200) {
     const exclus = ['Boissons', 'Desserts', 'Entrées', 'Sauces', 'Suppléments', 'Extras'];
     items = produits.filter(p => {
-      if (p.actif === false || parseFloat(p.prix) <= 0) return false;
+      if (!estCommandable(p) || !visibleSurBorne(p) || parseFloat(p.prix) <= 0) return false;
       if (estProduitFormule(p)) return false;
       const cat = categories.find(c => c.id === p.categorie_id);
       if (!cat) return false;
@@ -5836,14 +6038,15 @@ function ouvrirChoixRecompense(palier) {
       <div class="fid-box-sous">${reco.libelle} · −${palier} points sur votre compte</div>
       <div class="upsell-grille-v2" style="max-height:52vh;border-radius:16px;">
         ${items.map(p => {
-          const hasImage = p.image_url && p.image_url.trim() !== '';
+          const imgUrl = escUrl(p.image_url);
+          const hasImage = imgUrl !== '';
           return `
             <div class="upsell-card-v2 ${hasImage ? 'has-image' : ''}"
                  onclick="choisirArticleOffert('${p.id}')"
-                 ${hasImage ? `style="background-image:url('${p.image_url}')"` : ''}>
-              ${!hasImage ? `<div class="upsell-emoji-v2">${emojiCat(p.nom)}</div>` : ''}
+                 ${hasImage ? `style="background-image:url('${imgUrl}')"` : ''}>
+              ${!hasImage ? `<div class="upsell-emoji-v2">${emojiProduit(p)}</div>` : ''}
               <div class="upsell-bandeau-v2">
-                <div class="upsell-nom-v2">${p.nom}</div>
+                <div class="upsell-nom-v2">${esc(p.nom)}</div>
                 <div class="upsell-prix-v2">🎁 Offert</div>
               </div>
             </div>`;
@@ -5867,9 +6070,9 @@ function choisirArticleOffert(produitId) {
   // Sinon : le parcours est en cours, finaliserParcoursPlat gérera le retour
 }
 
-// Trouve la ligne du panier éligible à une récompense (la moins chère qui correspond)
-function trouverLigneEligible(reco) {
-  let candidates = [];
+// Liste des lignes du panier éligibles à une récompense donnée
+function lignesEligibles(reco) {
+  const candidates = [];
   panier.forEach((l, idx) => {
     if (l.recompense || l.lien_plat || l.prix <= 0) return;
     const p = produits.find(pp => pp.id === l.produit_id);
@@ -5890,6 +6093,12 @@ function trouverLigneEligible(reco) {
     }
     if (ok) candidates.push({ idx, prix: l.prix });
   });
+  return candidates;
+}
+
+// Trouve la ligne du panier éligible à une récompense (la moins chère qui correspond)
+function trouverLigneEligible(reco) {
+  const candidates = lignesEligibles(reco);
   if (candidates.length === 0) return null;
   candidates.sort((a, b) => a.prix - b.prix);
   return candidates[0].idx;
@@ -5928,6 +6137,47 @@ function retirerRecompense() {
   afficherEcranSoldeFid();
 }
 
+// 🎁 Retrait depuis le PANIER (bouton « Retirer » sur la ligne 🎁) —
+//    même logique que retirerRecompense mais sans rouvrir la modale fidélité.
+function retirerRecompenseDepuisPanier() {
+  recompensePendingAjout = null;
+  panier = panier.filter(l => !l.recompense);
+  recompenseEnAttente = null;
+  majBarrePanier();
+  afficherPanier();
+}
+
+// 🛡️ (audit v8) La remise fidélité doit TOUJOURS correspondre à un article
+//    réellement présent au panier. Appelée après chaque modification de
+//    quantité et juste avant le paiement :
+//    - plus aucun article éligible  → la remise saute (et les points ne
+//      seront pas débités), fini la ligne « −12 € » orpheline / total négatif ;
+//    - l'article éligible le moins cher est devenu MOINS cher que la remise
+//      → la remise est plafonnée à son prix (jamais plus offert que l'article).
+function verifierRecompenseValide() {
+  const ligneReco = panier.find(l => l.recompense);
+  if (!ligneReco && !recompenseEnAttente) return;
+  if (!ligneReco) { recompenseEnAttente = null; return; }
+  if (!recompenseEnAttente) { panier = panier.filter(l => !l.recompense); return; }
+  const reco = FID_PALIERS.find(r => r.palier === recompenseEnAttente.palier);
+  const candidats = reco ? lignesEligibles(reco) : [];
+  if (candidats.length === 0) {
+    panier = panier.filter(l => !l.recompense);
+    recompenseEnAttente = null;
+    return;
+  }
+  ligneReco.quantite = 1;                      // jamais multipliable
+  // ⚖️ Plafond = l'article éligible LE PLUS CHER encore présent : la remise
+  //    ne peut jamais dépasser un article réel, mais ajouter un article
+  //    moins cher ne la réduit pas non plus (comparer au moins cher aurait
+  //    pénalisé le client).
+  const prixMaxEligible = Math.max(...candidats.map(c => Number(c.prix) || 0));
+  if (-ligneReco.prix > prixMaxEligible) {     // remise > tout article restant
+    ligneReco.prix = -prixMaxEligible;
+    recompenseEnAttente.montant = prixMaxEligible;
+  }
+}
+
 // --- Crédit des points après la vente (carte payée sur la borne) ---
 async function crediterFideliteApresVente(venteId) {
   if (!clientFid || !clientFid.telephone || !venteId) return null;
@@ -5935,11 +6185,19 @@ async function crediterFideliteApresVente(venteId) {
     // 1. Déduire la récompense utilisée (si présente)
     if (recompenseEnAttente) {
       try {
-        await sb.rpc('fid_utiliser_recompense', {
+        const { error: eReco } = await sb.rpc('fid_utiliser_recompense', {
           p_telephone: clientFid.telephone,
           p_palier: recompenseEnAttente.palier
         });
-      } catch (e) { /* solde changé entre-temps : on n'annule pas la vente */ }
+        // 📋 Échec = remise déjà accordée mais points non débités : on n'annule
+        //    pas la vente, mais on TRACE pour réconciliation à la caisse
+        //    (avant : catch vide → perte silencieuse, invisible).
+        if (eReco) console.error('⚠️ RÉCONCILIATION CAISSE — récompense non débitée :',
+          recompenseEnAttente.palier, 'pts, vente', venteId, '-', eReco.message);
+      } catch (e) {
+        console.error('⚠️ RÉCONCILIATION CAISSE — récompense non débitée :',
+          recompenseEnAttente.palier, 'pts, vente', venteId, '-', e.message || e);
+      }
     }
     // 2. Créditer les points de la vente (le serveur lit le total lui-même)
     const { data, error } = await sb.rpc('fid_crediter_vente', {
@@ -5947,8 +6205,9 @@ async function crediterFideliteApresVente(venteId) {
       p_vente_id: venteId
     });
     if (error) {
-      // 23505 = déjà créditée (anti-rejeu) : on ignore
-      if (String(error.code) === '23505') return null;
+      // 23505 = déjà créditée (anti-rejeu) : distinguée d'un vrai échec pour
+      // ne pas afficher un faux message d'erreur au client
+      if (String(error.code) === '23505') return { deja: true };
       throw error;
     }
     return data && data[0] ? data[0] : null;   // { points_credites, nouveau_solde }
@@ -5970,12 +6229,17 @@ async function crediterApresVente() {
   const cta = document.getElementById('fin-fid-cta');
   const resultat = document.getElementById('fin-fid-resultat');
   if (cta) cta.style.display = 'none';
-  if (resultat && res) {
+  if (resultat) {
     resultat.style.display = 'block';
-    resultat.textContent = '🎉 +' + res.points_credites + ' points crédités · nouveau solde : ' + res.nouveau_solde + ' pts';
-  } else if (resultat) {
-    resultat.style.display = 'block';
-    resultat.textContent = '✅ Points enregistrés sur votre compte';
+    // 🛡️ Message HONNÊTE : avant, un échec réseau affichait quand même
+    //    « ✅ Points enregistrés » alors que rien n'avait été crédité.
+    if (res && res.points_credites != null) {
+      resultat.textContent = '🎉 +' + res.points_credites + ' points crédités · nouveau solde : ' + res.nouveau_solde + ' pts';
+    } else if (res && res.deja) {
+      resultat.textContent = '✅ Points déjà crédités sur votre compte';
+    } else {
+      resultat.textContent = '⚠️ Points non confirmés — présentez votre ticket au comptoir';
+    }
   }
   relancerTimerFin(12000);
 }
@@ -5992,7 +6256,12 @@ let derniereVente = null;     // { numero, vente_id } après enregistrement
 
 async function lancerPaiementSumUp() {
   const total = totalPanier();
-  if (total <= 0) return;
+  if (total <= 0) {
+    // 0 € (commande entièrement offerte) : rien à encaisser par carte —
+    // avant, le bouton ne faisait RIEN en silence.
+    borneAlert('Rien à régler par carte.<br>Choisissez « Payer au comptoir ».', '💳');
+    return;
+  }
 
   document.getElementById('paie-sumup-montant').textContent = fmt(total);
   document.getElementById('paie-sumup-sub').textContent = 'Suivez les instructions sur le terminal';
@@ -6020,7 +6289,7 @@ async function lancerPaiementSumUp() {
     // 2. Poller le statut du paiement
     demarrerPollingStatut();
   } catch (e) {
-    borneAlert('Paiement impossible : ' + e.message, '💳');
+    borneAlert('Paiement impossible : ' + esc(e.message), '💳');
     allerEcran('ecran-paiement');
   }
 }
@@ -6077,8 +6346,25 @@ async function annulerPaiementSumUp() {
 
 // ===== ENREGISTREMENT DE LA COMMANDE =====
 let envoiEnCours = false;   // 🔒 empêche un double enregistrement/impression
+let commandeUid = null;     // 🔑 uid d'idempotence : constant entre deux tentatives
 async function payer(methode) {
   if (envoiEnCours) return;   // déjà en cours (ex. 2 réponses SumUp "PAID" à la suite)
+  // 🛡️ (audit v8) Garde-fous AVANT tout enregistrement. Le chemin comptoir
+  //    n'avait AUCUN contrôle de montant : une commande à 0 € ou à total
+  //    négatif (remise orpheline) partait quand même à l'encaissement.
+  verifierRecompenseValide();
+  const totalCommande = Math.round(totalPanier() * 100) / 100;
+  // Total négatif : toujours refusé. Total à 0 € : uniquement si une récompense
+  // fidélité VALIDÉE couvre la commande (retrait gratuit légitime au comptoir).
+  if (panier.length === 0 || totalCommande < 0 || (totalCommande === 0 && !recompenseEnAttente)) {
+    borneAlert('Montant de commande invalide.<br>Vérifiez votre panier.', '🛒');
+    return;
+  }
+  // Chaque ligne doit porter son uid (la caisse rattache les sous-lignes par uid)
+  panier.forEach(l => { if (!l.ligne_uid) l.ligne_uid = bUid(); });
+  // 🔑 Idempotence : le MÊME uid est renvoyé si on retente après un timeout,
+  //    pour que le serveur puisse dédupliquer (anti double-vente).
+  if (!commandeUid) commandeUid = 'CMD-' + bUid();
   envoiEnCours = true;
   // methode : 'carte' (payé sur borne) ou 'comptoir' (à encaisser à la caisse)
   // 🎁 Récompense + comptoir : autorisé. Les points seront déduits à la caisse
@@ -6110,6 +6396,7 @@ async function payer(methode) {
         mode_paiement: methode,
         lignes,
         mode_service: modeService,
+        commande_uid: commandeUid,   // 🔑 idempotence (à dédupliquer côté serveur)
         client_id: clientFid ? clientFid.id : null,
         client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null
       })
@@ -6118,55 +6405,66 @@ async function payer(methode) {
     const data = await resp.json();
     if (!resp.ok || !data.ok) throw new Error(data.erreur || 'Erreur d\'enregistrement');
 
-    // 🖨️ Créer la commande dans commandes_en_cours → cuisine (KDS) + impression + encart caisse.
-    //    (La vente créée par la fonction garde le rôle fidélité.)
+    // ✅ À partir d'ici la vente EST enregistrée côté serveur : l'uid
+    //    d'idempotence a rempli son rôle, et PLUS AUCUNE exception ne doit
+    //    empêcher l'écran de confirmation de s'afficher (sinon la borne
+    //    restait figée avec envoiEnCours=true → hors service).
+    commandeUid = null;
     try {
-      const totalCmd = lignes.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.quantite) || 1), 0);
-      await sb.from('commandes_en_cours').insert({
-        restaurant_id: RESTO_ID,
-        numero: data.numero,
-        source: 'borne',
-        lignes: lignes,
-        total: totalCmd,
-        mode_service: modeService,
-        canal: 'borne',
-        statut: methode === 'comptoir' ? 'paiement_comptoir' : 'a_preparer',
-        client_id: clientFid ? clientFid.id : null,
-        client_nom: (clientFid && clientFid.nom) ? clientFid.nom : null,
-        client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null,
-        client_telephone: (clientFid && clientFid.telephone) ? clientFid.telephone : null,
-        vente_id: data.vente_id || null,
-        cree_le: new Date().toISOString()
-      });
-    } catch (eKds) {
-      console.warn('commandes_en_cours non créée :', eKds.message);
-    }
-
-    // 🖨️ Ticket client sur l'imprimante de la borne (numéro géant) — les 2 modes
-    const totalPaye = lignes.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.quantite) || 1), 0);
-    imprimerTicketBorneRawBT(data.numero, methode);
-    // 💳 Puis le reçu carte bancaire, juste en dessous (paiement carte uniquement)
-    if (methode === 'carte') {
-      setTimeout(() => {
-        imprimerTicketCB(data.numero, totalPaye, recuCB);
-      }, 1200);   // laisse le 1er ticket finir de sortir
-    }
-
-    if (methode === 'carte') {
-      // 🖨️ Bons cuisine/sushi/comptoir → tablette (uniquement si payé maintenant)
-      envoyerImpressionCuisine(data.numero, 'carte');
-
-      derniereVente = { numero: data.numero, vente_id: data.vente_id };
-      // 🎫 Crédit fidélité immédiat si un client est attaché (QR ou téléphone)
-      let fidResultat = null;
-      if (clientFid && clientFid.telephone) {
-        fidResultat = await crediterFideliteApresVente(data.vente_id);
+      // 🖨️ Créer la commande dans commandes_en_cours → cuisine (KDS) + impression + encart caisse.
+      //    (La vente créée par la fonction garde le rôle fidélité.)
+      try {
+        const totalCmd = Math.round(lignes.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.quantite) || 1), 0) * 100) / 100;
+        await sb.from('commandes_en_cours').insert({
+          restaurant_id: RESTO_ID,
+          numero: data.numero,
+          source: 'borne',
+          lignes: lignes,
+          total: totalCmd,
+          mode_service: modeService,
+          canal: 'borne',
+          statut: methode === 'comptoir' ? 'paiement_comptoir' : 'a_preparer',
+          client_id: clientFid ? clientFid.id : null,
+          client_nom: (clientFid && clientFid.nom) ? clientFid.nom : null,
+          client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null,
+          client_telephone: (clientFid && clientFid.telephone) ? clientFid.telephone : null,
+          vente_id: data.vente_id || null,
+          cree_le: new Date().toISOString()
+        });
+      } catch (eKds) {
+        console.warn('commandes_en_cours non créée :', eKds.message);
       }
-      afficherConfirmation(data.numero, 'paye', fidResultat);
-    } else {
-      // Comptoir : vente 'en_attente' → encaissée à la caisse (points + bons cuisine là-bas)
-      derniereVente = null;
-      afficherConfirmation(data.numero, 'comptoir');
+
+      // 🖨️ Ticket client sur l'imprimante de la borne (numéro géant) — les 2 modes
+      const totalPaye = lignes.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.quantite) || 1), 0);
+      imprimerTicketBorneRawBT(data.numero, methode);
+      // 💳 Puis le reçu carte bancaire, juste en dessous (paiement carte uniquement)
+      if (methode === 'carte') {
+        setTimeout(() => {
+          imprimerTicketCB(data.numero, totalPaye, recuCB);
+        }, 1200);   // laisse le 1er ticket finir de sortir
+      }
+
+      if (methode === 'carte') {
+        // 🖨️ Bons cuisine/sushi/comptoir → tablette (uniquement si payé maintenant)
+        envoyerImpressionCuisine(data.numero, 'carte');
+
+        derniereVente = { numero: data.numero, vente_id: data.vente_id };
+        // 🎫 Crédit fidélité immédiat si un client est attaché (téléphone)
+        let fidResultat = null;
+        if (clientFid && clientFid.telephone) {
+          fidResultat = await crediterFideliteApresVente(data.vente_id);
+        }
+        afficherConfirmation(data.numero, 'paye', fidResultat);
+      } else {
+        // Comptoir : vente 'en_attente' → encaissée à la caisse (points + bons cuisine là-bas)
+        derniereVente = null;
+        afficherConfirmation(data.numero, 'comptoir');
+      }
+    } catch (ePost) {
+      // 🛡️ Filet : la vente existe, on confirme quand même au client
+      console.error('Post-vente KO (vente déjà enregistrée) :', ePost);
+      afficherConfirmation(data.numero, methode === 'carte' ? 'paye' : 'comptoir');
     }
   } catch (e) {
     clearTimeout(minuteurVente);        // ne pas laisser le timer courir
@@ -6177,7 +6475,12 @@ async function payer(methode) {
       borneAlert('Connexion trop lente. Si votre carte a été débitée, '
         + 'présentez-vous à la caisse avec votre reçu — ne payez pas une 2e fois.', '⏱️');
     } else {
-      borneAlert('Erreur : ' + e.message, '⚠️');
+      borneAlert('Erreur : ' + esc(e.message), '⚠️');
+    }
+    // 🛡️ Ne jamais rester bloqué sur l'écran « Présentez votre carte »
+    //    (spinner infini) si l'enregistrement échoue après un paiement carte.
+    if (document.getElementById('ecran-paiement-sumup').classList.contains('actif')) {
+      allerEcran('ecran-paiement');
     }
   }
 }
@@ -6185,17 +6488,9 @@ async function payer(methode) {
 let timerFin = null;
 function relancerTimerFin(delai) {
   if (timerFin) clearTimeout(timerFin);
-  timerFin = setTimeout(() => {
-    panier = [];
-    clientFid = null;
-    derniereVente = null;
-    recompenseEnAttente = null;
-    envoiEnCours = false;
-    fermerFidelite();
-    majBarrePanier();
-    afficherFidelite();
-    allerEcran('ecran-accueil');
-  }, delai);
+  // 🧼 resetBorne : purge COMPLÈTE partagée (l'ancienne version oubliait
+  //    recompensePendingAjout, parcoursPlatEnCours, formuleEnCours, etc.)
+  timerFin = setTimeout(resetBorne, delai);
 }
 function prolongerTimerFin() {
   relancerTimerFin(60000);   // 60 s pendant la saisie du téléphone
@@ -6220,13 +6515,18 @@ function afficherConfirmation(numero, type, fidResultat) {
     document.getElementById('fin-sub').textContent = 'Votre commande part en cuisine';
     instructions.className = 'fin-instructions paye';
     instructions.innerHTML = 'Votre ticket sort au comptoir. <strong>Gardez votre numéro</strong>, on vous appelle dès que c\'est prêt !';
-    // 🎫 Fidélité : points crédités OU proposition de saisie
-    if (fidResultat) {
+    // 🎫 Fidélité : points crédités OU proposition de saisie.
+    // 🛡️ Messages HONNÊTES : avant, un échec de crédit affichait quand même
+    //    « ✅ Points enregistrés » alors que rien n'avait été crédité.
+    if (fidResultat && fidResultat.points_credites != null) {
       resultat.style.display = 'block';
       resultat.textContent = '🎉 +' + fidResultat.points_credites + ' points crédités · nouveau solde : ' + fidResultat.nouveau_solde + ' pts';
+    } else if (fidResultat && fidResultat.deja) {
+      resultat.style.display = 'block';
+      resultat.textContent = '✅ Points déjà crédités sur votre compte';
     } else if (clientFid && clientFid.telephone) {
       resultat.style.display = 'block';
-      resultat.textContent = '✅ Points enregistrés sur votre compte';
+      resultat.textContent = '⚠️ Points non confirmés — présentez votre ticket au comptoir';
     } else if (derniereVente && derniereVente.vente_id) {
       cta.style.display = 'inline-block';
     }
@@ -6245,6 +6545,8 @@ function afficherConfirmation(numero, type, fidResultat) {
 // ============================================================
 let carrouselIndex = 0;
 setInterval(() => {
+  // Ne tourne que quand l'écran d'accueil est réellement affiché
+  if (!document.getElementById('ecran-accueil').classList.contains('actif')) return;
   const slides = document.querySelectorAll('#ecran-accueil .carrousel-slide');
   if (slides.length < 2) return;
   slides[carrouselIndex].classList.remove('visible');
@@ -6278,6 +6580,12 @@ setInterval(async () => {
 }, 30000);
 
 // ===== GO =====
+// ⏳ Toute interaction ré-arme le minuteur d'inactivité (capture:true pour
+//    attraper les taps même dans les modales)
+['click', 'touchstart', 'pointerdown'].forEach(evt =>
+  document.addEventListener(evt, armerTimerInactivite, { passive: true, capture: true })
+);
+armerTimerInactivite();
 init();
 </script>
 </body>
