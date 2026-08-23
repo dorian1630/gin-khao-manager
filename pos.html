@@ -5967,7 +5967,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-y</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-aa</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -7188,7 +7188,11 @@ function rendreEditeur(modeAjout) {
         html += `<div class="mpp-bloc"><div class="mpp-lbl">Entrée (incluse)</div><div class="mpp-options">`;
         entrees.forEach(e => {
           let label = e.nom;
-          if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
+          if (e.pieces_formule != null && Number(e.pieces_formule) > 0) {
+            // 🎯 Même source de vérité que le NOYAU (donc que le bon cuisine) :
+            //    l'écran et le papier ne peuvent plus diverger.
+            label = e.nom + ' (' + e.pieces_formule + ' pièces)';
+          } else if (e.variantes && Array.isArray(e.variantes) && e.variantes.length > 0) {
             // Les variantes de ces entrées sont { prix, pieces } → on prend la
             // plus petite portion (2 pièces) pour la formule. "label" n'existe pas
             // sur ces objets → il faut construire le texte depuis "pieces".
