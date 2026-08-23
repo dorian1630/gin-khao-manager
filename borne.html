@@ -2923,7 +2923,7 @@ body {
   <div class="paie-titre">Comment réglez-vous ?</div>
   <div class="paie-montant" id="paie-montant">0,00 €</div>
   <div class="paie-choix">
-    <div class="paie-card" onclick="lancerPaiementSumUp()">
+    <div class="paie-card" id="paie-carte" onclick="lancerPaiementSumUp()">
       <div class="ic">💳</div>
       <div class="nm">Carte bancaire</div>
       <div class="badge">SumUp</div>
@@ -2987,7 +2987,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-c</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-d</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
@@ -3247,6 +3247,13 @@ function armerTimerInactivite() {
     resetBorne();
   }, DELAI_INACTIVITE);
 }
+// ⏯️ Applique l'interrupteur paiement carte (au chargement)
+function appliquerModesPaiement() {
+  const carte = document.getElementById('paie-carte');
+  if (carte) carte.style.display = PAIEMENT_CARTE_ACTIF ? '' : 'none';
+}
+appliquerModesPaiement();
+
 // 🛡️ Réarmement à CHAQUE interaction : sans ça, un client qui composait
 //    tranquillement sa commande voyait son panier effacé à la 90e seconde
 //    (timer armé une seule fois au démarrage). Prouvé par exécution.
@@ -5266,6 +5273,9 @@ function versAscii(str) {
 
 // ---- Routage cuisine / sushi / comptoir (par catégorie) ----
 const CATS_SUSHI = ['sushi','sushis','maki','makis','california','californias','crispy','crispys','tiger','tigers','poke bowl','pokebowl','pokebowls','poke','pokes'];
+// ⏯️ INTERRUPTEUR PAIEMENT CARTE (SumUp) — false = bouton masqué.
+const PAIEMENT_CARTE_ACTIF = false;
+
 const CATS_SANS_BON = ['boisson','boissons','dessert','desserts'];
 function normNomCat(s) {
   return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
