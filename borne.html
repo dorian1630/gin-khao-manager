@@ -2987,7 +2987,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-e</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-f</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2995,6 +2995,12 @@ body {
 <!-- 🧹 html5-qrcode retiré : le scan QR est désactivé sur la borne (identification
      par téléphone uniquement) — la lib ralentissait le démarrage pour rien. -->
 <script>
+// ⏯️ INTERRUPTEUR PAIEMENT CARTE (SumUp) — false = bouton masqué,
+//    true = visible. DOIT vivre dans le PREMIER bloc script : une const
+//    déclarée plus bas est en zone morte pour les blocs précédents
+//    (leçon du gate muet — simulation de démarrage à l'appui).
+const PAIEMENT_CARTE_ACTIF = false;
+
 // ===== CONFIG (même base que la caisse et l'appli) =====
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
@@ -5282,9 +5288,6 @@ function versAscii(str) {
 
 // ---- Routage cuisine / sushi / comptoir (par catégorie) ----
 const CATS_SUSHI = ['sushi','sushis','maki','makis','california','californias','crispy','crispys','tiger','tigers','poke bowl','pokebowl','pokebowls','poke','pokes'];
-// ⏯️ INTERRUPTEUR PAIEMENT CARTE (SumUp) — false = bouton masqué.
-const PAIEMENT_CARTE_ACTIF = false;
-
 const CATS_SANS_BON = ['boisson','boissons','dessert','desserts'];
 function normNomCat(s) {
   return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
