@@ -2987,10 +2987,10 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-d</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-e</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <!-- 🧹 html5-qrcode retiré : le scan QR est désactivé sur la borne (identification
      par téléphone uniquement) — la lib ralentissait le démarrage pour rien. -->
@@ -3001,6 +3001,15 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const RESTO_ID = 'gin-khao';
 // ⚠️ La clé anon est publique par nature : TOUTE la sécurité repose sur les
 //    politiques RLS Supabase et sur la validation serveur (voir commentaire en tête).
+// 🛡️ Si la bibliothèque CDN n'a pas chargé (réseau, DNS, date/heure fausse
+//    de la tablette → TLS), le portail doit PARLER au lieu de tourner muet.
+if (typeof supabase === 'undefined') {
+  const gm = document.getElementById('gate-msg');
+  if (gm) gm.textContent = 'Bibliothèque injoignable (CDN). Vérifiez le wifi et la DATE/HEURE de la tablette, puis relancez.';
+  const sp = document.querySelector('#gate .spinner');
+  if (sp) sp.style.display = 'none';
+  throw new Error('supabase-js non chargé');
+}
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 // ============================================================
