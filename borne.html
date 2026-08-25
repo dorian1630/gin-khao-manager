@@ -2920,7 +2920,7 @@ body {
 
 <!-- ===== ÉCRAN 5 : PAIEMENT ===== -->
 <div class="ecran" id="ecran-paiement">
-  <div class="paie-titre">Le paiement s’effectue uniquement au comptoir. Veuillez cliquer sur le bouton ci-dessous.</div>
+  <div class="paie-titre">Comment réglez-vous ?</div>
   <div class="paie-montant" id="paie-montant">0,00 €</div>
   <div class="paie-choix">
     <div class="paie-card" id="paie-carte" onclick="lancerPaiementSumUp()">
@@ -2987,7 +2987,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-f</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-g</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4939,7 +4939,10 @@ function afficherModaleSauces() {
         }).join('')}
       </div>
       <div class="parcours-actions">
-        ${obligatoire ? '' : `<button class="parcours-btn-passer" onclick="parcoursPlatEnCours.sauces = []; passerEtapeSuivante()">Passer (aucune sauce) →</button>`}
+        <!-- 🌶️ « Passer » TOUJOURS présent (comportement historique -e) :
+             sauce_required met l'étape en avant (Valider grisé tant que vide)
+             mais ne force JAMAIS l'achat d'une sauce payante — décision produit. -->
+        <button class="parcours-btn-passer" onclick="parcoursPlatEnCours.sauces = []; passerEtapeSuivante()">Passer (aucune sauce) →</button>
         <button class="parcours-btn-valider" id="parcours-btn-valider" ${(obligatoire && dejaChoisies.length === 0) ? 'disabled' : ''} onclick="passerEtapeSuivante()">Valider ✓</button>
       </div>
     </div>
