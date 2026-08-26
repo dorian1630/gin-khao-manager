@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🩺 Clinique Tablette — Gin Khao</title>
+<style>
+body { font-family: -apple-system, Roboto, Arial, sans-serif; background: #0A0908; color: #F5F1EA; margin: 0; padding: 16px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+.sub { color: #B8AFA3; font-size: 12px; margin-bottom: 14px; }
+.ligne { background: #171512; border: 1px solid #2A261F; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.45; word-break: break-word; }
+.ok { border-color: #3E7A34; }
+.ko { border-color: #A33327; }
+.attente { border-color: #6B5E4A; }
+.t { font-weight: 700; }
+.d { color: #B8AFA3; font-size: 12px; }
+#verdict { margin-top: 12px; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; background: #22201B; }
+.photo { margin-top: 10px; color: #E8A33D; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>🩺 Clinique Tablette</h1>
+<div class="sub">Gin Khao · chaque test s'affiche avec son verdict · v1.0</div>
+<div id="tests"></div>
+<div id="verdict">⏳ Tests en cours…</div>
+<div class="photo">📸 Quand tout est fini : photo de CET écran → envoie-la.</div>
+
+<script>
+// ⚠️ JavaScript volontairement PRÉHISTORIQUE (compatible moteurs ~2016) :
+//    var, function, concaténation. Aucune syntaxe moderne : la clinique doit
+//    tourner LÀ où justement les pages modernes meurent.
+var zone = document.getElementById('tests');
+var verdictEl = document.getElementById('verdict');
+var resultats = [];
+
+function ligne(id, titre) {
+  var d = document.createElement('div');
+  d.className = 'ligne attente';
+  d.id = 'L' + id;
+  d.innerHTML = '<span class="t">⏳ ' + titre + '</span><div class="d">en cours…</div>';
+  zone.appendChild(d);
+}
+function verdict(id, ok, titre, detail) {
+  var d = document.getElementById('L' + id);
+  d.className = 'ligne ' + (ok ? 'ok' : 'ko');
+  d.innerHTML = '<span class="t">' + (ok ? '✅ ' : '❌ ') + titre + '</span><div class="d">' + detail + '</div>';
+  resultats.push({ id: id, ok: ok });
+  if (resultats.length >= 7) conclure();
+}
+function conclure() {
+  var kos = [];
+  for (var i = 0; i < resultats.length; i++) if (!resultats[i].ok) kos.push(resultats[i].id);
+  if (kos.length === 0) {
+    verdictEl.innerHTML = '🟢 TOUT EST SAIN sur cet appareil, dans CE navigateur.<br>Si la caisse boucle quand même ICI : photo + dis-le, le mystère sera ailleurs.';
+  } else {
+    verdictEl.innerHTML = '🔴 Coupable(s) désigné(s) : <b>' + kos.join(', ') + '</b> — envoie la photo, le remède suivra.';
+  }
+}
+
+// ── 1. MOTEUR ─────────────────────────────────────────────
+ligne('MOTEUR', 'Moteur du navigateur');
+(function () {
+  var ua = navigator.userAgent || '?';
+  var m = ua.match(/Chrome\/(\d+)/);
+  var v = m ? parseInt(m[1], 10) : 0;
+  var moderne = true;
+  var manques = [];
+  try { eval('var a = {}; var b = a?.x;'); } catch (e) { moderne = false; manques.push('?.'); }
+  try { eval('var c = null ?? 1;'); } catch (e) { moderne = false; manques.push('??'); }
+  var det = 'Chrome/' + (v || '?') + ' · syntaxe moderne : ' + (moderne ? 'comprise' : 'REFUSÉE (' + manques.join(' ') + ')') + '<br>' + ua;
+  verdict('MOTEUR', v >= 85 && moderne, 'Moteur du navigateur', det);
+})();
+
+// ── 2. HORLOGE ────────────────────────────────────────────
+ligne('HORLOGE', 'Horloge de la tablette');
+(function () {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'https://szpgbdnijyoquqmjhhjj.supabase.co/auth/v1/health', true);
+  var t0 = Date.now();
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) return;
+    var serveur = xhr.getResponseHeader('date') || xhr.getResponseHeader('Date');
+    if (serveur) {
+      var ecart = Math.round((Date.now() - new Date(serveur).getTime()) / 1000);
+      var ok = Math.abs(ecart) < 120;
+      verdict('HORLOGE', ok, 'Horloge de la tablette',
+        'Écart avec le serveur : ' + ecart + ' s ' + (ok ? '(négligeable)' : '⚠️ RÈGLE LA DATE/HEURE (invalide les sessions !)'));
+    } else {
+      verdict('HORLOGE', true, 'Horloge de la tablette',
+        'Non mesurable ici (en-tête masqué) — vérifie à l\u2019œil : ' + new Date().toString());
+    }
+  };
+  xhr.onerror = function () {
+    verdict('HORLOGE', true, 'Horloge de la tablette', 'Non mesurable (réseau) — vérifie à l\u2019œil : ' + new Date().toString());
+  };
+  xhr.send();
+})();
+
+// ── 3. STOCKAGE ───────────────────────────────────────────
+ligne('STOCKAGE', 'Stockage local (où vit la session)');
+(function () {
+  try {
+    localStorage.setItem('gk_test', 'ok');
+    var lu = localStorage.getItem('gk_test');
+    localStorage.removeItem('gk_test');
+    document.cookie = 'gk_test=1';
+    var ck = document.cookie.indexOf('gk_test') !== -1;
+    verdict('STOCKAGE', lu === 'ok', 'Stockage local (où vit la session)',
+      'localStorage : ' + (lu === 'ok' ? 'écrit/relu ✓' : 'REFUSÉ') + ' · cookies : ' + (ck ? '✓' : 'refusés'));
+  } catch (e) {
+    verdict('STOCKAGE', false, 'Stockage local', 'BLOQUÉ : ' + e.message + ' → la session ne peut pas survivre ici');
+  }
+})();
+
+// ── 4. CDN (bibliothèque Supabase) ────────────────────────
+ligne('CDN', 'Téléchargement de la bibliothèque (CDN)');
+var cdnOk = false;
+(function () {
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  var fini = false;
+  s.onload = function () {
+    if (fini) return; fini = true; cdnOk = true;
+    verdict('CDN', true, 'Bibliothèque (CDN jsdelivr)', 'chargée ✓ — le réseau laisse passer');
+    etapeSupabase();
+  };
+  s.onerror = function () {
+    if (fini) return; fini = true;
+    verdict('CDN', false, 'Bibliothèque (CDN jsdelivr)', 'ÉCHEC de chargement → réseau/liste blanche du kiosque/DNS');
+    verdict('SESSION', false, 'Session Supabase', 'non testable (bibliothèque absente)');
+    verdict('RESEAU', false, 'Lecture base (menu)', 'non testable (bibliothèque absente)');
+  };
+  setTimeout(function () {
+    if (fini) return; fini = true;
+    verdict('CDN', false, 'Bibliothèque (CDN jsdelivr)', 'MUETTE après 10 s → réseau qui pend / liste blanche kiosque');
+    verdict('SESSION', false, 'Session Supabase', 'non testable');
+    verdict('RESEAU', false, 'Lecture base (menu)', 'non testable');
+  }, 10000);
+  document.head.appendChild(s);
+})();
+
+// ── 5+6. SUPABASE : session + lecture ─────────────────────
+ligne('SESSION', 'Session Supabase (getSession)');
+ligne('RESEAU', 'Lecture base (le menu se charge ?)');
+function etapeSupabase() {
+  var sb;
+  try {
+    sb = supabase.createClient(
+      'https://szpgbdnijyoquqmjhhjj.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak',
+      { auth: { lock: function (n, t, fn) { return fn(); } } }
+    );
+  } catch (e) {
+    verdict('SESSION', false, 'Session Supabase', 'createClient a crashé : ' + e.message);
+    verdict('RESEAU', false, 'Lecture base', 'non testable');
+    return;
+  }
+  var t0 = Date.now();
+  var repondu = false;
+  sb.auth.getSession().then(function (r) {
+    repondu = true;
+    var s = r && r.data && r.data.session;
+    verdict('SESSION', true, 'Session Supabase (getSession)',
+      'répondu en ' + (Date.now() - t0) + ' ms · session : ' + (s ? 'OUI (' + (s.user && s.user.email) + ')' : 'NON (normal si jamais connecté ici)'));
+  }, function (e) {
+    repondu = true;
+    verdict('SESSION', false, 'Session Supabase', 'erreur : ' + e.message);
+  });
+  setTimeout(function () {
+    if (!repondu) verdict('SESSION', false, 'Session Supabase (getSession)', 'GELÉ (>8 s sans réponse) — le fameux gel WebView');
+  }, 8000);
+
+  var t1 = Date.now();
+  sb.from('categories').select('id').limit(1).then(function (r) {
+    if (r.error) verdict('RESEAU', false, 'Lecture base (menu)', 'erreur : ' + r.error.message);
+    else verdict('RESEAU', true, 'Lecture base (menu)', 'répondu en ' + (Date.now() - t1) + ' ms ✓');
+  }, function (e) {
+    verdict('RESEAU', false, 'Lecture base (menu)', 'échec : ' + e.message);
+  });
+}
+
+// ── 7. IDENTITÉ DU CONTENEUR ──────────────────────────────
+ligne('CONTENEUR', 'Où suis-je ? (Chrome / WebView / kiosque)');
+(function () {
+  var ua = navigator.userAgent || '';
+  var wv = / wv\)/.test(ua) || /; wv/.test(ua);
+  var fully = typeof window.fully !== 'undefined';
+  var mode = fully ? 'Fully Kiosk (WebView)' : (wv ? 'WebView (PWA/app)' : 'Navigateur (Chrome/Firefox…)');
+  verdict('CONTENEUR', true, 'Conteneur détecté', mode + ' · écran ' + screen.width + '×' + screen.height);
+})();
+</script>
+</body>
+</html>
