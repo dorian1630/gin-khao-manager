@@ -5967,7 +5967,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-aa</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ab</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -10173,7 +10173,10 @@ function preparerImpression(lignesTicket, venteLocale) {
   const modeServiceBon = venteLocale.canal || null;
 
   derniereImpression = {
-    version: 'v26.07-b',   // 🔎 permet de vérifier que la caisse est à jour
+    // 🔎 Badge de version envoyé au Pi — lu depuis LE marqueur du pied de
+    //    page (source unique) : l'écran et les logs Pi ne peuvent plus diverger.
+    //    (leçon du fossile 'v26.07-b' resté codé en dur pendant 25 lettres)
+    version: (document.getElementById('marqueur-version') || {}).textContent || 'marqueur introuvable',
     refBorne: (typeof refBorneEnCours !== 'undefined' ? refBorneEnCours : null),
     // Bon CUISINE : uniquement s'il y a des plats chauds
     // 📦 BON DE LIVRAISON (livreur) : uniquement en livraison, avec un client
