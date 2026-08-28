@@ -2987,7 +2987,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-k</div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-l</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2999,7 +2999,7 @@ body {
 //    true = visible. DOIT vivre dans le PREMIER bloc script : une const
 //    déclarée plus bas est en zone morte pour les blocs précédents
 //    (leçon du gate muet — simulation de démarrage à l'appui).
-const PAIEMENT_CARTE_ACTIF = false;
+const PAIEMENT_CARTE_ACTIF = true;   // 💳 v26.08-l : CARTE ACTIVE (retrait de goupille sur ordre du patron)
 
 // ===== CONFIG (même base que la caisse et l'appli) =====
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
