@@ -2920,7 +2920,7 @@ body {
 
 <!-- ===== ÉCRAN 5 : PAIEMENT ===== -->
 <div class="ecran" id="ecran-paiement">
-  <div class="paie-titre">Le paiement s’effectue uniquement au comptoir. Veuillez cliquer sur le bouton ci-dessous.</div>
+  <div class="paie-titre">Comment réglez-vous ?</div>
   <div class="paie-montant" id="paie-montant">0,00 €</div>
   <div class="paie-choix">
     <div class="paie-card" id="paie-carte" onclick="lancerPaiementSumUp()">
@@ -2987,7 +2987,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-g</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-o</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2999,7 +2999,16 @@ body {
 //    true = visible. DOIT vivre dans le PREMIER bloc script : une const
 //    déclarée plus bas est en zone morte pour les blocs précédents
 //    (leçon du gate muet — simulation de démarrage à l'appui).
-const PAIEMENT_CARTE_ACTIF = false;
+const PAIEMENT_CARTE_ACTIF = true;   // 💳 v26.08-o : CARTE ACTIVE — le reader est lu dans la base (sumup_readers)
+// 📍 v26.08-o : SITE de cette borne — "?site=saint-just" une fois dans l'URL → mémorisé.
+//    Même convention que la caisse/pointeuse. Repli : saint-just.
+const SITE_BORNE = (function () {
+  try {
+    const p = new URLSearchParams(location.search).get('site');
+    if (p) localStorage.setItem('gk_site', p.trim().toLowerCase());
+    return localStorage.getItem('gk_site') || 'saint-just';
+  } catch (e) { return 'saint-just'; }
+})();
 
 // ===== CONFIG (même base que la caisse et l'appli) =====
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
@@ -5383,6 +5392,7 @@ function genererTicketCBEscPos(numero, montant, recu) {
 
   let s = ESC + '@' + ESC + 'a' + '\x01';        // init + centré
   s += ESC + 'E' + '\x01' + 'CARTE BANCAIRE' + LF + ESC + 'E' + '\x00';
+  if (numero) s += 'Commande ' + A(String(numero)) + LF;   // 🔖 v26.08-k : B1502 sur le reçu
   if (mode) s += mode + LF;
   s += ESC + 'a' + '\x00';                       // à gauche, comme un TPE
   if (r.carte_type) s += A(String(r.carte_type).toUpperCase()) + LF;
@@ -5502,7 +5512,11 @@ async function envoyerImpressionCuisine(numero, methode) {
     //    brique que la caisse. Le routage cuisine/sushi/comptoir, les détails,
     //    le nombre de pièces et l'éclatement des portions sushi sont donc
     //    IDENTIQUES des deux côtés — plus aucune règle dupliquée à maintenir ici.
-    if (!window.NC) { console.error('noyau-commande.js non chargé'); return; }
+    if (!window.NC) {
+      console.error('noyau-commande.js non chargé');
+      borneAlert('⚠️ Commande N°' + numero + ' PAYÉE mais impression NON transmise<br>(noyau absent).<br><b>PRÉVENEZ LE COMPTOIR.</b>', '🖨️');
+      return;
+    }
 
     const imp = NC.construireImpression(panier, {
       numero: String(numero),
@@ -5552,9 +5566,22 @@ async function envoyerImpressionCuisine(numero, methode) {
       total: imp.ticketClient.total,
       lignes: lignes
     });
-    if (error) console.error('Insert impressions_borne KO:', error.message);
+    if (error) {
+      console.error('Insert impressions_borne KO:', error.message, '— réessai…');
+      // 🔁 Un réessai (micro-coupure réseau) avant d'alerter le personnel
+      const { error: e2 } = await sb.from('impressions_borne').insert({
+        restaurant_id: RESTO_ID, numero: String(numero), mode_service: modeService,
+        mode_paiement: methode,
+        client_nom: clientFid ? clientFid.nom : null,
+        total: imp.ticketClient.total, lignes: lignes
+      });
+      if (e2) {
+        borneAlert('⚠️ Commande N°' + numero + ' PAYÉE mais impression NON transmise.<br><b>PRÉVENEZ LE COMPTOIR</b> (préparation à lancer à la main).', '🖨️');
+      }
+    }
   } catch (e) {
-    console.error('Envoi impression cuisine KO (non bloquant):', e);
+    console.error('Envoi impression cuisine KO :', e);
+    borneAlert('⚠️ Commande N°' + numero + ' PAYÉE mais impression NON transmise.<br><b>PRÉVENEZ LE COMPTOIR.</b>', '🖨️');
   }
 }
 
@@ -6273,7 +6300,29 @@ async function crediterApresVente() {
 //  💳 PAIEMENT
 // ============================================================
 // 💳 SUMUP SOLO — identifiant du lecteur physique de la borne
-const SUMUP_READER_ID = 'rdr_2SD5M6R7GJ9SJAKDEBV2TRQ5PW';
+//    v26.08-o : lu dans la base (table sumup_readers, par site) au démarrage —
+//    un changement de Solo = un appairage sur sumup-config.html, zéro redéploiement.
+//    La constante ci-dessous n'est qu'un REPLI si la table est vide.
+let SUMUP_READER_ID = 'rdr_2SD5M6R7GJ9SJAKDEBV2TRQ5PW';
+async function chargerReaderSumUp() {
+  try {
+    const { data, error } = await sb.from('sumup_readers')
+      .select('reader_id, nom').eq('site', SITE_BORNE).eq('actif', true).maybeSingle();
+    if (!error && data && data.reader_id) {
+      SUMUP_READER_ID = data.reader_id;
+      console.log('💳 Reader SumUp (base) :', data.reader_id, '—', data.nom || '', '— site', SITE_BORNE);
+    } else {
+      // 🛡️ v26.08-o : pas de reader affecté à CE site → on ne propose PAS la carte
+      //    (protège l'ordre du jour J et les sites pas encore équipés)
+      console.warn('💳 Reader SumUp : aucun reader en base pour', SITE_BORNE, '→ bouton carte masqué');
+      masquerCarteSansReader();
+    }
+  } catch (e) { console.warn('💳 Reader SumUp : chargement KO —', e.message, '→ bouton carte masqué'); masquerCarteSansReader(); }
+}
+function masquerCarteSansReader() {
+  try { var el = document.getElementById('paie-carte'); if (el) el.style.display = 'none'; } catch (e) {}
+}
+chargerReaderSumUp();
 let recuCB = null;   // détails de la transaction carte (renvoyés par SumUp)
 let paiementEnCours = null;   // { clientTransactionId }
 let pollingInterval = null;
@@ -6422,6 +6471,10 @@ async function payer(methode) {
         lignes,
         mode_service: modeService,
         commande_uid: commandeUid,   // 🔑 idempotence (à dédupliquer côté serveur)
+        // 🎫 v3 : le ctid SumUp — la fonction vérifie le paiement RÉEL (statut
+        //    + montant) auprès de SumUp et verrouille l'anti-double.
+        client_transaction_id: (methode === 'carte' && paiementEnCours)
+          ? paiementEnCours.clientTransactionId : null,
         client_id: clientFid ? clientFid.id : null,
         client_prenom: (clientFid && clientFid.nom) ? clientFid.nom.trim().split(/\s+/)[0] : null
       })
@@ -6435,6 +6488,9 @@ async function payer(methode) {
     //    empêcher l'écran de confirmation de s'afficher (sinon la borne
     //    restait figée avec envoiEnCours=true → hors service).
     commandeUid = null;
+    // 🔖 v26.08-j : numéro AFFICHÉ façon borne pour la carte (écran B1502 =
+    //    ticket #B1502 = reçu CB = encart caisse). Le comptoir a déjà son B###.
+    const numAffiche = (methode === 'carte') ? ('B' + data.numero) : data.numero;
     try {
       // 🖨️ Créer la commande dans commandes_en_cours → cuisine (KDS) + impression + encart caisse.
       //    (La vente créée par la fonction garde le rôle fidélité.)
@@ -6442,7 +6498,7 @@ async function payer(methode) {
         const totalCmd = Math.round(lignes.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.quantite) || 1), 0) * 100) / 100;
         await sb.from('commandes_en_cours').insert({
           restaurant_id: RESTO_ID,
-          numero: data.numero,
+          numero: numAffiche,
           source: 'borne',
           lignes: lignes,
           total: totalCmd,
@@ -6462,17 +6518,17 @@ async function payer(methode) {
 
       // 🖨️ Ticket client sur l'imprimante de la borne (numéro géant) — les 2 modes
       const totalPaye = lignes.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.quantite) || 1), 0);
-      imprimerTicketBorneRawBT(data.numero, methode);
+      imprimerTicketBorneRawBT(numAffiche, methode);
       // 💳 Puis le reçu carte bancaire, juste en dessous (paiement carte uniquement)
       if (methode === 'carte') {
         setTimeout(() => {
-          imprimerTicketCB(data.numero, totalPaye, recuCB);
+          imprimerTicketCB(numAffiche, totalPaye, recuCB);
         }, 1200);   // laisse le 1er ticket finir de sortir
       }
 
       if (methode === 'carte') {
         // 🖨️ Bons cuisine/sushi/comptoir → tablette (uniquement si payé maintenant)
-        envoyerImpressionCuisine(data.numero, 'carte');
+        envoyerImpressionCuisine(numAffiche, 'carte');
 
         derniereVente = { numero: data.numero, vente_id: data.vente_id };
         // 🎫 Crédit fidélité immédiat si un client est attaché (téléphone)
@@ -6480,16 +6536,16 @@ async function payer(methode) {
         if (clientFid && clientFid.telephone) {
           fidResultat = await crediterFideliteApresVente(data.vente_id);
         }
-        afficherConfirmation(data.numero, 'paye', fidResultat);
+        afficherConfirmation(numAffiche, 'paye', fidResultat);
       } else {
         // Comptoir : vente 'en_attente' → encaissée à la caisse (points + bons cuisine là-bas)
         derniereVente = null;
-        afficherConfirmation(data.numero, 'comptoir');
+        afficherConfirmation(numAffiche, 'comptoir');
       }
     } catch (ePost) {
       // 🛡️ Filet : la vente existe, on confirme quand même au client
       console.error('Post-vente KO (vente déjà enregistrée) :', ePost);
-      afficherConfirmation(data.numero, methode === 'carte' ? 'paye' : 'comptoir');
+      afficherConfirmation(numAffiche, methode === 'carte' ? 'paye' : 'comptoir');
     }
   } catch (e) {
     clearTimeout(minuteurVente);        // ne pas laisser le timer courir
@@ -6612,6 +6668,8 @@ setInterval(async () => {
 );
 armerTimerInactivite();
 init();
+// 🔖 le marqueur affiche aussi le site (identité complète de la borne)
+try { const _mq = document.getElementById('marqueur-version'); if (_mq) _mq.textContent += ' · ' + SITE_BORNE; } catch (e) {}
 </script>
 </body>
 </html>
