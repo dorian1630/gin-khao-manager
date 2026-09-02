@@ -3,267 +3,149 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Configuration SumUp — Gin Khao</title>
+<title>💳 SumUp — Appairage · Gin Khao</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    min-height: 100vh;
-    padding: 24px;
-    color: #1a1a1a;
-  }
-  .container {
-    max-width: 720px;
-    margin: 0 auto;
-    background: #fff;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.08);
-    padding: 32px;
-  }
-  h1 {
-    font-size: 28px;
-    margin-bottom: 8px;
-    color: #1a1a1a;
-  }
-  .sub {
-    color: #6b7280;
-    margin-bottom: 32px;
-    font-size: 15px;
-  }
-  h2 {
-    font-size: 18px;
-    margin-bottom: 16px;
-    color: #FF6B35;
-    margin-top: 32px;
-  }
-  .card {
-    background: #fafafa;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 14px;
-  }
-  .card.ok {
-    background: #ecfdf5;
-    border-color: #10b981;
-  }
-  .card.err {
-    background: #fef2f2;
-    border-color: #ef4444;
-  }
-  button {
-    background: #FF6B35;
-    color: #fff;
-    border: none;
-    padding: 12px 24px;
-    font-size: 15px;
-    font-weight: 700;
-    border-radius: 999px;
-    cursor: pointer;
-    font-family: inherit;
-    margin-right: 8px;
-    margin-bottom: 8px;
-  }
-  button:hover { background: #e85a25; }
-  button:disabled { background: #d1d5db; cursor: not-allowed; }
-  button.secondary {
-    background: #fff;
-    color: #FF6B35;
-    border: 2px solid #FF6B35;
-  }
-  .reader-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    margin-bottom: 10px;
-  }
-  .reader-status {
-    width: 12px; height: 12px;
-    border-radius: 50%;
-    background: #d1d5db;
-  }
-  .reader-status.ready { background: #10b981; }
-  .reader-status.processing { background: #f59e0b; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100% {opacity:1;} 50% {opacity:0.4;} }
-  .reader-info { flex: 1; }
-  .reader-nom { font-weight: 700; }
-  .reader-id { 
-    font-family: monospace;
-    font-size: 12px;
-    color: #6b7280;
-    word-break: break-all;
-  }
-  .badge {
-    background: #FF6B35;
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 800;
-  }
-  pre {
-    background: #1a1a1a;
-    color: #10b981;
-    padding: 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
-    margin: 12px 0;
-  }
-  input {
-    padding: 12px;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 15px;
-    font-family: inherit;
-    width: 200px;
-    margin-right: 8px;
-  }
-  input:focus { outline: none; border-color: #FF6B35; }
-  .montant-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 16px 0;
-  }
-  .copy-btn {
-    background: #e5e7eb;
-    color: #1a1a1a;
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    margin-left: 8px;
-  }
-  .copy-btn:hover { background: #d1d5db; }
+body { font-family: -apple-system, Roboto, Arial, sans-serif; background: #FFF8F2; color: #1A1714; margin: 0; padding: 18px; max-width: 760px; margin: 0 auto; }
+h1 { font-size: 22px; margin: 6px 0 2px; }
+.sub { color: #7A6E62; font-size: 13px; margin-bottom: 16px; }
+.carte { background: #fff; border: 1px solid #EADFD4; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+.carte h2 { font-size: 15px; margin: 0 0 10px; }
+label { display: block; font-size: 12px; color: #7A6E62; margin: 8px 0 4px; }
+input, select { width: 100%; box-sizing: border-box; font-size: 16px; padding: 11px 12px; border: 1px solid #D9CCC0; border-radius: 10px; background: #fff; }
+button { font-size: 15px; font-weight: 700; padding: 12px 16px; border: 0; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+.p { background: #C8442B; color: #fff; } .s { background: #EFE7DE; color: #1A1714; } .d { background: #fff; color: #A33327; border: 1px solid #E5B9B0; }
+.rd { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px dashed #EADFD4; font-size: 14px; }
+.rd:first-of-type { border-top: 0; }
+.tag { font-size: 11px; padding: 3px 8px; border-radius: 99px; background: #EFE7DE; }
+.tag.ok { background: #DDF2DC; color: #2F6B2A; } .tag.ko { background: #F6DAD5; color: #A33327; }
+code { background: #F3EDE6; padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+#msg { margin-top: 10px; font-size: 14px; min-height: 20px; }
+.gate { text-align: center; padding: 40px 10px; }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>⚙️ Configuration SumUp</h1>
-  <p class="sub">Détecte ton Solo et teste un paiement</p>
+<h1>💳 SumUp — Appairage des Solo</h1>
+<div class="sub">Gin Khao Manager · réservé au gérant · <span id="marqueur">sumup-config v1.0</span></div>
 
-  <h2>1. Solos appairés</h2>
-  <div id="readers-zone">
-    <div class="card">
-      <p>⏳ Chargement…</p>
-    </div>
-  </div>
-  <button onclick="chargerReaders()">🔄 Actualiser</button>
+<div id="gate" class="gate carte">Vérification de la session…</div>
 
-  <h2>2. Test de paiement</h2>
-  <div class="card" id="test-zone">
-    <p style="margin-bottom:12px;">Choisis un Solo et lance un paiement test :</p>
-    <div class="montant-row">
-      <label>Montant :</label>
-      <input type="number" id="test-montant" value="0.50" step="0.10" min="0.10">
-      <span>€</span>
-    </div>
-    <div id="test-readers"></div>
-    <div id="test-result"></div>
+<div id="app" style="display:none">
+  <div class="carte">
+    <h2>1 · Appairer un nouveau Solo</h2>
+    <div class="sub">Sur le Solo : <b>déconnecté de tout compte</b> → glisser vers le bas → Connexions → Wi-Fi ✓ → <b>API</b> → <b>Connecter</b> → un code s'affiche (valable 5 min).</div>
+    <label>Code d'appairage affiché par le Solo</label>
+    <input id="code" placeholder="ex : A7K3P9Q2" autocapitalize="characters" autocomplete="off">
+    <label>Nom du reader</label>
+    <input id="nom" value="Borne Gin Khao Saint-Just">
+    <button class="p" onclick="appairer()">Appairer ce Solo</button>
+    <div id="msg"></div>
   </div>
-  
-  <h2>3. Variable à ajouter dans Netlify (si plusieurs Solos)</h2>
-  <div class="card">
-    <p style="margin-bottom:8px;">Une fois que tu sais quel Solo utiliser pour la borne, copie son <b>reader_id</b> ci-dessus et ajoute cette variable dans Netlify :</p>
-    <pre>SUMUP_READER_ID = id-de-ton-solo</pre>
+
+  <div class="carte">
+    <h2>2 · Affecter un reader à un site (ce que la borne lira)</h2>
+    <label>Site</label>
+    <select id="site">
+      <option value="saint-just">Gin Khao Saint-Just</option>
+      <option value="la-capelette">Gin Khao La Capelette</option>
+      <option value="saint-fereol">Gin Khao Saint-Féréol</option>
+      <option value="saint-antoine">Gin Khao Saint-Antoine</option>
+    </select>
+    <label>reader_id (rempli automatiquement après appairage — ou choisi dans la liste ci-dessous)</label>
+    <input id="rid" placeholder="rdr_…">
+    <button class="p" onclick="enregistrer()">Enregistrer pour ce site</button>
+    <div id="msg2"></div>
+  </div>
+
+  <div class="carte">
+    <h2>3 · Readers du compte SumUp</h2>
+    <div id="liste">Chargement…</div>
+    <button class="s" onclick="charger()">↻ Rafraîchir</button>
   </div>
 </div>
 
 <script>
-let readers = [];
+// JavaScript volontairement classique (var/function) : cette page doit tourner partout.
+var SUPA_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
+var SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
+var sb = supabase.createClient(SUPA_URL, SUPA_ANON, { auth: { lock: function (n, t, fn) { return fn(); } } });
+var token = null;
 
-async function chargerReaders() {
-  const zone = document.getElementById('readers-zone');
-  zone.innerHTML = '<div class="card">⏳ Chargement…</div>';
-  
-  try {
-    const resp = await fetch('/.netlify/functions/sumup-list-readers');
-    const data = await resp.json();
-    
-    if (!data.ok) {
-      zone.innerHTML = '<div class="card err">❌ Erreur : ' + data.erreur + '</div>';
-      return;
-    }
-    
-    readers = data.readers || [];
-    
-    if (readers.length === 0) {
-      zone.innerHTML = '<div class="card err">⚠️ Aucun Solo appairé pour le marchand <b>' + data.merchant_code + '</b>.<br><br>Va sur le Solo → menu pairing API → récupère un code, puis re-pair.</div>';
-      return;
-    }
-    
-    zone.innerHTML = readers.map(r => {
-      const statut = (r.status || '').toLowerCase();
-      const statutCls = (statut.includes('online') || statut.includes('ready') || statut.includes('paired')) ? 'ready' : 
-                        statut.includes('process') ? 'processing' : '';
-      return `
-        <div class="reader-row">
-          <div class="reader-status ${statutCls}"></div>
-          <div class="reader-info">
-            <div class="reader-nom">${r.name || 'Solo sans nom'} 
-              <span class="badge">${r.status || 'unknown'}</span>
-            </div>
-            <div class="reader-id">${r.id}
-              <button class="copy-btn" onclick="navigator.clipboard.writeText('${r.id}'); this.textContent='Copié !';">Copier l'ID</button>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-    
-    // Aussi peupler le sélecteur de test
-    const testReaders = document.getElementById('test-readers');
-    testReaders.innerHTML = readers.map(r => `
-      <button onclick="lancerTest('${r.id}', '${(r.name || 'Solo').replace(/'/g, "\\'")}')">💳 Tester sur "${r.name || 'Solo'}"</button>
-    `).join('');
-    
-  } catch (e) {
-    zone.innerHTML = '<div class="card err">❌ ' + e.message + '</div>';
-  }
-}
+function el(id) { return document.getElementById(id); }
 
-async function lancerTest(readerId, nom) {
-  const montant = parseFloat(document.getElementById('test-montant').value);
-  if (!montant || montant < 0.10) {
-    alert('Montant minimum : 0,10 €');
+// ── porte : la session du Manager (même modèle que la caisse)
+sb.auth.getSession().then(function (r) {
+  var s = r && r.data && r.data.session;
+  if (!s) {
+    el('gate').innerHTML = 'Vous n\'êtes pas connecté au Manager.<br><br><button class="p" onclick="location.assign(\'index.html?retour=sumup-config\')">Se connecter</button>';
     return;
   }
-  
-  const result = document.getElementById('test-result');
-  result.innerHTML = '<div class="card">⏳ Envoi au Solo "' + nom + '"...</div>';
-  
-  try {
-    const resp = await fetch('/.netlify/functions/sumup-reader-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        reader_id: readerId,
-        montant: montant,
-        description: 'Test borne Gin Khao'
-      })
-    });
-    const data = await resp.json();
-    
-    if (!data.ok) {
-      result.innerHTML = '<div class="card err">❌ ' + data.erreur + '<br><pre>' + JSON.stringify(data, null, 2) + '</pre></div>';
-      return;
-    }
-    
-    result.innerHTML = '<div class="card ok">✅ Paiement envoyé au Solo ! Vérifie ton terminal physique.<br><br>Le client doit voir le montant ' + montant + ' € sur le Solo et insérer/présenter sa carte.<br><br><b>Réponse complète :</b><pre>' + JSON.stringify(data, null, 2) + '</pre></div>';
-  } catch (e) {
-    result.innerHTML = '<div class="card err">❌ ' + e.message + '</div>';
-  }
+  token = s.access_token;
+  el('gate').style.display = 'none';
+  el('app').style.display = '';
+  charger();
+});
+
+function api(body) {
+  return fetch('/.netlify/functions/sumup-pair-reader', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify(body)
+  }).then(function (r) { return r.json(); });
 }
 
-// Charge au démarrage
-chargerReaders();
+function charger() {
+  el('liste').textContent = 'Chargement…';
+  api({ op: 'list' }).then(function (d) {
+    if (!d.ok) { el('liste').textContent = '❌ ' + (d.erreur || 'erreur'); return; }
+    var parSite = {};
+    (d.sites || []).forEach(function (s) { parSite[s.reader_id] = s.site; });
+    var readers = Array.isArray(d.readers) ? d.readers : [];
+    if (!readers.length) { el('liste').textContent = 'Aucun reader appairé sur le compte.'; return; }
+    var h = '';
+    readers.forEach(function (r) {
+      var dev = r.device || {};
+      var ok = r.status === 'paired';
+      h += '<div class="rd"><div><b>' + (r.name || '(sans nom)') + '</b> <span class="tag ' + (ok ? 'ok' : 'ko') + '">' + r.status + '</span>'
+        + (parSite[r.id] ? ' <span class="tag">📍 ' + parSite[r.id] + '</span>' : '')
+        + '<br><code>' + r.id + '</code> · ' + (dev.model || '') + ' ' + (dev.identifier || '') + '</div>'
+        + '<div><button class="s" onclick="choisir(\'' + r.id + '\')">Utiliser</button> '
+        + '<button class="d" onclick="retirer(\'' + r.id + '\')">Retirer</button></div></div>';
+    });
+    el('liste').innerHTML = h;
+  }).catch(function (e) { el('liste').textContent = '❌ ' + e.message; });
+}
+
+function appairer() {
+  var code = el('code').value.trim();
+  el('msg').textContent = '⏳ Appairage en cours…';
+  api({ op: 'pair', code: code, nom: el('nom').value }).then(function (d) {
+    if (!d.ok) { el('msg').innerHTML = '❌ ' + (d.erreur || 'échec'); return; }
+    var r = d.reader || {};
+    el('msg').innerHTML = '✅ Reader créé : <code>' + r.id + '</code> (statut : ' + r.status + ')<br>→ Reader_id copié dans l\'étape 2 : choisis le site et enregistre.';
+    el('rid').value = r.id || '';
+    charger();
+  }).catch(function (e) { el('msg').textContent = '❌ ' + e.message; });
+}
+
+function choisir(id) { el('rid').value = id; window.scrollTo(0, 0); el('msg2').textContent = 'reader_id sélectionné : ' + id; }
+
+function enregistrer() {
+  var site = el('site').value, rid = el('rid').value.trim();
+  el('msg2').textContent = '⏳ Enregistrement…';
+  api({ op: 'save', site: site, reader_id: rid, nom: el('nom').value }).then(function (d) {
+    el('msg2').innerHTML = d.ok ? '✅ La borne <b>' + site + '</b> utilisera <code>' + rid + '</code> dès son prochain démarrage.' : '❌ ' + (d.erreur || 'échec');
+    charger();
+  }).catch(function (e) { el('msg2').textContent = '❌ ' + e.message; });
+}
+
+function retirer(id) {
+  if (!confirm('Retirer le reader ' + id + ' du compte SumUp ?\n(à faire pour l\'ancien Solo bloqué)')) return;
+  api({ op: 'unpair', reader_id: id }).then(function (d) {
+    alert(d.ok ? 'Reader retiré.' : 'Échec (' + d.status + ')');
+    charger();
+  });
+}
 </script>
 </body>
 </html>
