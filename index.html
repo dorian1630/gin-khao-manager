@@ -3427,6 +3427,57 @@ html, body {
 }
 .charges-form-actions button:active { transform: scale(0.97); }
 
+/* ═══════════════════════════════════════════════════════════════
+   ⏱️ ÉQUIPE — pointeuse : direct, feuilles de temps, badges
+   ═══════════════════════════════════════════════════════════════ */
+.eq-bloc { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 16px; }
+.eq-bloc-titre { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-soft); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.eq-pill { font-size: 11px; background: var(--surface-2); border: 1px solid var(--border); padding: 3px 10px; border-radius: 999px; color: var(--text-mute); font-weight: 700; }
+.eq-ligne { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px; margin-bottom: 8px; }
+.eq-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-soft)); color: #14110E; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+.eq-info { flex: 1; min-width: 0; }
+.eq-nom { font-size: 14px; font-weight: 700; color: var(--text); }
+.eq-sous { font-size: 11.5px; color: var(--text-mute); margin-top: 2px; }
+.eq-etat { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.eq-etat.present { background: rgba(168,225,12,0.12); color: var(--lime); border: 1px solid rgba(168,225,12,0.35); }
+.eq-etat.pause { background: rgba(228,184,96,0.12); color: var(--gold); border: 1px solid rgba(228,184,96,0.35); }
+.eq-etat.absent { background: var(--surface); color: var(--text-dim); border: 1px solid var(--border); }
+.eq-vide { text-align: center; color: var(--text-mute); font-size: 13px; padding: 18px 8px; }
+.eq-filtres { display: flex; gap: 8px; margin-bottom: 12px; }
+.eq-filtres select { flex: 1; min-width: 0; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: inherit; }
+.eq-jour { padding: 10px 2px; border-bottom: 1px solid var(--border-soft); }
+.eq-jour:last-child { border-bottom: none; }
+.eq-jour-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.eq-jour-date { font-size: 13px; font-weight: 700; color: var(--text); text-transform: capitalize; }
+.eq-jour-droite { display: flex; align-items: center; gap: 8px; }
+.eq-jour-total { font-size: 14px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+.eq-jour-detail { font-size: 11.5px; color: var(--text-mute); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.eq-seg { background: var(--surface-2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 8px; }
+.eq-seg.annule { text-decoration: line-through; opacity: 0.5; }
+.eq-warn { color: var(--warning); font-weight: 700; }
+.eq-mois-total { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 14px; margin-top: 10px; background: var(--surface-2); border: 1px solid var(--gold-soft); border-radius: 12px; }
+.eq-mois-total .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-soft); font-weight: 700; }
+.eq-mois-total .val { font-size: 20px; font-weight: 800; color: var(--gold); }
+.eq-btn-sec { width: 100%; margin-top: 10px; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-soft); border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.eq-btn-sec:active { transform: scale(0.98); }
+.eq-mini { background: transparent; border: 1px solid var(--border); color: var(--text-mute); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+.eq-mini:active { transform: scale(0.95); }
+.eq-overlay { position: fixed; inset: 0; background: rgba(5,4,3,0.82); z-index: 9000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.eq-overlay.actif { display: flex; }
+.eq-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 22px; width: 430px; max-width: 96%; max-height: 88vh; overflow-y: auto; }
+.eq-modal h3 { font-size: 18px; color: var(--text); margin: 0 0 14px; }
+.eq-modal label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-mute); font-weight: 700; margin: 10px 0 4px; }
+.eq-modal input, .eq-modal select { width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 11px 12px; font-size: 14px; font-family: inherit; box-sizing: border-box; }
+.eq-modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+.eq-modal-actions button { flex: 1; padding: 13px; border-radius: 12px; border: none; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
+.eq-b-annuler { background: var(--surface-2); color: var(--text-soft); border: 1px solid var(--border) !important; }
+.eq-b-ok { background: linear-gradient(135deg, var(--gold), var(--gold-soft)); color: #14110E; }
+.eq-b-danger { background: rgba(230,57,70,0.12); color: var(--danger); border: 1px solid var(--danger) !important; }
+.eq-qr-wrap { display: flex; justify-content: center; padding: 14px; background: #fff; border-radius: 14px; margin: 12px 0; }
+.eq-corr-ligne { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; margin-bottom: 6px; font-size: 13px; color: var(--text); }
+.eq-corr-ligne.annule { opacity: 0.45; text-decoration: line-through; }
+.eq-corr-ligne .flex1 { flex: 1; }
+.eq-toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--surface); color: var(--text); border: 1px solid var(--gold-soft); padding: 12px 20px; border-radius: 999px; z-index: 9500; font-weight: 700; font-size: 13px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 </style>
 </head>
 <body>
@@ -3459,7 +3510,7 @@ html, body {
     </div>
 
     <p style="font-size:11px; color:#5A5045; text-align:center; margin-top:18px; line-height:1.5;">Gin Khao Manager · Tableau de bord gérant<br>Les caissiers utilisent l'espace caisse dédié.</p>
-    <p style="font-size:10px; color:#3d362e; text-align:center; margin-top:8px;">v26.05-a</p>
+    <p style="font-size:10px; color:#3d362e; text-align:center; margin-top:8px;">v26.05-b</p>
   </div>
 </div>
 
@@ -4941,6 +4992,100 @@ html, body {
         </div>
       </section>
 
+      <!-- ====== ⏱️ ÉCRAN ÉQUIPE (pointeuse) ====== -->
+      <section class="screen" id="screen-equipe">
+        <header class="app-header">
+          <div>
+            <h1 class="screen-title">Équipe</h1>
+            <p class="screen-sub">Pointeuse · feuilles de temps · badges</p>
+          </div>
+          <button class="bell" aria-label="Ajouter un employé" onclick="eqOuvrirCreation()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </button>
+        </header>
+
+        <div class="eq-bloc">
+          <div class="eq-bloc-titre">🟢 En poste maintenant <span class="eq-pill" id="eq-direct-pill">—</span></div>
+          <div id="eq-direct"><div class="eq-vide">Chargement…</div></div>
+        </div>
+
+        <div class="eq-bloc">
+          <div class="eq-bloc-titre">📅 Feuille de temps</div>
+          <div class="eq-filtres">
+            <select id="eq-mois" onchange="eqChargerFeuille()"></select>
+            <select id="eq-employe" onchange="eqChargerFeuille()"></select>
+          </div>
+          <div id="eq-feuille"><div class="eq-vide">Choisissez un employé</div></div>
+          <button class="eq-btn-sec" onclick="eqExportCSV()">⬇️ Export CSV du mois (paie, tous les employés)</button>
+        </div>
+
+        <div class="eq-bloc">
+          <div class="eq-bloc-titre">👥 Employés &amp; badges</div>
+          <div id="eq-liste"><div class="eq-vide">Chargement…</div></div>
+          <button class="eq-btn-sec" onclick="eqImprimerPlanche()">🖨️ Imprimer la planche de badges (format carte bleue)</button>
+          <button class="eq-btn-sec" onclick="eqCloturerOublis()">🌙 Clôturer les oublis de sortie (tous les sites)</button>
+        </div>
+      </section>
+
+      <!-- Modale : création employé -->
+      <div class="eq-overlay" id="eq-ov-creation">
+        <div class="eq-modal">
+          <h3>➕ Nouvel employé</h3>
+          <label>Prénom</label>
+          <input type="text" id="eq-c-prenom" placeholder="Sophie">
+          <label>Nom</label>
+          <input type="text" id="eq-c-nom" placeholder="Martin">
+          <label>Site principal</label>
+          <select id="eq-c-site"></select>
+          <div class="eq-modal-actions">
+            <button class="eq-b-annuler" onclick="eqFermer('eq-ov-creation')">Annuler</button>
+            <button class="eq-b-ok" onclick="eqCreerEmploye()">Créer + badge</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modale : fiche employé + badge QR -->
+      <div class="eq-overlay" id="eq-ov-fiche">
+        <div class="eq-modal">
+          <h3 id="eq-f-titre">Badge</h3>
+          <div class="eq-qr-wrap"><div id="eq-f-qr"></div></div>
+          <p style="font-size:12px;color:var(--text-mute);text-align:center;margin:0 0 6px;">À scanner sur la douchette de la caisse pour pointer</p>
+          <div class="eq-modal-actions">
+            <button class="eq-b-annuler" onclick="eqFermer('eq-ov-fiche')">Fermer</button>
+            <button class="eq-b-ok" onclick="eqImprimerBadge()">🖨️ Imprimer</button>
+          </div>
+          <div class="eq-modal-actions">
+            <button class="eq-b-danger" id="eq-f-basculer" onclick="eqBasculerActif()">🚫 Désactiver le badge</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modale : corrections d'un jour -->
+      <div class="eq-overlay" id="eq-ov-corr">
+        <div class="eq-modal">
+          <h3 id="eq-k-titre">Corriger</h3>
+          <div id="eq-k-liste"></div>
+          <label>Ajouter un pointage</label>
+          <div style="display:flex;gap:8px;">
+            <select id="eq-k-type" style="flex:1.4;">
+              <option value="entree">🟢 Entrée</option>
+              <option value="pause">⏸️ Pause</option>
+              <option value="reprise">▶️ Reprise</option>
+              <option value="sortie">👋 Sortie</option>
+            </select>
+            <input type="time" id="eq-k-heure" style="flex:1;">
+          </div>
+          <label>Site</label>
+          <select id="eq-k-site"></select>
+          <label>Motif (obligatoire, tracé)</label>
+          <input type="text" id="eq-k-motif" placeholder="Oubli de badge, correction demandée par…">
+          <div class="eq-modal-actions">
+            <button class="eq-b-annuler" onclick="eqFermer('eq-ov-corr')">Fermer</button>
+            <button class="eq-b-ok" onclick="eqAjouterPointage()">✍️ Ajouter ce pointage</button>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ====== MARKETING MODAL ====== -->
@@ -5042,6 +5187,10 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span class="nav-label">Clients</span>
       </button>
+      <button class="nav-btn" data-screen="equipe">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="nav-label">Équipe</span>
+      </button>
       <button class="nav-btn" data-screen="stock">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         <span class="nav-label">Stocks</span>
@@ -5059,6 +5208,7 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
 
 <!-- Supabase (pour la fidélité) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 // ===== TAB NAVIGATION =====
 const navBtns = document.querySelectorAll('.nav-btn');
@@ -5070,6 +5220,7 @@ function switchScreen(screenKey) {
   screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + screenKey));
   appContent.scrollTop = 0;
   if (screenKey === 'clients' && typeof chargerClients === 'function') chargerClients();
+  if (screenKey === 'equipe' && typeof chargerEquipe === 'function') chargerEquipe();
 }
 
 navBtns.forEach(btn => {
@@ -8989,6 +9140,459 @@ function brancherInitVentes() {
     btn.addEventListener('click', initVentes);
   });
 }
+// ============================================================
+//  ⏱️ ÉQUIPE — pointeuse : direct, feuilles de temps, badges
+// ============================================================
+// Lecture DIRECTE des tables (RLS : lecture/écriture employés ouvertes au
+// gérant connecté ; pointages en lecture seule — inaltérables). Les
+// corrections et la clôture des oublis passent par la fonction serveur
+// /equipe (gardée par la session), seule détentrice de la clé service.
+const EQ_SITES = { 'saint-just': 'Saint-Just', 'la-capelette': 'La Capelette', 'saint-fereol': 'Saint-Féréol', 'saint-antoine': 'Saint-Antoine' };
+const EQ_TYPES = { entree: '🟢 Entrée', pause: '⏸️ Pause', reprise: '▶️ Reprise', sortie: '👋 Sortie' };
+let eqEmployes = [];
+let eqSelectsOk = false;
+let eqFicheId = null;
+let eqCorrCtx = null;          // { employeId, ymd }
+let eqFeuilleCache = [];       // pointages du mois affiché (feuille)
+
+function eqEsc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+  });
+}
+function eqInitiales(p, n) { return ((p || '?')[0] + (n || ' ')[0]).toUpperCase(); }
+function eqFmtMin(min) {
+  min = Math.max(0, Math.round(Number(min) || 0));
+  if (min < 60) return min + ' min';
+  return Math.floor(min / 60) + ' h ' + String(min % 60).padStart(2, '0');
+}
+function eqHeureParis(iso) {
+  return new Date(iso).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
+}
+// Jour civil PARIS d'un horodatage (même découpage que le serveur)
+function eqJourParis(iso) {
+  return new Date(iso).toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' });
+}
+function eqYmdSuivant(ymd) {
+  const d = new Date(ymd + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+// Timestamp (ms) du minuit PARIS d'un jour YYYY-MM-DD — DST géré (été/hiver)
+function eqMinuitParis(ymd) {
+  const offs = ['+02:00', '+01:00'];
+  for (let i = 0; i < offs.length; i++) {
+    const d = new Date(ymd + 'T00:00:00' + offs[i]);
+    if (eqJourParis(d.toISOString()) === ymd &&
+        d.toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour12: false }).indexOf('00:00') === 0) {
+      return d.getTime();
+    }
+  }
+  return new Date(ymd + 'T00:00:00+01:00').getTime();
+}
+// ⚖️ RÉPLIQUE EXACTE de cumul_minutes_jour (serveur) : entree/reprise ouvre un
+// segment, pause/sortie le ferme ; segment resté ouvert → borné à min(maintenant,
+// fin du jour Paris). Les pointages annulés sont exclus par l'appelant.
+function eqMinutesJour(points, ymd) {
+  let debut = null, totalMs = 0;
+  const borne = Math.min(Date.now(), eqMinuitParis(eqYmdSuivant(ymd)));
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    const t = new Date(p.horodatage).getTime();
+    if (p.type === 'entree' || p.type === 'reprise') debut = t;
+    else if ((p.type === 'pause' || p.type === 'sortie') && debut !== null) { totalMs += t - debut; debut = null; }
+  }
+  if (debut !== null) totalMs += Math.max(0, borne - debut);
+  return Math.round(totalMs / 60000);
+}
+function eqToast(msg) {
+  let t = document.getElementById('eq-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'eq-toast'; t.className = 'eq-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function () { t.style.display = 'none'; }, 3000);
+}
+// Appels serveur gardés — le jeton est RELU à chaque appel (jamais momifié)
+async function eqApi(body) {
+  const r0 = await sbClient.auth.getSession();
+  const s = r0 && r0.data && r0.data.session;
+  const rep = await fetch('/.netlify/functions/equipe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (s ? s.access_token : '') },
+    body: JSON.stringify(body)
+  });
+  return rep.json();
+}
+function eqFermer(id) { const o = document.getElementById(id); if (o) o.classList.remove('actif'); }
+function eqOuvrir(id) { const o = document.getElementById(id); if (o) o.classList.add('actif'); }
+
+// ── Chargement principal de l'onglet ──
+async function chargerEquipe() {
+  try {
+    const depuis = new Date(Date.now() - 20 * 3600 * 1000).toISOString();
+    const [rEmp, rPts] = await Promise.all([
+      sbClient.from('employes').select('*').eq('restaurant_id', RESTO_ID).order('prenom'),
+      sbClient.from('pointages').select('employe_id, site, type, horodatage')
+        .eq('restaurant_id', RESTO_ID).eq('annule', false)
+        .gte('horodatage', depuis).order('horodatage')
+    ]);
+    if (rEmp.error) throw rEmp.error;
+    if (rPts.error) throw rPts.error;
+    eqEmployes = rEmp.data || [];
+    eqPeuplerSelects();
+    eqRendreDirect(rPts.data || []);
+    eqRendreListe();
+    eqChargerFeuille();
+  } catch (e) {
+    document.getElementById('eq-direct').innerHTML = '<div class="eq-vide">⚠️ ' + eqEsc(e.message) + '</div>';
+  }
+}
+
+function eqPeuplerSelects() {
+  const selE = document.getElementById('eq-employe');
+  const actifs = eqEmployes.filter(function (x) { return x.actif; });
+  const memo = selE.value;
+  selE.innerHTML = '<option value="">— Employé —</option>' + eqEmployes.map(function (x) {
+    return '<option value="' + x.id + '">' + eqEsc(x.prenom + ' ' + x.nom) + (x.actif ? '' : ' (désactivé)') + '</option>';
+  }).join('');
+  if (memo) selE.value = memo;
+  if (!eqSelectsOk) {
+    eqSelectsOk = true;
+    const selM = document.getElementById('eq-mois');
+    const opts = [];
+    const now = new Date();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const val = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      const lbl = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      opts.push('<option value="' + val + '">' + eqEsc(lbl) + '</option>');
+    }
+    selM.innerHTML = opts.join('');
+    const sites = Object.keys(EQ_SITES).map(function (s) { return '<option value="' + s + '">' + EQ_SITES[s] + '</option>'; }).join('');
+    document.getElementById('eq-c-site').innerHTML = sites;
+    document.getElementById('eq-k-site').innerHTML = sites;
+    if (actifs.length === 1) selE.value = actifs[0].id;
+  }
+}
+
+// ── Le direct : qui est en poste MAINTENANT ──
+function eqRendreDirect(points20h) {
+  const zone = document.getElementById('eq-direct');
+  const parEmp = {};
+  points20h.forEach(function (p) { (parEmp[p.employe_id] = parEmp[p.employe_id] || []).push(p); });
+  const aujourdhui = eqJourParis(new Date().toISOString());
+  const lignes = [];
+  eqEmployes.filter(function (e) { return e.actif; }).forEach(function (e) {
+    const pts = parEmp[e.id] || [];
+    const dernier = pts.length ? pts[pts.length - 1] : null;
+    let etat = 'absent';
+    if (dernier && dernier.type !== 'sortie') etat = (dernier.type === 'pause') ? 'pause' : 'present';
+    const ptsJour = pts.filter(function (p) { return eqJourParis(p.horodatage) === aujourdhui; });
+    const cumul = ptsJour.length ? eqMinutesJour(ptsJour, aujourdhui) : 0;
+    lignes.push({ e: e, etat: etat, dernier: dernier, cumul: cumul });
+  });
+  const ordre = { present: 0, pause: 1, absent: 2 };
+  lignes.sort(function (a, b) { return ordre[a.etat] - ordre[b.etat] || a.e.prenom.localeCompare(b.e.prenom); });
+  const nb = lignes.filter(function (l) { return l.etat !== 'absent'; }).length;
+  document.getElementById('eq-direct-pill').textContent = nb + ' en poste';
+  if (lignes.length === 0) { zone.innerHTML = '<div class="eq-vide">Aucun employé actif — créez le premier avec le bouton ➕</div>'; return; }
+  zone.innerHTML = lignes.map(function (l) {
+    const lblEtat = l.etat === 'present' ? 'En poste' : (l.etat === 'pause' ? 'En pause' : 'Absent');
+    let sous = '—';
+    if (l.dernier && l.etat !== 'absent') {
+      sous = (EQ_SITES[l.dernier.site] || l.dernier.site) + ' · depuis ' + eqHeureParis(l.dernier.horodatage) + ' · ' + eqFmtMin(l.cumul) + ' aujourd\u2019hui';
+    } else if (l.dernier) {
+      sous = 'Parti à ' + eqHeureParis(l.dernier.horodatage) + (l.cumul ? ' · ' + eqFmtMin(l.cumul) + ' aujourd\u2019hui' : '');
+    }
+    return '<div class="eq-ligne">'
+      + '<div class="eq-avatar">' + eqEsc(eqInitiales(l.e.prenom, l.e.nom)) + '</div>'
+      + '<div class="eq-info"><div class="eq-nom">' + eqEsc(l.e.prenom + ' ' + l.e.nom) + '</div>'
+      + '<div class="eq-sous">' + eqEsc(sous) + '</div></div>'
+      + '<span class="eq-etat ' + l.etat + '">' + lblEtat + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+// ── La feuille de temps du mois ──
+async function eqChargerFeuille() {
+  const zone = document.getElementById('eq-feuille');
+  const empId = document.getElementById('eq-employe').value;
+  const mois = document.getElementById('eq-mois').value;
+  if (!empId) { zone.innerHTML = '<div class="eq-vide">Choisissez un employé</div>'; return; }
+  zone.innerHTML = '<div class="eq-vide">Chargement…</div>';
+  try {
+    const debut = new Date(eqMinuitParis(mois + '-01')).toISOString();
+    const dFin = new Date(mois + '-01T12:00:00Z'); dFin.setUTCMonth(dFin.getUTCMonth() + 1);
+    const fin = new Date(eqMinuitParis(dFin.toISOString().slice(0, 8) + '01')).toISOString();
+    const { data, error } = await sbClient.from('pointages')
+      .select('id, site, type, horodatage, source, annule')
+      .eq('restaurant_id', RESTO_ID).eq('employe_id', empId)
+      .gte('horodatage', debut).lt('horodatage', fin).order('horodatage');
+    if (error) throw error;
+    eqFeuilleCache = data || [];
+    eqRendreFeuille(empId);
+  } catch (e) {
+    zone.innerHTML = '<div class="eq-vide">⚠️ ' + eqEsc(e.message) + '</div>';
+  }
+}
+
+function eqRendreFeuille(empId) {
+  const zone = document.getElementById('eq-feuille');
+  const points = eqFeuilleCache;
+  if (points.length === 0) { zone.innerHTML = '<div class="eq-vide">Aucun pointage ce mois-ci</div>'; return; }
+  const parJour = {};
+  points.forEach(function (p) { const j = eqJourParis(p.horodatage); (parJour[j] = parJour[j] || []).push(p); });
+  const jours = Object.keys(parJour).sort();
+  const aujourdhui = eqJourParis(new Date().toISOString());
+  let totalMois = 0;
+  const html = jours.map(function (j) {
+    const pts = parJour[j];
+    const valides = pts.filter(function (p) { return !p.annule; });
+    const min = eqMinutesJour(valides, j);
+    totalMois += min;
+    const dernierValide = valides.length ? valides[valides.length - 1] : null;
+    const ouvert = dernierValide && dernierValide.type !== 'sortie';
+    const warn = ouvert ? (j < aujourdhui ? ' <span class="eq-warn">⚠️ sortie manquante</span>' : ' <span class="eq-warn">· en cours</span>') : '';
+    const segs = pts.map(function (p) {
+      const src = p.source === 'auto_cloture' ? ' 🌙' : (p.source === 'manuel' ? ' ✍️' : '');
+      return '<span class="eq-seg' + (p.annule ? ' annule' : '') + '">' + eqHeureParis(p.horodatage) + ' ' + (EQ_TYPES[p.type] || p.type) + src + '</span>';
+    }).join('');
+    const dateLbl = new Date(eqMinuitParis(j) + 43200000).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Paris' });
+    return '<div class="eq-jour">'
+      + '<div class="eq-jour-tete"><span class="eq-jour-date">' + eqEsc(dateLbl) + '</span>'
+      + '<span class="eq-jour-droite"><span class="eq-jour-total">' + eqFmtMin(min) + '</span>'
+      + '<button class="eq-mini" onclick="eqOuvrirCorrection(\'' + empId + '\',\'' + j + '\')">✏️</button></span></div>'
+      + '<div class="eq-jour-detail">' + segs + warn + '</div>'
+      + '</div>';
+  }).join('');
+  zone.innerHTML = html
+    + '<div class="eq-mois-total"><span class="lbl">Total du mois</span><span class="val">' + eqFmtMin(totalMois) + '</span></div>';
+}
+
+// ── Export CSV (paie) : TOUS les employés du mois ──
+async function eqExportCSV() {
+  const mois = document.getElementById('eq-mois').value;
+  try {
+    const debut = new Date(eqMinuitParis(mois + '-01')).toISOString();
+    const dFin = new Date(mois + '-01T12:00:00Z'); dFin.setUTCMonth(dFin.getUTCMonth() + 1);
+    const fin = new Date(eqMinuitParis(dFin.toISOString().slice(0, 8) + '01')).toISOString();
+    const { data, error } = await sbClient.from('pointages')
+      .select('employe_id, type, horodatage')
+      .eq('restaurant_id', RESTO_ID).eq('annule', false)
+      .gte('horodatage', debut).lt('horodatage', fin).order('horodatage');
+    if (error) throw error;
+    const parEmpJour = {};
+    (data || []).forEach(function (p) {
+      const j = eqJourParis(p.horodatage);
+      const k = p.employe_id + '|' + j;
+      (parEmpJour[k] = parEmpJour[k] || []).push(p);
+    });
+    const lignes = ['prenom;nom;jour;minutes;heures'];
+    const totaux = {};
+    Object.keys(parEmpJour).sort().forEach(function (k) {
+      const empId = k.split('|')[0], j = k.split('|')[1];
+      const e = eqEmployes.find(function (x) { return x.id === empId; }) || { prenom: '?', nom: '?' };
+      const min = eqMinutesJour(parEmpJour[k], j);
+      totaux[empId] = (totaux[empId] || 0) + min;
+      lignes.push([e.prenom, e.nom, j, min, (min / 60).toFixed(2).replace('.', ',')].join(';'));
+    });
+    lignes.push('');
+    Object.keys(totaux).forEach(function (empId) {
+      const e = eqEmployes.find(function (x) { return x.id === empId; }) || { prenom: '?', nom: '?' };
+      lignes.push(['TOTAL ' + e.prenom, e.nom, mois, totaux[empId], (totaux[empId] / 60).toFixed(2).replace('.', ',')].join(';'));
+    });
+    const blob = new Blob(['\uFEFF' + lignes.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'gin-khao-heures-' + mois + '.csv';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    eqToast('⬇️ CSV du mois téléchargé');
+  } catch (e) { eqToast('⚠️ ' + e.message); }
+}
+
+// ── Gestion des employés ──
+function eqRendreListe() {
+  const zone = document.getElementById('eq-liste');
+  if (eqEmployes.length === 0) { zone.innerHTML = '<div class="eq-vide">Aucun employé — créez le premier avec ➕</div>'; return; }
+  const tri = eqEmployes.slice().sort(function (a, b) { return (b.actif - a.actif) || a.prenom.localeCompare(b.prenom); });
+  zone.innerHTML = tri.map(function (e) {
+    return '<div class="eq-ligne" style="' + (e.actif ? '' : 'opacity:0.5;') + '">'
+      + '<div class="eq-avatar">' + eqEsc(eqInitiales(e.prenom, e.nom)) + '</div>'
+      + '<div class="eq-info"><div class="eq-nom">' + eqEsc(e.prenom + ' ' + e.nom) + (e.actif ? '' : ' <span style="font-size:10px;color:var(--text-dim);">(désactivé)</span>') + '</div>'
+      + '<div class="eq-sous">' + eqEsc(EQ_SITES[e.site_principal] || e.site_principal || '—') + '</div></div>'
+      + '<button class="eq-mini" onclick="eqOuvrirFiche(\'' + e.id + '\')">🪪 Badge</button>'
+      + '</div>';
+  }).join('');
+}
+function eqOuvrirCreation() {
+  document.getElementById('eq-c-prenom').value = '';
+  document.getElementById('eq-c-nom').value = '';
+  eqOuvrir('eq-ov-creation');
+}
+async function eqCreerEmploye() {
+  const prenom = document.getElementById('eq-c-prenom').value.trim();
+  const nom = document.getElementById('eq-c-nom').value.trim();
+  const site = document.getElementById('eq-c-site').value;
+  if (!prenom || !nom) { eqToast('Prénom et nom obligatoires'); return; }
+  try {
+    const { data, error } = await sbClient.from('employes')
+      .insert({ restaurant_id: RESTO_ID, prenom: prenom, nom: nom, site_principal: site })
+      .select().single();
+    if (error) throw error;
+    eqFermer('eq-ov-creation');
+    eqToast('✅ ' + prenom + ' créé — badge généré');
+    await chargerEquipe();
+    eqOuvrirFiche(data.id);
+  } catch (e) { eqToast('⚠️ ' + e.message); }
+}
+function eqOuvrirFiche(id) {
+  const e = eqEmployes.find(function (x) { return x.id === id; });
+  if (!e) return;
+  eqFicheId = id;
+  document.getElementById('eq-f-titre').textContent = '🪪 ' + e.prenom + ' ' + e.nom;
+  const btn = document.getElementById('eq-f-basculer');
+  btn.textContent = e.actif ? '🚫 Désactiver le badge' : '✓ Réactiver le badge';
+  const wrap = document.getElementById('eq-f-qr');
+  wrap.innerHTML = '';
+  try {
+    new QRCode(wrap, { text: 'EMPLOYE:' + e.badge, width: 220, height: 220, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  } catch (err) { wrap.textContent = 'QR indisponible : ' + err.message; }
+  eqOuvrir('eq-ov-fiche');
+}
+async function eqBasculerActif() {
+  const e = eqEmployes.find(function (x) { return x.id === eqFicheId; });
+  if (!e) return;
+  const veut = !e.actif;
+  if (!confirm((veut ? 'Réactiver' : 'Désactiver') + ' le badge de ' + e.prenom + ' ?' + (veut ? '' : '\n\nEffet immédiat sur les 4 caisses.'))) return;
+  try {
+    const { error } = await sbClient.from('employes').update({ actif: veut }).eq('id', e.id);
+    if (error) throw error;
+    eqFermer('eq-ov-fiche');
+    eqToast(veut ? '✓ Badge réactivé' : '🚫 Badge désactivé');
+    chargerEquipe();
+  } catch (err) { eqToast('⚠️ ' + err.message); }
+}
+
+// ── Badges : dataURL + impression ──
+function eqQrDataUrl(texte) {
+  return new Promise(function (resolve) {
+    const div = document.createElement('div');
+    div.style.position = 'fixed'; div.style.left = '-9999px';
+    document.body.appendChild(div);
+    try {
+      new QRCode(div, { text: texte, width: 512, height: 512, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    } catch (e) { div.remove(); resolve(null); return; }
+    setTimeout(function () {
+      const img = div.querySelector('img');
+      const canvas = div.querySelector('canvas');
+      const url = (img && img.src) ? img.src : (canvas ? canvas.toDataURL('image/png') : null);
+      div.remove();
+      resolve(url);
+    }, 60);
+  });
+}
+function eqHtmlCarte(e, dataUrl) {
+  return '<div class="carte">'
+    + '<img src="' + dataUrl + '" alt="QR">'
+    + '<div class="ct"><div class="marque">GIN KHAO</div>'
+    + '<div class="nomemp">' + eqEsc(e.prenom) + '<br>' + eqEsc((e.nom || '').toUpperCase()) + '</div>'
+    + '<div class="siteemp">' + eqEsc(EQ_SITES[e.site_principal] || '') + '</div></div></div>';
+}
+function eqOuvrirImpression(cartesHtml) {
+  const w = window.open('', '_blank');
+  if (!w) { eqToast('⚠️ Autorisez les pop-ups pour imprimer'); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Badges Gin Khao</title><style>'
+    + '@page { size: A4; margin: 8mm; } body { font-family: Arial, sans-serif; margin: 0; }'
+    + '.carte { width: 85.6mm; height: 54mm; border: 0.3mm dashed #999; border-radius: 3mm; display: inline-flex; align-items: center; gap: 4mm; padding: 4mm; box-sizing: border-box; margin: 1.5mm; page-break-inside: avoid; vertical-align: top; }'
+    + '.carte img { width: 42mm; height: 42mm; }'
+    + '.ct .marque { font-size: 10pt; font-weight: 800; letter-spacing: 1.5px; }'
+    + '.ct .nomemp { font-size: 12pt; font-weight: 700; margin-top: 2mm; line-height: 1.25; }'
+    + '.ct .siteemp { font-size: 8pt; color: #666; margin-top: 1.5mm; }'
+    + '</style></head><body>' + cartesHtml + '</body></html>');
+  w.document.close();
+  setTimeout(function () { w.print(); }, 400);
+}
+async function eqImprimerBadge() {
+  const e = eqEmployes.find(function (x) { return x.id === eqFicheId; });
+  if (!e) return;
+  const url = await eqQrDataUrl('EMPLOYE:' + e.badge);
+  if (!url) { eqToast('⚠️ QR non généré'); return; }
+  eqOuvrirImpression(eqHtmlCarte(e, url));
+}
+async function eqImprimerPlanche() {
+  const actifs = eqEmployes.filter(function (x) { return x.actif; });
+  if (actifs.length === 0) { eqToast('Aucun employé actif'); return; }
+  eqToast('🖨️ Préparation de ' + actifs.length + ' badge(s)…');
+  const cartes = [];
+  for (let i = 0; i < actifs.length; i++) {
+    const url = await eqQrDataUrl('EMPLOYE:' + actifs[i].badge);
+    if (url) cartes.push(eqHtmlCarte(actifs[i], url));
+  }
+  eqOuvrirImpression(cartes.join(''));
+}
+
+// ── Corrections (tracées, via la fonction serveur gardée) ──
+function eqOuvrirCorrection(empId, ymd) {
+  const e = eqEmployes.find(function (x) { return x.id === empId; });
+  eqCorrCtx = { employeId: empId, ymd: ymd };
+  document.getElementById('eq-k-titre').textContent = '✏️ ' + (e ? e.prenom + ' ' + e.nom : '') + ' — ' + ymd;
+  const pts = eqFeuilleCache.filter(function (p) { return eqJourParis(p.horodatage) === ymd; });
+  document.getElementById('eq-k-liste').innerHTML = pts.length ? pts.map(function (p) {
+    return '<div class="eq-corr-ligne' + (p.annule ? ' annule' : '') + '">'
+      + '<span class="flex1">' + eqHeureParis(p.horodatage) + ' · ' + (EQ_TYPES[p.type] || p.type)
+      + (p.source !== 'douchette' ? ' · ' + eqEsc(p.source) : '') + '</span>'
+      + (p.annule ? '<span style="font-size:11px;">annulé</span>'
+                  : '<button class="eq-mini" onclick="eqAnnulerPointage(' + p.id + ')">✕ Annuler</button>')
+      + '</div>';
+  }).join('') : '<div class="eq-vide">Aucun pointage ce jour</div>';
+  const premier = pts.find(function (p) { return !p.annule; });
+  document.getElementById('eq-k-site').value = (premier && premier.site) || (e && e.site_principal) || 'saint-just';
+  document.getElementById('eq-k-motif').value = '';
+  eqOuvrir('eq-ov-corr');
+}
+async function eqAnnulerPointage(pid) {
+  const motif = document.getElementById('eq-k-motif').value.trim();
+  if (!motif) { eqToast('Motif obligatoire (champ en bas)'); return; }
+  if (!confirm('Annuler ce pointage ? (tracé, irréversible)')) return;
+  const r = await eqApi({ op: 'corriger', annuler_id: pid, motif: motif });
+  if (r && r.ok) { eqToast('✓ Pointage annulé'); eqFermer('eq-ov-corr'); eqChargerFeuille(); chargerEquipe(); }
+  else eqToast('⚠️ ' + ((r && r.erreur) || 'échec'));
+}
+async function eqAjouterPointage() {
+  if (!eqCorrCtx) return;
+  const motif = document.getElementById('eq-k-motif').value.trim();
+  const heure = document.getElementById('eq-k-heure').value;
+  if (!motif) { eqToast('Motif obligatoire'); return; }
+  if (!heure) { eqToast('Heure obligatoire'); return; }
+  const h = heure.split(':');
+  const horodatage = new Date(eqMinuitParis(eqCorrCtx.ymd) + (Number(h[0]) * 3600 + Number(h[1]) * 60) * 1000).toISOString();
+  const r = await eqApi({
+    op: 'corriger', motif: motif,
+    employe: eqCorrCtx.employeId,
+    site: document.getElementById('eq-k-site').value,
+    type: document.getElementById('eq-k-type').value,
+    horodatage: horodatage
+  });
+  if (r && r.ok) { eqToast('✍️ Pointage ajouté'); eqFermer('eq-ov-corr'); eqChargerFeuille(); chargerEquipe(); }
+  else eqToast('⚠️ ' + ((r && r.erreur) || 'échec'));
+}
+async function eqCloturerOublis() {
+  if (!confirm('Fermer automatiquement les journées restées ouvertes (> 14 h) sur les 4 sites ?')) return;
+  let total = 0, echec = null;
+  const sites = Object.keys(EQ_SITES);
+  for (let i = 0; i < sites.length; i++) {
+    const r = await eqApi({ op: 'cloturer', site: sites[i] });
+    if (r && r.ok) total += Number(r.clotures || 0);
+    else echec = (r && r.erreur) || 'échec';
+  }
+  if (echec) eqToast('⚠️ ' + echec);
+  else eqToast('🌙 ' + total + ' oubli(s) clôturé(s)');
+  eqChargerFeuille(); chargerEquipe();
+}
+
 if (document.readyState !== 'loading') {
   brancherInitVentes();
 } else {
