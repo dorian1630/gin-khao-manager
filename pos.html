@@ -4857,6 +4857,84 @@ html, body {
   .ep-col-gauche, .ep-col-droite, .erl-col { overflow-y: visible; }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ⏱️ POINTEUSE — bannière de pointage + choix PAUSE/SORTIE
+   z-index au-dessus de TOUT (gate 5000, cadenas 4500, dialogues) :
+   un employé pointe même caisse verrouillée, avant l'ouverture.
+   ═══════════════════════════════════════════════════════════════ */
+.pointeuse-banniere {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-160px);
+  z-index: 100001;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  padding: 14px 22px;
+  box-shadow: 0 20px 50px -15px rgba(0,0,0,0.45);
+  transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+  max-width: 92vw;
+}
+.pointeuse-banniere.show { transform: translateX(-50%) translateY(0); }
+.pointeuse-banniere.ok { border-color: var(--lime); }
+.pointeuse-banniere.err { border-color: var(--danger); }
+.pointeuse-banniere .ptb-ic { font-size: 30px; line-height: 1; }
+.pointeuse-banniere .ptb-txt b { display: block; font-size: 17px; font-weight: 800; color: var(--text); }
+.pointeuse-banniere .ptb-txt span { font-size: 13px; color: var(--text-mute); font-family: var(--mono); }
+.pointeuse-choix-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(5,4,3,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.pointeuse-choix-overlay.actif { display: flex; }
+.pointeuse-choix-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 30px 28px 22px;
+  width: 460px;
+  max-width: 94%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+.ptc-ic { font-size: 44px; line-height: 1; }
+.ptc-nom { font-family: var(--display); font-size: 26px; font-weight: 600; margin-top: 8px; color: var(--text); }
+.ptc-sous { font-size: 14px; color: var(--text-mute); margin: 6px 0 20px; }
+.ptc-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+.ptc-btn {
+  border: none;
+  border-radius: 18px;
+  padding: 26px 10px;
+  font-family: var(--body);
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.ptc-btn:active { transform: scale(0.96); }
+.ptc-pause { background: linear-gradient(135deg, var(--gold), var(--gold-soft)); box-shadow: 0 8px 20px rgba(201,165,90,0.35); }
+.ptc-sortie { background: linear-gradient(135deg, var(--sriracha), var(--sriracha-soft)); box-shadow: 0 8px 20px rgba(230,57,70,0.35); }
+.ptc-annuler {
+  background: none;
+  border: none;
+  color: var(--text-mute);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: var(--body);
+  padding: 8px;
+}
+
 </style>
 </head>
 <body>
@@ -5967,7 +6045,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ab</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ac</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -9367,7 +9445,10 @@ async function chargerHistorique() {
     debut.setHours(0, 0, 0, 0);
 
     // 1) Ventes (caisse + borne encaissées)
-    const { data: ventes, error } = await sb.from('ventes')
+    // ⚠️ let (pas const) : le repli plus bas RÉASSIGNE ventes si la jointure
+    //    clients(...) échoue — en const, ce filet de sécurité crashait
+    //    (Assignment to constant variable) au lieu de sauver l'historique.
+    let { data: ventes, error } = await sb.from('ventes')
 .select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, clients(nom, telephone, adresse, code_postal, ville, notes), lignes_vente(*)')      .eq('restaurant_id', RESTO_ID)
       .gte('cree_le', debut.toISOString())
       .order('numero', { ascending: false });
@@ -12811,6 +12892,207 @@ document.getElementById('overlay-ticket').addEventListener('click', e => {
 document.getElementById('overlay-cloture').addEventListener('click', e => {
   if (e.target.id === 'overlay-cloture') fermerCloture();
 });
+
+// ============================================
+//  ⏱️ POINTEUSE — badge employé à la douchette, partout dans la caisse
+// ============================================
+// Le badge QR contient EMPLOYE:<uuid>. La douchette tape comme un clavier
+// mais à VITESSE MACHINE : on reconnaît la rafale (écarts < 120 ms entre
+// frappes — aucun humain ne tient ce rythme sur 45 caractères), on
+// intercepte l'Entrée finale, on efface toute trace du texte tombé dans un
+// champ, et on envoie le badge au serveur (RPC pointer, machine à états).
+// Fonctionne MÊME caisse verrouillée : un employé pointe avant l'ouverture
+// (bannière et choix passent AU-DESSUS du cadenas et de la porte de session).
+const POINTEUSE_URL = '/.netlify/functions/pointer';
+const SITES_POINTEUSE = ['saint-just', 'la-capelette', 'saint-fereol', 'saint-antoine'];
+let SITE_CAISSE = 'saint-just';
+// 📍 Site réglable PAR TABLETTE, sans redéploiement (même recette que ?relais=) :
+//    ouvrir UNE FOIS  pos.html?site=la-capelette  (mémorisé) · retour : ?site=reset
+try {
+  const _siteParam = new URLSearchParams(location.search).get('site');
+  if (_siteParam === 'reset') localStorage.removeItem('pointeuse_site');
+  else if (_siteParam && SITES_POINTEUSE.includes(_siteParam.trim().toLowerCase())) {
+    localStorage.setItem('pointeuse_site', _siteParam.trim().toLowerCase());
+  }
+  const _siteMemo = localStorage.getItem('pointeuse_site');
+  if (_siteMemo && SITES_POINTEUSE.includes(_siteMemo)) SITE_CAISSE = _siteMemo;
+} catch (e) { console.warn('Site pointeuse : repli saint-just (' + e.message + ')'); }
+// Le site actif s'affiche au marqueur de version (contrôle visuel immédiat,
+// et il voyage dans le badge version lu par le Pi — source unique du pied de page)
+try {
+  const _mvPt = document.getElementById('marqueur-version');
+  if (_mvPt) _mvPt.textContent += ' · pointeuse: ' + SITE_CAISSE;
+} catch (e) {}
+
+let ptBuffer = '';
+let ptDernierTs = 0;
+let ptEnCours = false;        // 🔒 un pointage réseau à la fois
+let ptBadgeChoix = null;      // badge en attente dans la modale PAUSE/SORTIE
+let ptBanTimer = null;
+let ptChoixTimer = null;
+const PT_VITESSE_MAX = 120;   // ms max entre deux frappes "machine"
+const PT_RE = /^EMPLOYE:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Écoute en phase CAPTURE : on voit la rafale avant tout champ ou handler.
+// Les frappes ne sont PAS bloquées en amont (zéro risque pour la saisie
+// humaine) : seule l'Entrée d'un badge reconnu est interceptée, puis le
+// texte qui aurait fui dans un champ est retiré chirurgicalement.
+document.addEventListener('keydown', function (e) {
+  const t = Date.now();
+  if (t - ptDernierTs > PT_VITESSE_MAX) ptBuffer = '';
+  ptDernierTs = t;
+  if (e.key === 'Enter') {
+    const code = ptBuffer;
+    ptBuffer = '';
+    if (PT_RE.test(code)) {
+      e.preventDefault();
+      e.stopPropagation();
+      ptNettoyerChampActif(code);
+      pointerBadge(code, null);
+    }
+    return;
+  }
+  if (e.key && e.key.length === 1) ptBuffer += e.key;
+}, true);
+
+// Retire la chaîne scannée du champ qui avait le focus (formulaire client,
+// champ fidélité…) : le scan ne laisse aucune trace dans la saisie en cours.
+function ptNettoyerChampActif(code) {
+  try {
+    const el = document.activeElement;
+    if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return;
+    if (el.readOnly || el.disabled || typeof el.value !== 'string' || !el.value) return;
+    const i = el.value.toUpperCase().lastIndexOf(code.toUpperCase());
+    if (i >= 0) el.value = el.value.slice(0, i) + el.value.slice(i + code.length);
+  } catch (e) {}
+}
+
+async function pointerBadge(badge, action) {
+  if (ptEnCours) return;
+  ptEnCours = true;
+  fermerChoixPointeuse();
+  afficherBannierePointeuse('⏱️', 'Pointage…', SITE_CAISSE, 'attente', 12000);
+  // ⏱️ Couperet 8 s : le serveur muet ne laisse jamais l'employé dans le doute
+  const ctl = new AbortController();
+  const tId = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const r = await fetchPointeuse(badge, action, ctl.signal);
+    const data = await r.json();
+    ptTraiterReponse(badge, data);
+  } catch (e) {
+    const msg = (e.name === 'AbortError')
+      ? 'le serveur n\'a pas répondu en 8 s'
+      : e.message;
+    afficherBannierePointeuse('⚠️', 'Pointage NON enregistré', msg + ' — représentez le badge', 'err', 6000);
+  } finally {
+    clearTimeout(tId);
+    ptEnCours = false;
+  }
+}
+
+// Appel réseau isolé (testable) : POST { badge, site, action } vers la fonction
+function fetchPointeuse(badge, action, signal) {
+  return fetch(POINTEUSE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ badge: badge, site: SITE_CAISSE, action: action }),
+    signal: signal
+  });
+}
+
+const PT_LIBELLES = {
+  entree:  { ic: '🟢', titre: 'Entrée',  phrase: 'Bonjour' },
+  reprise: { ic: '▶️', titre: 'Reprise', phrase: 'Bon retour' },
+  pause:   { ic: '⏸️', titre: 'Pause',   phrase: 'Bonne pause' },
+  sortie:  { ic: '👋', titre: 'Sortie',  phrase: 'À bientôt' }
+};
+
+function ptFmtMinutes(min) {
+  min = Math.max(0, Math.round(Number(min) || 0));
+  if (min < 60) return min + ' min';
+  return Math.floor(min / 60) + ' h ' + String(min % 60).padStart(2, '0');
+}
+
+function ptTraiterReponse(badge, data) {
+  if (!data || typeof data !== 'object') {
+    afficherBannierePointeuse('⚠️', 'Pointage NON enregistré', 'réponse illisible — représentez le badge', 'err', 6000);
+    return;
+  }
+  // Employé déjà en poste : le serveur demande PAUSE ou SORTIE
+  if (data.choix) { ouvrirChoixPointeuse(badge, data); return; }
+  if (data.ok) {
+    const lib = PT_LIBELLES[data.type] || { ic: '✓', titre: data.type || 'Pointé', phrase: '' };
+    const sous = [
+      data.heure || '',
+      data.site || '',
+      (data.type === 'sortie' && data.cumul_min != null) ? ptFmtMinutes(data.cumul_min) + ' aujourd\'hui' : ''
+    ].filter(Boolean).join(' · ');
+    const titre = lib.titre + ' — ' + (lib.phrase ? lib.phrase + ' ' : '') + (data.prenom || '');
+    afficherBannierePointeuse(lib.ic, titre, sous, 'ok', 4000);
+    return;
+  }
+  // Refus (badge désactivé, anti-double 60 s, transition impossible…)
+  const titreErr = data.deja ? 'Déjà pointé' : 'Pointage refusé';
+  const qui = data.prenom ? data.prenom + ' — ' : '';
+  afficherBannierePointeuse('🚫', titreErr, qui + (data.erreur || 'erreur inconnue'), 'err', 5000);
+}
+
+function afficherBannierePointeuse(ic, titre, sous, type, duree) {
+  let b = document.getElementById('pointeuse-banniere');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'pointeuse-banniere';
+    b.className = 'pointeuse-banniere';
+    document.body.appendChild(b);
+  }
+  b.innerHTML = '<span class="ptb-ic">' + ic + '</span>'
+    + '<span class="ptb-txt"><b>' + escapeHtmlPos(titre) + '</b>'
+    + (sous ? '<span>' + escapeHtmlPos(sous) + '</span>' : '') + '</span>';
+  b.classList.remove('ok', 'err', 'attente');
+  if (type) b.classList.add(type);
+  b.classList.add('show');
+  if (ptBanTimer) clearTimeout(ptBanTimer);
+  ptBanTimer = setTimeout(function () { b.classList.remove('show'); }, duree || 3000);
+}
+
+function ouvrirChoixPointeuse(badge, data) {
+  ptBadgeChoix = badge;
+  let m = document.getElementById('pointeuse-choix');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'pointeuse-choix';
+    m.className = 'pointeuse-choix-overlay';
+    m.addEventListener('click', function (e) { if (e.target === m) fermerChoixPointeuse(); });
+    document.body.appendChild(m);
+  }
+  m.innerHTML = '<div class="pointeuse-choix-box">'
+    + '<div class="ptc-ic">⏱️</div>'
+    + '<div class="ptc-nom">' + escapeHtmlPos(((data.prenom || '') + ' ' + (data.nom || '')).trim() || 'Employé') + '</div>'
+    + '<div class="ptc-sous">Vous êtes en poste — que faites-vous ?</div>'
+    + '<div class="ptc-btns">'
+    + '<button type="button" class="ptc-btn ptc-pause" onclick="ptChoisir(\'pause\')">⏸️<br>PAUSE</button>'
+    + '<button type="button" class="ptc-btn ptc-sortie" onclick="ptChoisir(\'sortie\')">👋<br>SORTIE</button>'
+    + '</div>'
+    + '<button type="button" class="ptc-annuler" onclick="fermerChoixPointeuse()">Annuler</button>'
+    + '</div>';
+  m.classList.add('actif');
+  if (ptChoixTimer) clearTimeout(ptChoixTimer);
+  // Se referme seule si personne ne choisit (l'employé re-scannera)
+  ptChoixTimer = setTimeout(fermerChoixPointeuse, 15000);
+}
+
+function ptChoisir(action) {
+  const b = ptBadgeChoix;          // capturé AVANT la fermeture (qui le vide)
+  fermerChoixPointeuse();
+  if (b) pointerBadge(b, action);
+}
+
+function fermerChoixPointeuse() {
+  if (ptChoixTimer) { clearTimeout(ptChoixTimer); ptChoixTimer = null; }
+  ptBadgeChoix = null;
+  const m = document.getElementById('pointeuse-choix');
+  if (m) m.classList.remove('actif');
+}
 
 // Lancer
 init();
