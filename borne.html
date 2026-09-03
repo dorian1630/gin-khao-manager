@@ -6700,5 +6700,28 @@ init();
 // 🔖 le marqueur affiche aussi le site (identité complète de la borne)
 try { const _mq = document.getElementById('marqueur-version'); if (_mq) _mq.textContent += ' · ' + SITE_BORNE; } catch (e) {}
 </script>
+  <!-- 🔄 v26.08-t : geste secret — 5 taps rapides coin HAUT-DROIT → rechargement (écouteur transparent, ne vole aucun clic) -->
+<script>
+(function () {
+  var taps = 0, premier = 0;
+  document.addEventListener('click', function (e) {
+    if (e.clientX < window.innerWidth - 70 || e.clientY > 70) return;
+    var t = Date.now();
+    if (t - premier > 2500) { taps = 0; premier = t; }
+    taps++;
+    if (taps < 5) return;
+    taps = 0;
+    document.body.insertAdjacentHTML('beforeend',
+      '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.88);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;z-index:99999;font-family:inherit;">🔄 Rechargement de la borne…</div>');
+    var fini = function () { location.reload(); };
+    try {
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }).then(fini, fini);
+        setTimeout(fini, 3000);
+      } else { setTimeout(fini, 400); }
+    } catch (err) { fini(); }
+  }, true);
+})();
+</script>
 </body>
 </html>
