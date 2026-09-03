@@ -2985,6 +2985,7 @@ body {
   <div class="fin-fid-resultat" id="fin-fid-resultat" style="display:none;"></div>
   <div class="fin-instructions" id="fin-instructions"></div>
   <div class="fin-mode" id="fin-mode"></div>
+    <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
 <div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-r</div>
@@ -6321,7 +6322,7 @@ async function crediterApresVente() {
       resultat.textContent = '⚠️ Points non confirmés — présentez votre ticket au comptoir';
     }
   }
-  relancerTimerFin(12000);
+  relancerTimerFin(6000);
 }
 
 // ============================================================
@@ -6646,7 +6647,7 @@ function afficherConfirmation(numero, type, fidResultat) {
   declencherConfettis();
 
   // Retour à l'accueil (14 s — le temps de lire / taper son numéro)
-  relancerTimerFin(14000);
+  relancerTimerFin(6000);
 }
 
 // ============================================================
