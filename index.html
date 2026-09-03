@@ -3510,7 +3510,7 @@ html, body {
     </div>
 
     <p style="font-size:11px; color:#5A5045; text-align:center; margin-top:18px; line-height:1.5;">Gin Khao Manager · Tableau de bord gérant<br>Les caissiers utilisent l'espace caisse dédié.</p>
-    <p style="font-size:10px; color:#3d362e; text-align:center; margin-top:8px;">v26.05-b</p>
+    <p style="font-size:10px; color:#3d362e; text-align:center; margin-top:8px;">v26.05-c</p>
   </div>
 </div>
 
@@ -5020,6 +5020,12 @@ html, body {
         </div>
 
         <div class="eq-bloc">
+          <div class="eq-bloc-titre">💶 Paie du mois <span class="eq-pill" id="eq-paie-pill">—</span></div>
+          <div id="eq-paie"><div class="eq-vide">Chargement…</div></div>
+          <button class="eq-btn-sec" onclick="eqEnvoyerCharges()">📤 Envoyer dans les charges (Compta · catégorie Salaires)</button>
+        </div>
+
+        <div class="eq-bloc">
           <div class="eq-bloc-titre">👥 Employés &amp; badges</div>
           <div id="eq-liste"><div class="eq-vide">Chargement…</div></div>
           <button class="eq-btn-sec" onclick="eqImprimerPlanche()">🖨️ Imprimer la planche de badges (format carte bleue)</button>
@@ -5037,6 +5043,8 @@ html, body {
           <input type="text" id="eq-c-nom" placeholder="Martin">
           <label>Site principal</label>
           <select id="eq-c-site"></select>
+          <label>Taux horaire (€/h) — optionnel</label>
+          <input type="number" id="eq-c-taux" step="0.01" min="0" placeholder="12.50">
           <div class="eq-modal-actions">
             <button class="eq-b-annuler" onclick="eqFermer('eq-ov-creation')">Annuler</button>
             <button class="eq-b-ok" onclick="eqCreerEmploye()">Créer + badge</button>
@@ -5050,6 +5058,11 @@ html, body {
           <h3 id="eq-f-titre">Badge</h3>
           <div class="eq-qr-wrap"><div id="eq-f-qr"></div></div>
           <p style="font-size:12px;color:var(--text-mute);text-align:center;margin:0 0 6px;">À scanner sur la douchette de la caisse pour pointer</p>
+          <label>Taux horaire (€/h)</label>
+          <div style="display:flex;gap:8px;">
+            <input type="number" id="eq-f-taux" step="0.01" min="0" placeholder="—">
+            <button class="eq-mini" style="flex-shrink:0;" onclick="eqSauverTaux()">💾 Enregistrer</button>
+          </div>
           <div class="eq-modal-actions">
             <button class="eq-b-annuler" onclick="eqFermer('eq-ov-fiche')">Fermer</button>
             <button class="eq-b-ok" onclick="eqImprimerBadge()">🖨️ Imprimer</button>
@@ -9320,6 +9333,7 @@ async function eqChargerFeuille() {
   const zone = document.getElementById('eq-feuille');
   const empId = document.getElementById('eq-employe').value;
   const mois = document.getElementById('eq-mois').value;
+  eqRendrePaie();
   if (!empId) { zone.innerHTML = '<div class="eq-vide">Choisissez un employé</div>'; return; }
   zone.innerHTML = '<div class="eq-vide">Chargement…</div>';
   try {
@@ -9389,19 +9403,23 @@ async function eqExportCSV() {
       const k = p.employe_id + '|' + j;
       (parEmpJour[k] = parEmpJour[k] || []).push(p);
     });
-    const lignes = ['prenom;nom;jour;minutes;heures'];
+    const lignes = ['prenom;nom;jour;minutes;heures;taux_horaire;montant'];
     const totaux = {};
     Object.keys(parEmpJour).sort().forEach(function (k) {
       const empId = k.split('|')[0], j = k.split('|')[1];
       const e = eqEmployes.find(function (x) { return x.id === empId; }) || { prenom: '?', nom: '?' };
       const min = eqMinutesJour(parEmpJour[k], j);
       totaux[empId] = (totaux[empId] || 0) + min;
-      lignes.push([e.prenom, e.nom, j, min, (min / 60).toFixed(2).replace('.', ',')].join(';'));
+      const tj = (e.taux_horaire != null) ? Number(e.taux_horaire) : null;
+      const mj = (tj != null) ? (Math.round(min / 60 * tj * 100) / 100).toFixed(2).replace('.', ',') : '';
+      lignes.push([e.prenom, e.nom, j, min, (min / 60).toFixed(2).replace('.', ','), (tj != null) ? String(tj).replace('.', ',') : '', mj].join(';'));
     });
     lignes.push('');
     Object.keys(totaux).forEach(function (empId) {
       const e = eqEmployes.find(function (x) { return x.id === empId; }) || { prenom: '?', nom: '?' };
-      lignes.push(['TOTAL ' + e.prenom, e.nom, mois, totaux[empId], (totaux[empId] / 60).toFixed(2).replace('.', ',')].join(';'));
+      const tt = (e.taux_horaire != null) ? Number(e.taux_horaire) : null;
+      const mt = (tt != null) ? (Math.round(totaux[empId] / 60 * tt * 100) / 100).toFixed(2).replace('.', ',') : '';
+      lignes.push(['TOTAL ' + e.prenom, e.nom, mois, totaux[empId], (totaux[empId] / 60).toFixed(2).replace('.', ','), (tt != null) ? String(tt).replace('.', ',') : '', mt].join(';'));
     });
     const blob = new Blob(['\uFEFF' + lignes.join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
@@ -9430,16 +9448,19 @@ function eqRendreListe() {
 function eqOuvrirCreation() {
   document.getElementById('eq-c-prenom').value = '';
   document.getElementById('eq-c-nom').value = '';
+  document.getElementById('eq-c-taux').value = '';
   eqOuvrir('eq-ov-creation');
 }
 async function eqCreerEmploye() {
   const prenom = document.getElementById('eq-c-prenom').value.trim();
   const nom = document.getElementById('eq-c-nom').value.trim();
   const site = document.getElementById('eq-c-site').value;
+  const tauxBrut = parseFloat(document.getElementById('eq-c-taux').value);
+  const taux = (isFinite(tauxBrut) && tauxBrut > 0) ? Math.round(tauxBrut * 100) / 100 : null;
   if (!prenom || !nom) { eqToast('Prénom et nom obligatoires'); return; }
   try {
     const { data, error } = await sbClient.from('employes')
-      .insert({ restaurant_id: RESTO_ID, prenom: prenom, nom: nom, site_principal: site })
+      .insert({ restaurant_id: RESTO_ID, prenom: prenom, nom: nom, site_principal: site, taux_horaire: taux })
       .select().single();
     if (error) throw error;
     eqFermer('eq-ov-creation');
@@ -9455,6 +9476,7 @@ function eqOuvrirFiche(id) {
   document.getElementById('eq-f-titre').textContent = '🪪 ' + e.prenom + ' ' + e.nom;
   const btn = document.getElementById('eq-f-basculer');
   btn.textContent = e.actif ? '🚫 Désactiver le badge' : '✓ Réactiver le badge';
+  document.getElementById('eq-f-taux').value = (e.taux_horaire != null) ? e.taux_horaire : '';
   const wrap = document.getElementById('eq-f-qr');
   wrap.innerHTML = '';
   try {
@@ -9532,6 +9554,128 @@ async function eqImprimerPlanche() {
     if (url) cartes.push(eqHtmlCarte(actifs[i], url));
   }
   eqOuvrirImpression(cartes.join(''));
+}
+
+async function eqSauverTaux() {
+  const e = eqEmployes.find(function (x) { return x.id === eqFicheId; });
+  if (!e) return;
+  const brut = parseFloat(document.getElementById('eq-f-taux').value);
+  const taux = (isFinite(brut) && brut > 0) ? Math.round(brut * 100) / 100 : null;
+  try {
+    const { error } = await sbClient.from('employes').update({ taux_horaire: taux }).eq('id', e.id);
+    if (error) throw error;
+    e.taux_horaire = taux;
+    eqToast(taux != null ? '💾 Taux enregistré : ' + eqFmtEuro(taux) + '/h' : '💾 Taux effacé');
+    eqRendrePaie();
+  } catch (err) { eqToast('⚠️ ' + err.message); }
+}
+
+// ── 💶 Paie du mois : heures × taux, par employé ──
+function eqFmtEuro(n) {
+  return (Math.round(Number(n) * 100) / 100).toFixed(2).replace('.', ',') + ' €';
+}
+function eqBornesMois(mois) {
+  const debut = new Date(eqMinuitParis(mois + '-01')).toISOString();
+  const dFin = new Date(mois + '-01T12:00:00Z'); dFin.setUTCMonth(dFin.getUTCMonth() + 1);
+  const finYmd = dFin.toISOString().slice(0, 8) + '01';
+  return { debut: debut, fin: new Date(eqMinuitParis(finYmd)).toISOString(), dernierJour: eqYmdSuivant((function () { const d = new Date(finYmd + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 2); return d.toISOString().slice(0, 10); })()) };
+}
+async function eqMinutesMoisTous(mois) {
+  const b = eqBornesMois(mois);
+  const { data, error } = await sbClient.from('pointages')
+    .select('employe_id, type, horodatage')
+    .eq('restaurant_id', RESTO_ID).eq('annule', false)
+    .gte('horodatage', b.debut).lt('horodatage', b.fin).order('horodatage');
+  if (error) throw error;
+  const parEmpJour = {};
+  (data || []).forEach(function (p) {
+    const k = p.employe_id + '|' + eqJourParis(p.horodatage);
+    (parEmpJour[k] = parEmpJour[k] || []).push(p);
+  });
+  const minutes = {};
+  Object.keys(parEmpJour).forEach(function (k) {
+    const empId = k.split('|')[0], j = k.split('|')[1];
+    minutes[empId] = (minutes[empId] || 0) + eqMinutesJour(parEmpJour[k], j);
+  });
+  return minutes;
+}
+async function eqRendrePaie() {
+  const zone = document.getElementById('eq-paie');
+  const mois = document.getElementById('eq-mois').value;
+  if (!mois) return;
+  try {
+    const minutes = await eqMinutesMoisTous(mois);
+    const ids = Object.keys(minutes);
+    if (ids.length === 0) {
+      zone.innerHTML = '<div class="eq-vide">Aucune heure pointée ce mois-ci</div>';
+      document.getElementById('eq-paie-pill').textContent = '—';
+      return;
+    }
+    let total = 0, manquants = 0;
+    const lignes = ids.map(function (empId) {
+      const e = eqEmployes.find(function (x) { return x.id === empId; }) || { prenom: '?', nom: '', taux_horaire: null };
+      const min = minutes[empId];
+      const taux = (e.taux_horaire != null) ? Number(e.taux_horaire) : null;
+      const montant = (taux != null) ? Math.round(min / 60 * taux * 100) / 100 : null;
+      if (montant != null) total += montant; else manquants++;
+      return { e: e, min: min, taux: taux, montant: montant };
+    }).sort(function (a, b) { return (b.montant || 0) - (a.montant || 0); });
+    zone.innerHTML = lignes.map(function (l) {
+      const droite = (l.montant != null)
+        ? '<span class="eq-jour-total">' + eqFmtEuro(l.montant) + '</span>'
+        : '<span class="eq-warn" style="font-size:11px;">taux ? → 🪪</span>';
+      const sous = eqFmtMin(l.min) + (l.taux != null ? ' × ' + eqFmtEuro(l.taux) + '/h' : '');
+      return '<div class="eq-ligne">'
+        + '<div class="eq-avatar">' + eqEsc(eqInitiales(l.e.prenom, l.e.nom)) + '</div>'
+        + '<div class="eq-info"><div class="eq-nom">' + eqEsc(l.e.prenom + ' ' + l.e.nom) + '</div>'
+        + '<div class="eq-sous">' + eqEsc(sous) + '</div></div>'
+        + droite + '</div>';
+    }).join('')
+    + '<div class="eq-mois-total"><span class="lbl">Total à payer' + (manquants ? ' (' + manquants + ' sans taux)' : '') + '</span><span class="val">' + eqFmtEuro(total) + '</span></div>';
+    document.getElementById('eq-paie-pill').textContent = eqFmtEuro(total);
+  } catch (e) {
+    zone.innerHTML = '<div class="eq-vide">⚠️ ' + eqEsc(e.message) + '</div>';
+  }
+}
+// ── 📤 Pousser le total du mois dans la Compta (catégorie Salaires) ──
+async function eqEnvoyerCharges() {
+  const mois = document.getElementById('eq-mois').value;
+  try {
+    const minutes = await eqMinutesMoisTous(mois);
+    let total = 0, manquants = 0;
+    Object.keys(minutes).forEach(function (empId) {
+      const e = eqEmployes.find(function (x) { return x.id === empId; });
+      if (e && e.taux_horaire != null) total += Math.round(minutes[empId] / 60 * Number(e.taux_horaire) * 100) / 100;
+      else manquants++;
+    });
+    total = Math.round(total * 100) / 100;
+    if (total <= 0) { eqToast('Rien à envoyer : aucune heure avec un taux saisi'); return; }
+    const lbl = new Date(mois + '-15T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    if (!confirm('Envoyer ' + eqFmtEuro(total) + ' dans les charges (Salaires · ' + lbl + ') ?'
+      + (manquants ? '\n\n⚠️ ' + manquants + ' employé(s) sans taux : non comptés.' : '')
+      + '\n\nRe-cliquer plus tard METTRA À JOUR le montant (pas de doublon).')) return;
+    const b = eqBornesMois(mois);
+    const { data: existantes, error: eSel } = await sbClient.from('charges')
+      .select('id').eq('restaurant_id', RESTO_ID).eq('source', 'pointeuse')
+      .gte('date_charge', mois + '-01').lte('date_charge', b.dernierJour).limit(1);
+    if (eSel) throw eSel;
+    const champs = {
+      categorie: 'salaires',
+      date_charge: b.dernierJour,
+      fournisseur: 'Équipe Gin Khao',
+      description: 'Salaires équipe — ' + lbl + ' (pointeuse)',
+      montant_ht: total, tva: 0, montant_ttc: total
+    };
+    if (existantes && existantes.length > 0) {
+      const { error } = await sbClient.from('charges').update(champs).eq('id', existantes[0].id);
+      if (error) throw error;
+      eqToast('📤 Charge Salaires mise à jour : ' + eqFmtEuro(total));
+    } else {
+      const { error } = await sbClient.from('charges').insert(Object.assign({ restaurant_id: RESTO_ID, source: 'pointeuse', recurrent: false }, champs));
+      if (error) throw error;
+      eqToast('📤 ' + eqFmtEuro(total) + ' envoyés dans les charges (' + lbl + ')');
+    }
+  } catch (e) { eqToast('⚠️ ' + e.message); }
 }
 
 // ── Corrections (tracées, via la fonction serveur gardée) ──
