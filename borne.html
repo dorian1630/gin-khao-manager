@@ -2987,7 +2987,7 @@ body {
   <div class="fin-mode" id="fin-mode"></div>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-o</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-r</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3000,6 +3000,10 @@ body {
 //    déclarée plus bas est en zone morte pour les blocs précédents
 //    (leçon du gate muet — simulation de démarrage à l'appui).
 const PAIEMENT_CARTE_ACTIF = true;   // 💳 v26.08-o : CARTE ACTIVE — le reader est lu dans la base (sumup_readers)
+// 🎓 v26.08-p : MENU ÉTUDIANT — visible en dehors du créneau mais commandable
+//    uniquement le midi (heure locale de la tablette). Bornes : début inclus, fin exclue.
+const ETUDIANT_H_DEBUT = 11;   // dès 11:00:00
+const ETUDIANT_H_FIN   = 14;   // jusqu'à 13:59:59
 // 📍 v26.08-o : SITE de cette borne — "?site=saint-just" une fois dans l'URL → mémorisé.
 //    Même convention que la caisse/pointeuse. Repli : saint-just.
 const SITE_BORNE = (function () {
@@ -3056,12 +3060,30 @@ function escUrl(u) {
 //    (indisponible), et pas en rupture de stock. Ce test doit être appliqué
 //    sur TOUS les chemins d'ajout (menu, upsell, formules, récompenses) —
 //    avant l'audit, seuls la grille menu (via CSS) et le stock l'étaient.
+// 🎓 Un produit est soumis au créneau étudiant si son NOM contient « étudiant »
+//    (casse et accents ignorés) — aucun réglage en base : nommer le produit suffit.
+function estMenuEtudiant(p) {
+  if (!p || !p.nom) return false;
+  const nom = String(p.nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return nom.indexOf('etudiant') !== -1;
+}
+function creneauEtudiantOuvert() {
+  const h = new Date().getHours();
+  return h >= ETUDIANT_H_DEBUT && h < ETUDIANT_H_FIN;
+}
 function estCommandable(p) {
   if (!p) return false;
   if (p.actif === false) return false;
   if (p.indisponible === true) return false;
   if (p.stock_actif && !(p.stock > 0)) return false;
+  if (estMenuEtudiant(p) && !creneauEtudiantOuvert()) return false;
   return true;
+}
+
+// 🎓 v26.08-r : bon cuisine/sushi — « Menu Étudiant — Pad Thaï » → « M Pad Thaï »
+//    (le ticket comptoir garde le nom complet « Menu Étudiant — … »)
+function raccourcirEtudiant(nom) {
+  return String(nom || '').replace(/^Menu\s+Étudiant\s*[—–-]\s*/i, 'M ');
 }
 // Emoji cohérent pour un produit (via SA catégorie — avant, on passait parfois
 // le nom du produit à emojiCat, qui attend un nom de catégorie).
@@ -3606,7 +3628,8 @@ function afficherMenu() {
     const cat = categories.find(c => c.id === p.categorie_id);
     const emoji = emojiCat(cat ? cat.nom : '');
     const rupture = p.stock_actif && p.stock <= 0;
-    const indispo = p.indisponible === true;
+    const horsCreneauEtu = estMenuEtudiant(p) && !creneauEtudiantOuvert();
+    const indispo = p.indisponible === true || horsCreneauEtu;
     const imgUrl = escUrl(p.image_url);
     const hasImage = imgUrl !== '';
     // ✨ Prix affiché : le prix de la variante si une seule, "dès X €" si plusieurs
@@ -3617,7 +3640,7 @@ function afficherMenu() {
       <div class="plat-wrapper">
         <div class="plat-prix-top">${prixAffiche}</div>
         <div class="plat-card ${rupture?'rupture':''} ${indispo?'indispo':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}')" ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
-          ${indispo ? '<div class="plat-indispo-badge">VICTIME DE<br>SON SUCCÈS</div>' : ''}
+          ${horsCreneauEtu ? '<div class="plat-indispo-badge">🎓 LE MIDI<br>11 h – 14 h</div>' : (indispo ? '<div class="plat-indispo-badge">VICTIME DE<br>SON SUCCÈS</div>' : '')}
           ${rupture ? '<div class="plat-rupture-badge">Épuisé</div>' : ''}
           ${!hasImage ? `
             <div class="plat-emoji-bg">${emoji}</div>
@@ -3634,6 +3657,11 @@ function afficherMenu() {
 function ajouter(produitId) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
+  // 🎓 Hors créneau : message poli (au lieu du refus silencieux)
+  if (estMenuEtudiant(p) && !creneauEtudiantOuvert()) {
+    borneAlert('Désolé, le <b>menu étudiant</b> est disponible <b>le midi uniquement</b><br>(11 h – 14 h). À très vite ! 🎓', '🕐');
+    return;
+  }
   // 🛡️ Vrai garde-fou de disponibilité (le blocage n'était que visuel via CSS)
   if (!estCommandable(p)) return;
 
@@ -5532,7 +5560,7 @@ async function envoyerImpressionCuisine(numero, methode) {
     const pousser = (it, station) => {
       lignes.push({
         nom: it.nom,
-        nom_cuisine: it.nom,
+        nom_cuisine: raccourcirEtudiant(it.nom),
         quantite: it.quantite,
         prix: 0,
         station: station,
