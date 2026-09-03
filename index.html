@@ -3510,7 +3510,7 @@ html, body {
     </div>
 
     <p style="font-size:11px; color:#5A5045; text-align:center; margin-top:18px; line-height:1.5;">Gin Khao Manager · Tableau de bord gérant<br>Les caissiers utilisent l'espace caisse dédié.</p>
-    <p style="font-size:10px; color:#3d362e; text-align:center; margin-top:8px;">v26.05-c</p>
+    <p style="font-size:10px; color:#3d362e; text-align:center; margin-top:8px;">v26.05-d</p>
   </div>
 </div>
 
@@ -5063,6 +5063,17 @@ html, body {
             <input type="number" id="eq-f-taux" step="0.01" min="0" placeholder="—">
             <button class="eq-mini" style="flex-shrink:0;" onclick="eqSauverTaux()">💾 Enregistrer</button>
           </div>
+          <label>🗓️ Horaires prévus — « 11:00-14:30, 18:30-22:30 » (vide = repos)</label>
+          <div style="display:grid;grid-template-columns:44px 1fr;gap:6px;align-items:center;">
+            <span class="eq-sous">Lun</span><input type="text" id="eq-h-0" placeholder="repos">
+            <span class="eq-sous">Mar</span><input type="text" id="eq-h-1" placeholder="repos">
+            <span class="eq-sous">Mer</span><input type="text" id="eq-h-2" placeholder="repos">
+            <span class="eq-sous">Jeu</span><input type="text" id="eq-h-3" placeholder="repos">
+            <span class="eq-sous">Ven</span><input type="text" id="eq-h-4" placeholder="repos">
+            <span class="eq-sous">Sam</span><input type="text" id="eq-h-5" placeholder="repos">
+            <span class="eq-sous">Dim</span><input type="text" id="eq-h-6" placeholder="repos">
+          </div>
+          <button class="eq-btn-sec" onclick="eqSauverHoraires()">💾 Enregistrer les horaires</button>
           <div class="eq-modal-actions">
             <button class="eq-b-annuler" onclick="eqFermer('eq-ov-fiche')">Fermer</button>
             <button class="eq-b-ok" onclick="eqImprimerBadge()">🖨️ Imprimer</button>
@@ -9163,6 +9174,8 @@ function brancherInitVentes() {
 const EQ_SITES = { 'saint-just': 'Saint-Just', 'la-capelette': 'La Capelette', 'saint-fereol': 'Saint-Féréol', 'saint-antoine': 'Saint-Antoine' };
 const EQ_TYPES = { entree: '🟢 Entrée', pause: '⏸️ Pause', reprise: '▶️ Reprise', sortie: '👋 Sortie' };
 let eqEmployes = [];
+let eqHoraires = [];
+const EQ_TOLERANCE_RETARD_MIN = 5;   // ⏰ minutes de grâce avant de signaler un retard
 let eqSelectsOk = false;
 let eqFicheId = null;
 let eqCorrCtx = null;          // { employeId, ymd }
@@ -9245,15 +9258,18 @@ function eqOuvrir(id) { const o = document.getElementById(id); if (o) o.classLis
 async function chargerEquipe() {
   try {
     const depuis = new Date(Date.now() - 20 * 3600 * 1000).toISOString();
-    const [rEmp, rPts] = await Promise.all([
+    const [rEmp, rPts, rHor] = await Promise.all([
       sbClient.from('employes').select('*').eq('restaurant_id', RESTO_ID).order('prenom'),
       sbClient.from('pointages').select('employe_id, site, type, horodatage')
         .eq('restaurant_id', RESTO_ID).eq('annule', false)
-        .gte('horodatage', depuis).order('horodatage')
+        .gte('horodatage', depuis).order('horodatage'),
+      sbClient.from('horaires_prevus').select('employe_id, jour_semaine, debut, fin')
+        .eq('restaurant_id', RESTO_ID)
     ]);
     if (rEmp.error) throw rEmp.error;
     if (rPts.error) throw rPts.error;
     eqEmployes = rEmp.data || [];
+    eqHoraires = (rHor && !rHor.error && rHor.data) ? rHor.data : [];
     eqPeuplerSelects();
     eqRendreDirect(rPts.data || []);
     eqRendreListe();
@@ -9304,7 +9320,13 @@ function eqRendreDirect(points20h) {
     if (dernier && dernier.type !== 'sortie') etat = (dernier.type === 'pause') ? 'pause' : 'present';
     const ptsJour = pts.filter(function (p) { return eqJourParis(p.horodatage) === aujourdhui; });
     const cumul = ptsJour.length ? eqMinutesJour(ptsJour, aujourdhui) : 0;
-    lignes.push({ e: e, etat: etat, dernier: dernier, cumul: cumul });
+    let alerte = '';
+    const rj = eqRetardsJour(e.id, aujourdhui, ptsJour);
+    const retard = rj.find(function (r) { return r.retard > 0; });
+    const manque = rj.find(function (r) { return r.pas_pointe; });
+    if (retard) alerte = '⏰ +' + retard.retard + ' min';
+    else if (manque) alerte = '⚠️ attendu à ' + manque.debut;
+    lignes.push({ e: e, etat: etat, dernier: dernier, cumul: cumul, alerte: alerte });
   });
   const ordre = { present: 0, pause: 1, absent: 2 };
   lignes.sort(function (a, b) { return ordre[a.etat] - ordre[b.etat] || a.e.prenom.localeCompare(b.e.prenom); });
@@ -9322,7 +9344,7 @@ function eqRendreDirect(points20h) {
     return '<div class="eq-ligne">'
       + '<div class="eq-avatar">' + eqEsc(eqInitiales(l.e.prenom, l.e.nom)) + '</div>'
       + '<div class="eq-info"><div class="eq-nom">' + eqEsc(l.e.prenom + ' ' + l.e.nom) + '</div>'
-      + '<div class="eq-sous">' + eqEsc(sous) + '</div></div>'
+      + '<div class="eq-sous">' + eqEsc(sous) + (l.alerte ? ' <span class="eq-warn">' + eqEsc(l.alerte) + '</span>' : '') + '</div></div>'
       + '<span class="eq-etat ' + l.etat + '">' + lblEtat + '</span>'
       + '</div>';
   }).join('');
@@ -9368,7 +9390,11 @@ function eqRendreFeuille(empId) {
     totalMois += min;
     const dernierValide = valides.length ? valides[valides.length - 1] : null;
     const ouvert = dernierValide && dernierValide.type !== 'sortie';
-    const warn = ouvert ? (j < aujourdhui ? ' <span class="eq-warn">⚠️ sortie manquante</span>' : ' <span class="eq-warn">· en cours</span>') : '';
+    let warn = ouvert ? (j < aujourdhui ? ' <span class="eq-warn">⚠️ sortie manquante</span>' : ' <span class="eq-warn">· en cours</span>') : '';
+    eqRetardsJour(empId, j, valides).forEach(function (r) {
+      if (r.retard > 0) warn += ' <span class="eq-warn">⏰ +' + r.retard + ' min</span>';
+      else if (r.pas_pointe) warn += ' <span class="eq-warn">⚠️ ' + eqEsc(r.debut) + ' non pointé</span>';
+    });
     const segs = pts.map(function (p) {
       const src = p.source === 'auto_cloture' ? ' 🌙' : (p.source === 'manuel' ? ' ✍️' : '');
       return '<span class="eq-seg' + (p.annule ? ' annule' : '') + '">' + eqHeureParis(p.horodatage) + ' ' + (EQ_TYPES[p.type] || p.type) + src + '</span>';
@@ -9477,6 +9503,13 @@ function eqOuvrirFiche(id) {
   const btn = document.getElementById('eq-f-basculer');
   btn.textContent = e.actif ? '🚫 Désactiver le badge' : '✓ Réactiver le badge';
   document.getElementById('eq-f-taux').value = (e.taux_horaire != null) ? e.taux_horaire : '';
+  for (let js = 0; js < 7; js++) {
+    const cs = eqHoraires
+      .filter(function (h) { return h.employe_id === e.id && h.jour_semaine === js; })
+      .sort(function (a, b) { return String(a.debut).localeCompare(String(b.debut)); })
+      .map(function (h) { return String(h.debut).slice(0, 5) + '-' + String(h.fin).slice(0, 5); });
+    document.getElementById('eq-h-' + js).value = cs.join(', ');
+  }
   const wrap = document.getElementById('eq-f-qr');
   wrap.innerHTML = '';
   try {
@@ -9676,6 +9709,73 @@ async function eqEnvoyerCharges() {
       eqToast('📤 ' + eqFmtEuro(total) + ' envoyés dans les charges (' + lbl + ')');
     }
   } catch (e) { eqToast('⚠️ ' + e.message); }
+}
+
+// ── 🗓️ Horaires prévus & retards ──
+// Jour de semaine PARIS d'un YYYY-MM-DD : 0 = lundi … 6 = dimanche
+function eqJourSemaine(ymd) {
+  return (new Date(eqMinuitParis(ymd) + 43200000).getUTCDay() + 6) % 7;
+}
+// « 11:00-14:30, 18:30-22:30 » → [{debut,fin}] (créneaux invalides ignorés)
+function eqParseCreneaux(str) {
+  const out = [];
+  const re = /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/g;
+  let m;
+  while ((m = re.exec(String(str || ''))) !== null) {
+    const h1 = Number(m[1]), m1 = Number(m[2]), h2 = Number(m[3]), m2 = Number(m[4]);
+    if (h1 > 23 || h2 > 23 || m1 > 59 || m2 > 59) continue;
+    if (h2 * 60 + m2 <= h1 * 60 + m1) continue;
+    out.push({ debut: String(h1).padStart(2, '0') + ':' + String(m1).padStart(2, '0'),
+               fin: String(h2).padStart(2, '0') + ':' + String(m2).padStart(2, '0') });
+  }
+  return out;
+}
+function eqCreneauxDe(employeId, ymd) {
+  const js = eqJourSemaine(ymd);
+  return eqHoraires
+    .filter(function (h) { return h.employe_id === employeId && h.jour_semaine === js; })
+    .sort(function (a, b) { return String(a.debut).localeCompare(String(b.debut)); });
+}
+// Par créneau prévu : retard (> tolérance) ou « pas pointé » (fenêtre d'appariement : début − 2 h)
+function eqRetardsJour(employeId, ymd, points) {
+  const creneaux = eqCreneauxDe(employeId, ymd);
+  if (creneaux.length === 0) return [];
+  const minuit = eqMinuitParis(ymd);
+  const aujourdhui = eqJourParis(new Date().toISOString());
+  return creneaux.map(function (c) {
+    const hm = String(c.debut).split(':');
+    const tsDebut = minuit + (Number(hm[0]) * 60 + Number(hm[1])) * 60000;
+    const lbl = String(c.debut).slice(0, 5);
+    const p = points.find(function (pt) {
+      return (pt.type === 'entree' || pt.type === 'reprise') && new Date(pt.horodatage).getTime() >= tsDebut - 2 * 3600000;
+    });
+    if (!p) {
+      const manque = (ymd < aujourdhui) || (Date.now() > tsDebut + 30 * 60000);
+      return { debut: lbl, retard: 0, pas_pointe: manque };
+    }
+    const ecart = Math.round((new Date(p.horodatage).getTime() - tsDebut) / 60000);
+    return { debut: lbl, retard: ecart > EQ_TOLERANCE_RETARD_MIN ? ecart : 0, pas_pointe: false };
+  });
+}
+async function eqSauverHoraires() {
+  const e = eqEmployes.find(function (x) { return x.id === eqFicheId; });
+  if (!e) return;
+  const lignes = [];
+  for (let js = 0; js < 7; js++) {
+    eqParseCreneaux(document.getElementById('eq-h-' + js).value).forEach(function (c) {
+      lignes.push({ restaurant_id: RESTO_ID, employe_id: e.id, jour_semaine: js, debut: c.debut, fin: c.fin });
+    });
+  }
+  try {
+    const del = await sbClient.from('horaires_prevus').delete().eq('employe_id', e.id);
+    if (del.error) throw del.error;
+    if (lignes.length) {
+      const ins = await sbClient.from('horaires_prevus').insert(lignes);
+      if (ins.error) throw ins.error;
+    }
+    eqToast('💾 Horaires enregistrés (' + lignes.length + ' créneau' + (lignes.length > 1 ? 'x' : '') + ')');
+    await chargerEquipe();
+  } catch (err) { eqToast('⚠️ ' + err.message); }
 }
 
 // ── Corrections (tracées, via la fonction serveur gardée) ──
