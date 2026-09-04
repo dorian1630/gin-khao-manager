@@ -355,7 +355,8 @@
     if (!l) return '';
     var base = String(l.nom || '')
       .replace(/^\s*[↳>]\s*/, '')
-      .replace(/\s*\((?:formule|box|supplément|supplement)\)\s*$/i, '')
+      .replace(/\s*\((?:formule|box|supplément|supplement)\)\s*/gi, ' ')
+      .replace(/\s{2,}/g, ' ')
       .trim();
     var acc = accompagnementDe(l);
     // ⚠️ IDEMPOTENT : si l'appelant a déjà collé l'accompagnement au nom
