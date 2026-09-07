@@ -1496,6 +1496,8 @@ body {
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
+.upsell-promo-v2 { color: var(--lime, #A8E10C); font-weight: 800; }
+.upsell-ancien-v2 { color: rgba(255,255,255,0.45); font-size: 0.78em; font-weight: 400; margin-left: 4px; }
 .upsell-prix-v2 {
   font-size: 12px;
   color: var(--orange);
@@ -2988,7 +2990,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-w</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-x</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3849,6 +3851,29 @@ function declencherUpsellDesserts() {
 }
 
 // ============================================================
+//  💶 v26.08-x : PRIX SPÉCIAL UPSELL (boissons à 1 € / 2 €)
+//  La promo ne vit QUE dans le tunnel, et QUE si le panier
+//  contient un vrai plat (pas pour un panier de canettes).
+//  La carte Boissons vitrine garde ses prix intacts.
+// ============================================================
+function panierContientPlat() {
+  return panier.some(l => {
+    if (l.recompense || l.lien_plat) return false;
+    const p = produits.find(x => x.id === l.produit_id);
+    if (!p || p.est_boisson === true) return false;
+    const cat = categories.find(c => c.id === p.categorie_id);
+    const nomCat = cat ? String(cat.nom) : '';
+    return !/boisson|dessert|sauce|suppl/i.test(nomCat);
+  });
+}
+function prixUpsellDe(p) {
+  if (!p || p.prix_upsell == null || aDesVariantes(p)) return null;
+  if (!panierContientPlat()) return null;
+  const v = parseFloat(p.prix_upsell);
+  return Number.isFinite(v) ? v : null;
+}
+
+// ============================================================
 //  🎨 AFFICHAGE GRILLE UPSELL (commune entrées + boissons)
 // ============================================================
 function afficherUpsellGrille(config) {
@@ -3872,9 +3897,12 @@ function afficherUpsellGrille(config) {
           // ✅ Prix affiché : celui de la variante s'il n'y en a qu'une (avant,
           //    un produit à variante unique affichait ET facturait p.prix,
           //    potentiellement faux, au lieu du prix de sa variante)
-          const prixAffiche = aDesVariantes(p)
-            ? (multiVariantes ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(prixMinVariantes(p)))
-            : fmt(p.prix);
+          const promoUpsell = prixUpsellDe(p);
+          const prixAffiche = promoUpsell !== null
+            ? `<span class="upsell-promo-v2">${fmt(promoUpsell)}</span> <s class="upsell-ancien-v2">${fmt(p.prix)}</s>`
+            : (aDesVariantes(p)
+              ? (multiVariantes ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(prixMinVariantes(p)))
+              : fmt(p.prix));
           return `
             <div class="upsell-card-v2 ${hasImage ? 'has-image' : ''}"
                  onclick="${multiVariantes ? `ouvrirVariantesUpsell('${p.id}', '${config.type}')` : `ajouterUpsell('${p.id}', '${config.type}', event)`}"
@@ -3963,8 +3991,9 @@ function ajouterUpsell(produitId, type, ev) {
     // Ajout direct au panier
     // ⚠️ !l.lien_plat : sans lui, l'upsell d'un Coca incrémentait le Coca à 0 €
     //    d'une formule déjà au panier → 2e Coca gratuit + quantités désynchronisées.
+    const prixEffectif = (() => { const u = prixUpsellDe(p); return u !== null ? u : parseFloat(p.prix); })();
     const ligne = panier.find(l => l.produit_id === p.id && !l.options && !l.variante
-      && !l.lien_plat && Number(l.prix) === parseFloat(p.prix) && l.via_upsell === true);
+      && !l.lien_plat && Number(l.prix) === prixEffectif && l.via_upsell === true);
     if (ligne) {
       ligne.quantite++;
     } else {
@@ -3972,7 +4001,7 @@ function ajouterUpsell(produitId, type, ev) {
         ligne_uid: bUid(),
         produit_id: p.id,
         nom: p.nom,
-        prix: parseFloat(p.prix),
+        prix: prixEffectif,           // 💶 1 € / 2 € si promo upsell active
         quantite: 1,
         emoji: emojiProduit(p),
         via_upsell: true              // ⤴ tampon stats upsell
