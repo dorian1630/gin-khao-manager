@@ -2774,11 +2774,9 @@ body {
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/1_xkwuty.png" alt="Gin Khao 2" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/2_ggpz3e.png" alt="Gin Khao 3" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784326017/081B97AF-C4E6-496B-9D07-FB7C42E5699B_zg9ilq.png" alt="Gin Khao 5" />
-    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1788447732/Gemini_Generated_Image_tk211ftk211ftk21_wgg4ms.jpg" alt="Gin Khao 6" />
-    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1788533711/ChatGPT_Image_4_sept._2026_16_53_07_ci5i1j.png" alt="Gin Khao 7" />
   </div>
   <div class="accueil-bottom" onclick="allerMode()">
-    <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander 👆</div>
+    <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander</div>
   </div>
 </div>
 
@@ -2987,10 +2985,10 @@ body {
   <div class="fin-fid-resultat" id="fin-fid-resultat" style="display:none;"></div>
   <div class="fin-instructions" id="fin-instructions"></div>
   <div class="fin-mode" id="fin-mode"></div>
-    <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
+  <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-r</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-w</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3945,7 +3943,8 @@ function ajouterUpsell(produitId, type, ev) {
     const vLabel = labelVariante(v);
     const vPrix = parseFloat(v.prix);
     const ligneV = panier.find(l => l.produit_id === p.id && !l.options
-      && (l.variante || null) === (vLabel || null) && !l.lien_plat && Number(l.prix) === vPrix);
+      && (l.variante || null) === (vLabel || null) && !l.lien_plat && Number(l.prix) === vPrix
+      && l.via_upsell === true);
     if (ligneV) {
       ligneV.quantite++;
     } else {
@@ -3956,7 +3955,8 @@ function ajouterUpsell(produitId, type, ev) {
         prix: vPrix,
         quantite: 1,
         emoji: emojiProduit(p),
-        variante: vLabel || undefined
+        variante: vLabel || undefined,
+        via_upsell: true              // ⤴ tampon stats upsell
       });
     }
   } else {
@@ -3964,7 +3964,7 @@ function ajouterUpsell(produitId, type, ev) {
     // ⚠️ !l.lien_plat : sans lui, l'upsell d'un Coca incrémentait le Coca à 0 €
     //    d'une formule déjà au panier → 2e Coca gratuit + quantités désynchronisées.
     const ligne = panier.find(l => l.produit_id === p.id && !l.options && !l.variante
-      && !l.lien_plat && Number(l.prix) === parseFloat(p.prix));
+      && !l.lien_plat && Number(l.prix) === parseFloat(p.prix) && l.via_upsell === true);
     if (ligne) {
       ligne.quantite++;
     } else {
@@ -3974,7 +3974,8 @@ function ajouterUpsell(produitId, type, ev) {
         nom: p.nom,
         prix: parseFloat(p.prix),
         quantite: 1,
-        emoji: emojiProduit(p)
+        emoji: emojiProduit(p),
+        via_upsell: true              // ⤴ tampon stats upsell
       });
     }
   }
@@ -4045,7 +4046,7 @@ function choisirVarianteUpsell(produitId, indexVariante) {
   // Ajout au panier (regroupe si même produit + même variante déjà présent sans options)
   // ⚠️ !l.lien_plat + prix identique : jamais de fusion avec une sous-ligne de formule
   const ligne = panier.find(l => l.produit_id === p.id && !l.options && l.variante === vLabel
-    && !l.lien_plat && Number(l.prix) === parseFloat(variante.prix));
+    && !l.lien_plat && Number(l.prix) === parseFloat(variante.prix) && l.via_upsell === true);
   if (ligne) {
     ligne.quantite++;
   } else {
@@ -4056,7 +4057,8 @@ function choisirVarianteUpsell(produitId, indexVariante) {
       prix: parseFloat(variante.prix),
       quantite: 1,
       emoji: emojiProduit(p),
-      variante: vLabel
+      variante: vLabel,
+      via_upsell: true                // ⤴ tampon stats upsell
     });
   }
   majBarrePanier();
@@ -4591,13 +4593,17 @@ function afficherEcranFormulePlat() {
         const imgUrl = escUrl(p.image_url);
         const hasImage = imgUrl !== '';
         const nomPropre = p.nom.replace(/ \(Formule\)$/, '');
+        // 📏 v26.08-v : « dès 10,90 € » quand le plat de formule a plusieurs tailles
+        const prixCarte = aDesVariantes(p)
+          ? (p.variantes.length > 1 ? 'dès ' + fmt(prixMinVariantes(p)) : fmt(prixMinVariantes(p)))
+          : fmt(p.prix);
         return `
           <div class="formule-card ${hasImage?'has-image':''}" onclick="choisirFormulePlat('${p.id}')"
                ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
             ${!hasImage ? `<div class="formule-card-emoji">🍜</div>` : ''}
             <div class="formule-card-bandeau">
               <div class="formule-card-nom">${esc(nomPropre)}</div>
-              <div class="formule-card-prix">${fmt(p.prix)}</div>
+              <div class="formule-card-prix">${prixCarte}</div>
             </div>
           </div>
         `;
@@ -4640,11 +4646,22 @@ function demarrerParcoursPlatFormule(produit) {
     formule_entree_id: formuleEnCours.entree_id,
     formule_entree_label: formuleEnCours.entree_label,
     formule_plat_id: produit.id,
-    etape: 'options_base'
+    etape: 'variantes'
   };
   
-  if (produit.options_base && Array.isArray(produit.options_base) && produit.options_base.length > 0) {
-    afficherModaleOptionsBase();
+  // 📏 v26.08-v : Taille M/L — le plat de formule passe par l'étape variantes,
+  //    exactement comme le parcours classique. La machine à étapes commune
+  //    enchaîne ensuite (options, retirables, sauces… puis écran boisson),
+  //    et la finalisation classique honore variante_label / variante_prix.
+  if (aDesVariantes(produit)) {
+    if (produit.variantes.length === 1) {
+      const v = produit.variantes[0];
+      parcoursPlatEnCours.variante_label = labelVariante(v);
+      parcoursPlatEnCours.variante_prix = parseFloat(v.prix);
+      passerEtapeSuivante();
+    } else {
+      afficherModaleVariantes();
+    }
   } else {
     passerEtapeSuivante();
   }
@@ -6482,7 +6499,8 @@ async function payer(methode) {
     options: l.options || null,
     ligne_uid: l.ligne_uid || null,       // ⚠️ indispensable : la caisse rattache
     lien_plat: l.lien_plat || null,       //    les sous-lignes via cet uid
-    recompense: l.recompense || null      // 🎁 palier fidélité (ligne remise)
+    recompense: l.recompense || null,     // 🎁 palier fidélité (ligne remise)
+    via_upsell: l.via_upsell === true     // ⤴ tampon stats upsell (→ serrure → lignes_vente)
   }));
 
   // ⏱️ Garde-fou anti-blocage : le paiement carte a DÉJÀ réussi ici. Si le
@@ -6648,7 +6666,8 @@ function afficherConfirmation(numero, type, fidResultat) {
   allerEcran('ecran-fin');
   declencherConfettis();
 
-  // Retour à l'accueil (14 s — le temps de lire / taper son numéro)
+  // Retour à l'accueil (6 s — le temps de lire son numéro ; bouton ✓ Terminer
+  //    pour partir tout de suite ; le CTA fidélité prolonge à 60 s si tapé)
   relancerTimerFin(6000);
 }
 
@@ -6701,29 +6720,6 @@ armerTimerInactivite();
 init();
 // 🔖 le marqueur affiche aussi le site (identité complète de la borne)
 try { const _mq = document.getElementById('marqueur-version'); if (_mq) _mq.textContent += ' · ' + SITE_BORNE; } catch (e) {}
-</script>
-  <!-- 🔄 v26.08-t : geste secret — 5 taps rapides coin HAUT-DROIT → rechargement (écouteur transparent, ne vole aucun clic) -->
-<script>
-(function () {
-  var taps = 0, premier = 0;
-  document.addEventListener('click', function (e) {
-    if (e.clientX < window.innerWidth - 70 || e.clientY > 70) return;
-    var t = Date.now();
-    if (t - premier > 2500) { taps = 0; premier = t; }
-    taps++;
-    if (taps < 5) return;
-    taps = 0;
-    document.body.insertAdjacentHTML('beforeend',
-      '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.88);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;z-index:99999;font-family:inherit;">🔄 Rechargement de la borne…</div>');
-    var fini = function () { location.reload(); };
-    try {
-      if (window.caches && caches.keys) {
-        caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }).then(fini, fini);
-        setTimeout(fini, 3000);
-      } else { setTimeout(fini, 400); }
-    } catch (err) { fini(); }
-  }, true);
-})();
 </script>
 </body>
 </html>
