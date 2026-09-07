@@ -110,7 +110,7 @@ exports.handler = async function (event) {
   // ── 💶 Verrou 2 : RECALCUL DES PRIX depuis la base ──
   const ids = [...new Set(lignes.filter(l => !l.recompense).map(l => l.produit_id))];
   const { data: prods, error: errProds } = await sb
-    .from('produits').select('id, nom, prix, variantes, actif').in('id', ids);
+    .from('produits').select('id, nom, prix, variantes, actif, prix_upsell').in('id', ids);
   if (errProds) {
     return jsonResp(500, { ok: false, erreur: 'Lecture produits impossible : ' + errProds.message });
   }
@@ -126,6 +126,11 @@ exports.handler = async function (event) {
     (Array.isArray(p.variantes) ? p.variantes : []).forEach(v => {
       if (v && v.prix != null) autorises.add(Math.round(Number(v.prix) * 100));
     });
+    // 💶 v4 : le prix promo du tunnel n'est accepté QUE sur une ligne
+    //    tamponnée via_upsell — impossible d'acheter la carte à prix réduit.
+    if (l.via_upsell === true && p.prix_upsell != null) {
+      autorises.add(Math.round(Number(p.prix_upsell) * 100));
+    }
     if (l.lien_plat) { autorises.add(0); autorises.add(100); }  // inclus formule / boisson +1 €
     if (!autorises.has(cents)) {
       return jsonResp(400, {
