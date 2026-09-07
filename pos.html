@@ -6045,7 +6045,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ac</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ae</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -8822,7 +8822,8 @@ async function validerVente() {
     // 🧩 Ids de formule : la réimpression reconnaît l'entrée par ID
     //    (le nom du bon stocké n'a plus le suffixe "(formule)")
     formule_entree_id: l.formule_entree_id || null,
-    formule_boisson_id: l.formule_boisson_id || null
+    formule_boisson_id: l.formule_boisson_id || null,
+    via_upsell: l.via_upsell === true       // ⤴ tampon stats upsell (borne)
   }));
 // ✨ Si paiement TR papier : ajouter une ligne de détail
   if (modePaiement === 'ticket_resto_papier') {
@@ -12529,6 +12530,7 @@ async function chargerCommandeAttente(id) {
       supplements_sel: o.supplements || [],
       sauces_sel: o.sauces || [],
       est_formule: prod ? (prod.est_formule === true) : false,
+      via_upsell: l.via_upsell === true,  // ⤴ le tampon borne voyage jusqu'à lignes_vente
       _uid_borne: l.ligne_uid || null,   // uid transmis par la borne (v26.07-c+)
       _lien_borne: l.lien_plat || null   // ancien format : produit_id du parent
     };
