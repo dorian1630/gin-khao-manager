@@ -6045,7 +6045,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ae</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-af</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6520,6 +6520,8 @@ function ajouterAvecParcours(produitId) {
   const estFormule = p.est_formule === true;
 
   if (!aOptionsBase && !aRetirables && !aSupplements && !aSauces && !aVariantes && !estFormule) {
+    // 💶 v26.07-af : produit à prix menu (boissons) → le caissier tranche
+    if (p.prix_upsell != null) { ouvrirModaleBoissonMenu(p); return; }
     // Plat simple → ajout direct
     ajouterSimple(p);
     return;
@@ -7757,6 +7759,7 @@ function ligneFusionnable(l, p) {
   return l.produit_id === p.id
       && !l.lien_plat                                   // jamais une sous-ligne
       && !l.remise_ligne
+      && !l.via_upsell                                  // 💶 -af : une ligne menu ne fusionne jamais ici
       && !l.variante
       && !l.est_formule
       && Object.keys(l.options_base || {}).length === 0
@@ -7764,6 +7767,60 @@ function ligneFusionnable(l, p) {
       && (l.supplements_sel || []).length === 0
       && (l.sauces_sel || []).length === 0
       && Number(l.prix) === parseFloat(p.prix);         // garde-fou prix
+}
+
+// ============================================================
+//  💶 v26.07-af — BOISSON : MENU (prix upsell) OU SEULE (carte)
+//  La modale ne s'ouvre que si le produit porte un prix_upsell
+//  en base. « Menu » tamponne via_upsell → la ligne compte dans
+//  les stats ⤴ du Manager, exactement comme à la borne.
+// ============================================================
+function ouvrirModaleBoissonMenu(p) {
+  const T = (v) => Number(v).toFixed(2).replace('.', ',') + ' €';
+  const N = String(p.nom).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const old = document.getElementById('modale-boisson-menu');
+  if (old) old.remove();
+  const ov = document.createElement('div');
+  ov.id = 'modale-boisson-menu';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9500;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:26px 24px;width:min(92vw,420px);text-align:center;box-shadow:0 24px 70px rgba(0,0,0,0.35);">
+      <div style="font-size:19px;font-weight:800;color:#1A1612;margin-bottom:4px;">${N}</div>
+      <div style="font-size:13px;color:#8B7E6F;margin-bottom:18px;">Dans un menu ou seule ?</div>
+      <div style="display:flex;gap:12px;">
+        <button id="mbm-menu" style="flex:1;padding:20px 8px;border:none;border-radius:14px;background:#1A1612;color:#E4B860;font-size:17px;font-weight:800;cursor:pointer;">🍽️ MENU<br><span style="font-size:15px;">${T(p.prix_upsell)}</span></button>
+        <button id="mbm-seule" style="flex:1;padding:20px 8px;border:2px solid #E5DED2;border-radius:14px;background:#fff;color:#1A1612;font-size:17px;font-weight:800;cursor:pointer;">🥤 SEULE<br><span style="font-size:15px;">${T(p.prix)}</span></button>
+      </div>
+      <button id="mbm-annuler" style="margin-top:14px;background:none;border:none;color:#8B7E6F;font-size:13px;text-decoration:underline;cursor:pointer;">annuler</button>
+    </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('mbm-menu').onclick = () => { ov.remove(); ajouterBoisson(p, true); };
+  document.getElementById('mbm-seule').onclick = () => { ov.remove(); ajouterBoisson(p, false); };
+  document.getElementById('mbm-annuler').onclick = () => ov.remove();
+}
+function ajouterBoisson(p, enMenu) {
+  const prixChoisi = enMenu ? parseFloat(p.prix_upsell) : parseFloat(p.prix);
+  const ligne = ticket.find(l => l.produit_id === p.id && !l.variante && !l.lien_plat && !l.est_formule
+    && Number(l.prix) === prixChoisi && (l.via_upsell === true) === (enMenu === true));
+  if (p.stock_actif) {
+    const deja = ligne ? ligne.quantite : 0;
+    if (deja >= p.stock) { flashStock(); return; }
+  }
+  if (ligne) { ligne.quantite++; }
+  else {
+    ticket.push({
+      produit_id: p.id,
+      nom: p.nom,
+      prix: prixChoisi,
+      quantite: 1,
+      ligne_uid: genUid(),
+      stock_actif: p.stock_actif,
+      stock: p.stock,
+      categorie_id: p.categorie_id,
+      via_upsell: enMenu === true    // ⤴ le menu compte dans les stats upsell
+    });
+  }
+  afficherTicket();
 }
 
 function ajouterSimple(p) {
