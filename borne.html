@@ -1444,6 +1444,17 @@ body {
   gap: 16px;
   background: var(--bg-deep);
 }
+/* 🧃 v26.08-z : mode COMPACTE (>9 items) — tout tient sans défiler */
+.upsell-grille-v2.compacte { grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 14px 18px 18px; }
+.upsell-grille-v2.compacte .upsell-card-v2 { aspect-ratio: 1 / 1.04; border-radius: 14px; }
+.upsell-grille-v2.compacte .upsell-emoji-v2 { font-size: 40px; }
+.upsell-grille-v2.compacte .upsell-nom-v2 { font-size: 12px; }
+.upsell-grille-v2.compacte .upsell-prix-v2 { font-size: 11px; padding: 3px 8px; }
+/* 🛒 v26.08-z : le vol vers le panier */
+.vol-panier { position: fixed; z-index: 99998; pointer-events: none; margin: 0;
+  transition: transform 0.62s cubic-bezier(0.45, -0.15, 0.65, 1), opacity 0.62s ease; will-change: transform; }
+@keyframes panier-pouls { 0% { transform: scale(1); } 45% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.panier-pouls { animation: panier-pouls 0.4s ease; }
 .upsell-card-v2 {
   background: #FFFFFF;
   border: 2px solid var(--border-soft);
@@ -1496,7 +1507,7 @@ body {
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
-.upsell-promo-v2 { color: var(--lime, #A8E10C); font-weight: 800; }
+.upsell-promo-v2 { color: var(--orange); font-weight: 800; font-size: 1.3em; }
 .upsell-ancien-v2 { color: rgba(255,255,255,0.45); font-size: 0.78em; font-weight: 400; margin-left: 4px; }
 .upsell-prix-v2 {
   font-size: 12px;
@@ -2990,7 +3001,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-x</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-z</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3889,7 +3900,7 @@ function afficherUpsellGrille(config) {
         <h2 class="upsell-titre-v2">${config.titre}</h2>
         <p class="upsell-sous-v2">${config.sous}</p>
       </div>
-      <div class="upsell-grille-v2">
+      <div class="upsell-grille-v2 ${config.items.length > 9 ? 'compacte' : ''}">
         ${config.items.map(p => {
           const imgUrl = escUrl(p.image_url);
           const hasImage = imgUrl !== '';
@@ -4014,6 +4025,7 @@ function ajouterUpsell(produitId, type, ev) {
   const card = ev && ev.target ? ev.target.closest('.upsell-card-v2') : null;
   if (card) {
     card.classList.add('ajoute');
+    animerVolVersPanier(card);      // 🛒 le clone s'envole vers le panier
   }
 
   // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout (débouncé : voir plus haut)
@@ -5255,6 +5267,38 @@ function totalPanier() {
 
 function nbArticles() {
   return panier.reduce((s, l) => s + l.quantite, 0);
+}
+
+// ============================================================
+//  🛒 v26.08-z — LE VOL VERS LE PANIER
+//  Un clone de la carte s'envole vers la barre panier puis la
+//  fait pulser. Ne bloque JAMAIS un ajout (tout est en try).
+// ============================================================
+function animerVolVersPanier(elDepart) {
+  try {
+    const cible = document.querySelector('.upsell-btn-next-v2') || document.getElementById('panier-count');
+    if (!elDepart || !cible || !elDepart.getBoundingClientRect) return;
+    const d = elDepart.getBoundingClientRect();
+    const a = cible.getBoundingClientRect();
+    const clone = elDepart.cloneNode(true);
+    clone.className = (clone.className || '') + ' vol-panier';
+    clone.style.left = d.left + 'px';
+    clone.style.top = d.top + 'px';
+    clone.style.width = d.width + 'px';
+    clone.style.height = d.height + 'px';
+    document.body.appendChild(clone);
+    requestAnimationFrame(() => {
+      const dx = (a.left + a.width / 2) - (d.left + d.width / 2);
+      const dy = (a.top + a.height / 2) - (d.top + d.height / 2);
+      clone.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(0.12) rotate(6deg)';
+      clone.style.opacity = '0.15';
+    });
+    setTimeout(() => {
+      clone.remove();
+      cible.classList.add('panier-pouls');
+      setTimeout(() => cible.classList.remove('panier-pouls'), 450);
+    }, 640);
+  } catch (e) { /* l'animation ne bloque jamais un ajout */ }
 }
 
 function majBarrePanier() {
@@ -6749,6 +6793,30 @@ armerTimerInactivite();
 init();
 // 🔖 le marqueur affiche aussi le site (identité complète de la borne)
 try { const _mq = document.getElementById('marqueur-version'); if (_mq) _mq.textContent += ' · ' + SITE_BORNE; } catch (e) {}
+</script>
+<!-- 🔄 v26.08-y : geste secret — 5 taps rapides (<2,5 s) dans le coin HAUT-DROIT (70×70) → purge caches + rechargement.
+     Remplace le bouton ⟳ du navigateur disparu en mode PWA plein écran. Invisible, ne vole aucun clic. -->
+<script>
+(function () {
+  var taps = 0, premier = 0;
+  document.addEventListener('click', function (e) {
+    if (e.clientX < window.innerWidth - 70 || e.clientY > 70) return;
+    var t = Date.now();
+    if (t - premier > 2500) { taps = 0; premier = t; }
+    taps++;
+    if (taps < 5) return;
+    taps = 0;
+    document.body.insertAdjacentHTML('beforeend',
+      '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.88);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;z-index:99999;font-family:inherit;">🔄 Rechargement de la borne…</div>');
+    var fini = function () { location.reload(); };
+    try {
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }).then(fini, fini);
+        setTimeout(fini, 3000);
+      } else { setTimeout(fini, 400); }
+    } catch (err) { fini(); }
+  }, true);
+})();
 </script>
 </body>
 </html>
