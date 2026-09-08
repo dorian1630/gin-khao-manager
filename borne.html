@@ -1407,9 +1407,9 @@ body {
 #modal-upsell .upsell-content-v2 {
   background: #FFFFFF;
   border-radius: 32px;
-  max-width: 1000px;
+  max-width: 1040px;
   width: 100%;
-  max-height: 92vh;
+  max-height: 97vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 32px 64px rgba(0, 0, 0, 0.3);
@@ -1444,12 +1444,17 @@ body {
   gap: 16px;
   background: var(--bg-deep);
 }
-/* 🧃 v26.08-z : mode COMPACTE (>9 items) — tout tient sans défiler */
-.upsell-grille-v2.compacte { grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 14px 18px 18px; }
-.upsell-grille-v2.compacte .upsell-card-v2 { aspect-ratio: 1 / 1.04; border-radius: 14px; }
-.upsell-grille-v2.compacte .upsell-emoji-v2 { font-size: 40px; }
-.upsell-grille-v2.compacte .upsell-nom-v2 { font-size: 12px; }
-.upsell-grille-v2.compacte .upsell-prix-v2 { font-size: 11px; padding: 3px 8px; }
+/* 🧃 v26.08-aa : mode COMPACTE (>9 items) — tout tient sans défiler,
+   la modale monte à 97vh, le bandeau s'affine : les IMAGES respirent. */
+.upsell-content-v2.compacte .upsell-head-v2 { padding: 16px 24px 10px; }
+.upsell-content-v2.compacte .upsell-titre-v2 { font-size: 26px; margin-bottom: 3px; }
+.upsell-content-v2.compacte .upsell-sous-v2 { font-size: 14px; }
+.upsell-content-v2.compacte .upsell-grille-v2 { grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 14px 18px 18px; }
+.upsell-content-v2.compacte .upsell-card-v2 { aspect-ratio: 1 / 1.26; border-radius: 14px; }
+.upsell-content-v2.compacte .upsell-emoji-v2 { font-size: 46px; }
+.upsell-content-v2.compacte .upsell-bandeau-v2 { padding: 6px 8px; gap: 2px; }
+.upsell-content-v2.compacte .upsell-nom-v2 { font-size: 12px; }
+.upsell-content-v2.compacte .upsell-prix-v2 { font-size: 11px; padding: 3px 8px; }
 /* 🛒 v26.08-z : le vol vers le panier */
 .vol-panier { position: fixed; z-index: 99998; pointer-events: none; margin: 0;
   transition: transform 0.62s cubic-bezier(0.45, -0.15, 0.65, 1), opacity 0.62s ease; will-change: transform; }
@@ -3001,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-z</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ab</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3862,36 +3867,59 @@ function declencherUpsellDesserts() {
 }
 
 // ============================================================
-//  💶 v26.08-x : PRIX SPÉCIAL UPSELL (boissons à 1 € / 2 €)
-//  La promo ne vit QUE dans le tunnel, et QUE si le panier
-//  contient un vrai plat (pas pour un panier de canettes).
-//  La carte Boissons vitrine garde ses prix intacts.
+//  💶 v26.08-ab : PRIX SPÉCIAL UPSELL — LE QUOTA « 1 PAR PLAT »
+//  Une boisson à prix menu PAR plat au panier, pas une de plus.
+//  Dès le quota atteint, les cartes repassent au prix vitrine
+//  et le stepper du panier refuse poliment.
 // ============================================================
-function panierContientPlat() {
-  return panier.some(l => {
-    if (l.recompense || l.lien_plat) return false;
-    const p = produits.find(x => x.id === l.produit_id);
-    if (!p || p.est_boisson === true) return false;
-    const cat = categories.find(c => c.id === p.categorie_id);
-    const nomCat = cat ? String(cat.nom) : '';
-    return !/boisson|dessert|sauce|suppl/i.test(nomCat);
-  });
+function estLignePlat(l) {
+  if (!l || l.recompense || l.lien_plat) return false;
+  const p = produits.find(x => x.id === l.produit_id);
+  if (!p || p.est_boisson === true) return false;
+  const cat = categories.find(c => c.id === p.categorie_id);
+  const nomCat = cat ? String(cat.nom) : '';
+  return !/boisson|dessert|sauce|suppl/i.test(nomCat);
 }
+function nbPlatsAuPanier() {
+  return panier.reduce((s, l) => s + (estLignePlat(l) ? (Number(l.quantite) || 0) : 0), 0);
+}
+function nbBoissonsMenuAuPanier() {
+  return panier.reduce((s, l) => {
+    if (l.via_upsell !== true) return s;
+    const p = produits.find(x => x.id === l.produit_id);
+    if (!p || p.prix_upsell == null) return s;
+    if (Number(l.prix) !== parseFloat(p.prix_upsell)) return s;
+    return s + (Number(l.quantite) || 0);
+  }, 0);
+}
+function panierContientPlat() { return nbPlatsAuPanier() > 0; }
 function prixUpsellDe(p) {
   if (!p || p.prix_upsell == null || aDesVariantes(p)) return null;
-  if (!panierContientPlat()) return null;
+  // 🥤 le quota : autant de boissons menu que de plats, jamais plus
+  if (nbBoissonsMenuAuPanier() >= nbPlatsAuPanier()) return null;
   const v = parseFloat(p.prix_upsell);
   return Number.isFinite(v) ? v : null;
+}
+function toastBorne(msg) {
+  try {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(20,16,12,0.92);color:#fff;padding:12px 22px;border-radius:999px;font-size:15px;font-weight:600;z-index:99999;pointer-events:none;';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
+  } catch (e) { /* jamais bloquant */ }
 }
 
 // ============================================================
 //  🎨 AFFICHAGE GRILLE UPSELL (commune entrées + boissons)
 // ============================================================
+let _upsellConfigCourante = null;
 function afficherUpsellGrille(config) {
+  _upsellConfigCourante = config;
   const modal = document.getElementById('modal-upsell') || creerModaleUpsell();
 
   const html = `
-    <div class="upsell-content-v2">
+    <div class="upsell-content-v2 ${config.items.length > 9 ? 'compacte' : ''}">
       <div class="parcours-head-nav" style="padding: 16px 20px 0;">
         <div style="visibility:hidden;">←</div>
         <button class="parcours-btn-close" onclick="fermerUpsellEtContinuer('${config.type}', 'skip')" title="Fermer">✕</button>
@@ -3900,7 +3928,7 @@ function afficherUpsellGrille(config) {
         <h2 class="upsell-titre-v2">${config.titre}</h2>
         <p class="upsell-sous-v2">${config.sous}</p>
       </div>
-      <div class="upsell-grille-v2 ${config.items.length > 9 ? 'compacte' : ''}">
+      <div class="upsell-grille-v2">
         ${config.items.map(p => {
           const imgUrl = escUrl(p.image_url);
           const hasImage = imgUrl !== '';
@@ -4027,6 +4055,8 @@ function ajouterUpsell(produitId, type, ev) {
     card.classList.add('ajoute');
     animerVolVersPanier(card);      // 🛒 le clone s'envole vers le panier
   }
+  // 🥤 v26.08-ab : le quota a pu s'épuiser → les cartes affichent le vrai prix
+  if (_upsellConfigCourante) afficherUpsellGrille(_upsellConfigCourante);
 
   // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout (débouncé : voir plus haut)
   programmerAvanceUpsell(600);
@@ -5229,6 +5259,13 @@ function modifierQte(index, delta) {
     if (p && p.stock_actif) {
       const dejaTotal = panier.filter(l => l.produit_id === ligne.produit_id).reduce((s, l) => s + l.quantite, 0);
       if (dejaTotal >= p.stock) return;
+    }
+    // 🥤 v26.08-ab : une boisson à prix menu par plat — le + s'arrête au quota
+    if (ligne.via_upsell === true && p && p.prix_upsell != null
+        && Number(ligne.prix) === parseFloat(p.prix_upsell)
+        && nbBoissonsMenuAuPanier() >= nbPlatsAuPanier()) {
+      toastBorne('🥤 1 boisson à prix menu par plat');
+      return;
     }
   }
   ligne.quantite += delta;
