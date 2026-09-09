@@ -2256,6 +2256,18 @@ html, body {
   font-family: var(--body); font-size: 13px; font-weight: 800;
   box-shadow: 0 3px 10px rgba(228,184,96,0.35);
 }
+
+/* 🪶 v26.07-aj : BANDEAU CLIENT COMPACT — la fidélité informe sans cacher
+   la commande. Pur CSS : aucune info retirée, tout est juste resserré. */
+.bandeau-client { margin: 8px 20px 0; border-width: 1.5px; border-radius: 12px; }
+.bandeau-client-head { padding: 4px 12px; }
+.bandeau-client-body { padding: 7px 12px; font-size: 12px; }
+.bandeau-client-nom { font-size: 14.5px; margin-bottom: 2px; }
+.bandeau-client-info { margin: 1px 0; font-size: 11.5px; line-height: 1.35; }
+.bandeau-client-notes { padding: 4px 8px; margin-top: 4px; font-size: 11.5px; }
+.fidc-jauge-txt { font-size: 11px; margin: 2px 0 3px; }
+.fidc-jauge { height: 5px; }
+.fidc-btn { padding: 6px 10px; font-size: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(228,184,96,0.3); }
 .fidc-btn:active { transform: scale(0.97); }
 .fidc-badges { margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .fidc-badge {
@@ -6045,7 +6057,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ag</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-aj</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -8813,6 +8825,23 @@ function calculerRendu() {
 let enCours = false;
 async function validerVente() {
   if (enCours || ticket.length === 0) return;
+  // 🚗 v26.07-ah : commande LIVRAISON → les frais doivent être RÉGLÉS avant
+  //    d'encaisser. Trois trous fermés : calcul en cours, adresse en erreur,
+  //    0 € non confirmé. Le 0 € VOLONTAIRE reste possible (éditeur 🚗).
+  if (clientActif && modeClientTel !== 'cc') {
+    if (infoLivraison && infoLivraison.calc) {
+      posAlert('🚗 Le calcul des frais de livraison est en cours…<br>Attends 2 secondes puis réessaie.');
+      return;
+    }
+    if (infoLivraison && infoLivraison.erreur) {
+      posConfirm('🚗 ' + infoLivraison.erreur + '<br><br>Fixer les frais à la main maintenant ?', () => modifierFraisLivraison());
+      return;
+    }
+    if (fraisLivraison === 0 && fraisLivraisonManuel == null) {
+      posConfirm('🚗 Frais de livraison à 0 € non confirmés.<br><br>Les fixer maintenant (même à 0 €) ?', () => modifierFraisLivraison());
+      return;
+    }
+  }
   // ✨ Vérif Paiement Mixte
   if (modePaiement === 'mixte') {
     const reste = restePaiementMixte();
@@ -11989,7 +12018,9 @@ function afficherBandeauClient() {
   const livraisonHtml = (clientActif && infoLivraison)
     ? (infoLivraison.erreur
         ? `<div class="bandeau-client-info" style="color:var(--danger);">🚗 ${escapeHtmlPos(infoLivraison.erreur)}</div>`
-        : `<div class="bandeau-client-info">🚗 <b>${infoLivraison.km.toFixed(1).replace('.', ',')} km</b> → Livraison +${fmt(infoLivraison.frais)}</div>`)
+        : infoLivraison.km != null
+          ? `<div class="bandeau-client-info">🚗 <b>${infoLivraison.km.toFixed(1).replace('.', ',')} km</b> → Livraison +${fmt(infoLivraison.frais)}</div>`
+          : `<div class="bandeau-client-info">🚗 ${infoLivraison.manuel ? 'Frais fixés à la main : +' + fmt(infoLivraison.frais || 0) : 'Calcul de la distance…'}</div>`)
     : '';
 
   body.innerHTML = `
@@ -12087,6 +12118,21 @@ function distanceKm(a, b) {
 
 // Recalcule les frais de livraison selon canal + client + adresse
 async function majFraisLivraison() {
+  try {
+    await _majFraisLivraisonCoeur();
+  } catch (e) {
+    // 🛡️ v26.07-ah : un crash au milieu du calcul laissait « Calcul en
+    //    cours… » À VIE. Désormais tout chemin CONCLUT : erreur affichée,
+    //    frais à régler à la main (la ligne 🚗 du ticket).
+    console.error('majFraisLivraison KO :', e);
+    fraisLivraison = 0;
+    infoLivraison = { erreur: 'Calcul impossible — fixe les frais à la main ✏️' };
+    try { majTotal(); } catch (e2) {}
+    try { afficherBandeauClient(); } catch (e2) {}
+    try { afficherTicket(); } catch (e2) {}
+  }
+}
+async function _majFraisLivraisonCoeur() {
   const jeton = ++majFraisJeton;   // 🎫 toute exécution plus récente m'invalide
   // 🏪 Click & Collect : le client vient chercher → jamais de frais de livraison
   if (modeClientTel === 'cc') {
