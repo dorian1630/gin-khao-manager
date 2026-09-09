@@ -3006,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ab</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ac</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3913,9 +3913,7 @@ function toastBorne(msg) {
 // ============================================================
 //  🎨 AFFICHAGE GRILLE UPSELL (commune entrées + boissons)
 // ============================================================
-let _upsellConfigCourante = null;
 function afficherUpsellGrille(config) {
-  _upsellConfigCourante = config;
   const modal = document.getElementById('modal-upsell') || creerModaleUpsell();
 
   const html = `
@@ -4056,7 +4054,8 @@ function ajouterUpsell(produitId, type, ev) {
     animerVolVersPanier(card);      // 🛒 le clone s'envole vers le panier
   }
   // 🥤 v26.08-ab : le quota a pu s'épuiser → les cartes affichent le vrai prix
-  if (_upsellConfigCourante) afficherUpsellGrille(_upsellConfigCourante);
+  //    (window._upsellConfig est posé par afficherUpsellGrille depuis l'origine)
+  if (window._upsellConfig) afficherUpsellGrille(window._upsellConfig);
 
   // ✨ AUTO-PASSER À LA PAGE SUIVANTE après l'ajout (débouncé : voir plus haut)
   programmerAvanceUpsell(600);
@@ -5577,22 +5576,30 @@ async function imprimerTicketCB(numero, montant, recu) {
   try {
     const escpos = genererTicketCBEscPos(numero, montant, recu);
     const base64 = btoa(escpos);
-    if (window.AndroidPrinter) { AndroidPrinter.print(base64); return; }
-    window.location.href = 'rawbt:base64,' + base64;
+    lancerImpressionRawBT(base64);
   } catch (e) {
     console.error('Impression ticket CB KO :', e);
   }
 }
 
+// 🖨️ v26.08-ac : TOUTE impression RawBT passe par une IFRAME JETABLE — plus
+//    jamais de navigation de la page principale. Si RawBT est absent ou muet
+//    (PWA standalone), l'échec meurt dans l'iframe et l'écran continue sa vie.
+function lancerImpressionRawBT(base64) {
+  if (window.AndroidPrinter) {
+    AndroidPrinter.print(base64);   // impression native directe (APK)
+    return;
+  }
+  const f = document.createElement('iframe');
+  f.style.display = 'none';
+  f.src = 'rawbt:base64,' + base64;
+  document.body.appendChild(f);
+  setTimeout(() => { try { f.remove(); } catch (e2) {} }, 3000);
+}
+
 async function imprimerTicketBorneRawBT(numero, methode) {
   try {
-    const escpos = versAscii(genererTicketBorneEscPos(numero, methode));
-    const base64 = btoa(escpos);
-    if (window.AndroidPrinter) {
-      AndroidPrinter.print(base64);   // impression native directe (APK)
-      return;
-    }
-    window.location.href = 'rawbt:base64,' + base64;  // fallback hors APK
+    lancerImpressionRawBT(btoa(versAscii(genererTicketBorneEscPos(numero, methode))));
   } catch (e) {
     console.error('Erreur impression borne:', e);
   }
