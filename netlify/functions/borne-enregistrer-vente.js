@@ -1,6 +1,6 @@
 // netlify/functions/borne-enregistrer-vente.js
 // ============================================================
-// Enregistrer une vente depuis la borne — v3 « serrure du coffre »
+// Enregistrer une vente depuis la borne — v6 « serrure du coffre »
 // ============================================================
 // La borne utilise la clé anon publique (lecture seule).
 // Pour ENREGISTRER une vente, on passe par cette function (service_role).
@@ -110,12 +110,21 @@ exports.handler = async function (event) {
   // ── 💶 Verrou 2 : RECALCUL DES PRIX depuis la base ──
   const ids = [...new Set(lignes.filter(l => !l.recompense).map(l => l.produit_id))];
   const { data: prods, error: errProds } = await sb
-    .from('produits').select('id, nom, prix, variantes, actif, prix_upsell').in('id', ids);
+    .from('produits').select('id, nom, prix, variantes, actif, prix_upsell, categorie_id, est_boisson').in('id', ids);
   if (errProds) {
     return jsonResp(500, { ok: false, erreur: 'Lecture produits impossible : ' + errProds.message });
   }
   const parId = {};
   (prods || []).forEach(p => { parId[p.id] = p; });
+  // 🥤 v5 : les catégories, pour distinguer un PLAT d'un accompagnement
+  const parCat = {};
+  {
+    const catIds = [...new Set((prods || []).map(p => p.categorie_id).filter(Boolean))];
+    if (catIds.length) {
+      const { data: cats } = await sb.from('categories').select('id, nom').in('id', catIds);
+      (cats || []).forEach(c => { parCat[c.id] = c.nom; });
+    }
+  }
   for (const l of lignes) {
     if (l.recompense) continue;                     // déjà validée (bornée) plus haut
     const p = parId[l.produit_id];
@@ -140,6 +149,27 @@ exports.handler = async function (event) {
     }
   }
 
+  // ── 🥤 Verrou 2bis : UNE boisson à prix menu PAR plat, pas une de plus ──
+  {
+    let nbMenus = 0, nbPlats = 0;
+    for (const l of lignes) {
+      if (l.lien_plat || l.recompense) continue;
+      const p = parId[l.produit_id];
+      if (!p) continue;
+      const q = Number(l.quantite) || 0;
+      if (l.via_upsell === true && p.prix_upsell != null
+          && Math.round(Number(l.prix) * 100) === Math.round(Number(p.prix_upsell) * 100)) {
+        nbMenus += q;
+        continue;
+      }
+      const nomCat = parCat[p.categorie_id] || '';
+      if (p.est_boisson !== true && !/boisson|dessert|sauce|suppl/i.test(nomCat)) nbPlats += q;
+    }
+    if (nbMenus > nbPlats) {
+      return jsonResp(400, { ok: false, erreur: 'Boissons à prix menu : une par plat maximum (' + nbMenus + ' demandées pour ' + nbPlats + ' plat(s)).' });
+    }
+  }
+
   // ── 🔐 Verrou 1 : LA VÉRITÉ SUMUP (statut + montant) ──
   const SUMUP_API_KEY = process.env.SUMUP_API_KEY;
   const SUMUP_MERCHANT_CODE = process.env.SUMUP_MERCHANT_CODE;
@@ -158,7 +188,11 @@ exports.handler = async function (event) {
     return jsonResp(502, { ok: false, erreur: 'Vérification SumUp impossible : ' + e.message });
   }
   const statusBrut = ((tx && tx.status) || '').toUpperCase();
-  if (!(statusBrut === 'SUCCESSFUL' || statusBrut.includes('PAID') || statusBrut.includes('SUCC'))) {
+  // 🔐 v6 : égalité STRICTE — l'ancien « includes » laissait passer
+  //    UNSUCCESSFUL (contient SUCC) et UNPAID (contient PAID) : une
+  //    transaction REFUSÉE du bon montant aurait été enregistrée payée.
+  const STATUTS_PAYES = ['SUCCESSFUL', 'PAID'];
+  if (!STATUTS_PAYES.includes(statusBrut)) {
     return jsonResp(402, { ok: false, erreur: 'Paiement non confirmé par SumUp (' + (statusBrut || 'introuvable') + ')' });
   }
   const montantPaye = tx && tx.amount != null ? Math.round(Number(tx.amount) * 100) : null;
