@@ -3006,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ac</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ad</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3895,6 +3895,10 @@ function nbBoissonsMenuAuPanier() {
 function panierContientPlat() { return nbPlatsAuPanier() > 0; }
 function prixUpsellDe(p) {
   if (!p || p.prix_upsell == null || aDesVariantes(p)) return null;
+  // 💶 v26.08-ad : la promo ne vit QUE sur l'écran qui la déclare (le
+  //    mini-upsell après un plat). La séquence du bouton panier reste
+  //    au tarif vitrine 1,50 / 2,50 — pas de drapeau, pas de promo.
+  if (!window._upsellConfig || window._upsellConfig.promoMenu !== true) return null;
   // 🥤 le quota : autant de boissons menu que de plats, jamais plus
   if (nbBoissonsMenuAuPanier() >= nbPlatsAuPanier()) return null;
   const v = parseFloat(p.prix_upsell);
@@ -3915,6 +3919,11 @@ function toastBorne(msg) {
 // ============================================================
 function afficherUpsellGrille(config) {
   const modal = document.getElementById('modal-upsell') || creerModaleUpsell();
+  // 🧭 v26.08-ad : la config est mémorisée AVANT le rendu — les cartes
+  //    doivent connaître promoMenu au moment où elles se dessinent.
+  window._upsellConfig = config;
+  window._upsellOnNext = config.onNext;
+  window._upsellOnSkip = config.onSkip;
 
   const html = `
     <div class="upsell-content-v2 ${config.items.length > 9 ? 'compacte' : ''}">
@@ -3963,10 +3972,6 @@ function afficherUpsellGrille(config) {
   modal.innerHTML = html;
   modal.classList.add('actif');
 
-  // Mémoriser la config : callbacks + retour depuis l'écran de variantes
-  window._upsellConfig = config;
-  window._upsellOnNext = config.onNext;
-  window._upsellOnSkip = config.onSkip;
 }
 
 function creerModaleUpsell() {
@@ -4314,6 +4319,16 @@ function selectionnerVariante(index, element) {
 
 function finaliserParcoursPlat() {
   const p = parcoursPlatEnCours.produit;
+  // 🥫 v26.08-ad : sauce OBLIGATOIRE quand la fiche produit le déclare
+  //    (sauce_obligatoire en base — le Crousty Khao). Retour à l'étape
+  //    sauces tant que rien n'est choisi.
+  if (p && p.sauce_obligatoire === true
+      && (!parcoursPlatEnCours.sauces || parcoursPlatEnCours.sauces.length === 0)) {
+    parcoursPlatEnCours.etape = 'sauces';
+    afficherModaleSauces();
+    borneAlert('Choisis ta sauce pour accompagner ton ' + esc(p.nom), '🥫');
+    return;
+  }
   const options = {
     retirable: parcoursPlatEnCours.retirables,
     supplements: parcoursPlatEnCours.supplements,
@@ -4473,6 +4488,7 @@ function declencherMiniUpsellBoisson(produitAjoute) {
     sous: 'Ou continuez vos achats',
     items: boissons,
     type: 'boisson',
+    promoMenu: true,   // 💶 v26.08-ad : SEUL cet écran (après un plat) porte le 1 € / 2 €
     onNext: () => fermerUpsellModal(),
     onSkip: () => fermerUpsellModal()
   });
