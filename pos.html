@@ -6057,7 +6057,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-aj</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ak</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -7247,21 +7247,8 @@ function rendreEditeur(modeAjout) {
     html += `</div></div>`;
   }
 
-  // Formule : boisson + entrée
+  // Formule : entrée PUIS boisson (ordre du geste caissier — v26.07-ak)
   if (l.est_formule) {
-    const catBoissons = categories.find(c => /boisson/i.test(c.nom));
-    if (catBoissons) {
-      // Toutes les boissons : les 33cl sont incluses, les autres sont à +1 €
-      const boissons = produits.filter(pp => pp.categorie_id === catBoissons.id && pp.actif !== false);
-      html += `<div class="mpp-bloc"><div class="mpp-lbl">Boisson (incluse · certaines +${fmt(SUPPLEMENT_BOISSON)})</div><div class="mpp-options">`;
-      boissons.forEach(b => {
-        const act = l.formule_boisson_id === b.id ? ' active' : '';
-        const pB = prixBoissonFormule(b);
-        const prixTxt = pB > 0 ? ` <span class="mpp-prix">+${fmt(pB)}</span>` : '';
-        html += `<button class="mpp-option${act}" onclick="edSetBoisson('${b.id}')">${escapeHtmlPos(b.nom.replace(' 33cl', ''))}${prixTxt}</button>`;
-      });
-      html += `</div></div>`;
-    }
     const compFixes = composantsFixes(p);
     if (compFixes.length > 0) {
       html += `<div class="mpp-bloc"><div class="mpp-lbl">Inclus dans la box</div><div class="mpp-options">`;
@@ -7299,8 +7286,20 @@ function rendreEditeur(modeAjout) {
         html += `</div></div>`;
       }
     }
+    const catBoissons = categories.find(c => /boisson/i.test(c.nom));
+    if (catBoissons) {
+      // Toutes les boissons : les 33cl sont incluses, les autres sont à +1 €
+      const boissons = produits.filter(pp => pp.categorie_id === catBoissons.id && pp.actif !== false);
+      html += `<div class="mpp-bloc"><div class="mpp-lbl">Boisson (incluse · certaines +${fmt(SUPPLEMENT_BOISSON)})</div><div class="mpp-options">`;
+      boissons.forEach(b => {
+        const act = l.formule_boisson_id === b.id ? ' active' : '';
+        const pB = prixBoissonFormule(b);
+        const prixTxt = pB > 0 ? ` <span class="mpp-prix">+${fmt(pB)}</span>` : '';
+        html += `<button class="mpp-option${act}" onclick="edSetBoisson('${b.id}')">${escapeHtmlPos(b.nom.replace(' 33cl', ''))}${prixTxt}</button>`;
+      });
+      html += `</div></div>`;
+    }
   }
-
   html += `<div class="mpp-actions">
       ${modeAjout
         ? `<button class="btn-annuler" onclick="annulerAjoutEditeur()">Annuler</button>
@@ -7308,7 +7307,14 @@ function rendreEditeur(modeAjout) {
         : `<button class="btn-valider" onclick="fermerEditeurPlat()">Fermer</button>`}
     </div></div>`;
 
+  // 📌 v26.07-ak : le défilement SURVIT au re-render — fini le retour
+  //    en haut de la modale à chaque tap sur une option.
+  const ancienCorps = modal.querySelector('.mpp-content');
+  const scrollY = ancienCorps ? ancienCorps.scrollTop : (modal.scrollTop || 0);
   modal.innerHTML = html;
+  const nouveauCorps = modal.querySelector('.mpp-content');
+  if (nouveauCorps && scrollY) nouveauCorps.scrollTop = scrollY;
+  if (!nouveauCorps && scrollY) modal.scrollTop = scrollY;
 }
 
 // 🚦 Vérifie qu'une formule est complète avant l'ajout au ticket.
