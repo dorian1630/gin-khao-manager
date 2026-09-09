@@ -6057,7 +6057,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ak</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-am</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -7332,6 +7332,12 @@ function verifierChoixComplets(l, p) {
         return 'Veuillez choisir : ' + cle;
       }
     }
+  }
+
+  // 🥫 v26.07-al : sauce OBLIGATOIRE quand la fiche produit le déclare
+  //    (sauce_obligatoire en base — le Crousty Khao)
+  if (p.sauce_obligatoire === true && ((l.sauces_sel || []).length === 0)) {
+    return 'Veuillez choisir une sauce';
   }
 
   // Formule : boisson + entrée obligatoires
@@ -8676,7 +8682,7 @@ function calculTR() {
   
   if (total > totalT && totalT > 0) {
     const diff = total - totalT;
-    blocages.push('⚠️ Surplus de ' + fmt(diff) + ' — le commerçant ne peut pas rendre la différence');
+    blocages.push('ℹ️ Surplus de ' + fmt(diff) + ' — pas de rendu sur titres restaurant (accepté)');
   }
   
   if (blocages.length > 0) {
@@ -8684,19 +8690,20 @@ function calculTR() {
     warn.style.display = 'block';
   }
 }
-function trEstValide() {
-  if (trType === 'carte') return true;
-  
+// 🎫 v26.07-am : chaque refus TR dit SA raison — fini le message cryptique.
+//    Et le SURPLUS n'est plus bloquant : 2 tickets de 10 € sur 19,40 €,
+//    ça s'accepte (pas de rendu sur TR — l'avertissement reste affiché).
+function trMotifRefus() {
+  if (trType === 'carte') return null;
   const valeur = parseFloat(document.getElementById('tr-valeur').value) || 0;
   const total = trNbTickets * valeur;
-  const totalT = totalTicket();
-  
-  if (valeur > TR_PLAFOND_TICKET) return false;
-  if (new Date().getDay() === 0) return false;
-  if (total > totalT && totalT > 0) return false;
-  
-  return total > 0;
+  if (valeur <= 0) return 'Saisissez la valeur du ticket 🎫';
+  if (valeur > TR_PLAFOND_TICKET) return 'Valeur d\'un ticket (' + fmt(valeur) + ') au-dessus du plafond de ' + TR_PLAFOND_TICKET + ' €';
+  if (new Date().getDay() === 0) return 'Dimanche — les tickets restaurant ne sont pas acceptés';
+  if (total <= 0) return 'Nombre de tickets ou valeur manquants';
+  return null;
 }
+function trEstValide() { return trMotifRefus() === null; }
 // 💵 Espèces (hors livraison) : validation immédiate, sans saisie du montant reçu.
 function validerEspecesDirect() {
   const input = document.getElementById('cash-input');
@@ -8864,8 +8871,9 @@ async function validerVente() {
   }
   // ✨ Vérif Ticket Restaurant
   if (modePaiement === 'ticket_resto') {
-    if (!trEstValide()) {
-      posAlert('Le paiement par tickets restaurant n\'est pas valide.\nVérifiez le message d\'avertissement.');
+    const motifTR = trMotifRefus();
+    if (motifTR) {
+      posAlert('🎫 ' + motifTR);
       return;
     }
     // Si paiement carte TR : on bascule sur le mode "carte" pour SumUp
