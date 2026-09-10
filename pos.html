@@ -82,7 +82,7 @@ html, body {
 
 /* ===== LAYOUT ===== */
 .caisse {
-  height: 100vh;
+  height: 100vh; height: 100dvh; /* 📐 v26.07-an : insensible à la barre Firefox/Chrome mobile */
   display: grid;
   grid-template-columns: 240px 1fr 420px;
   background:
@@ -452,6 +452,7 @@ html, body {
   font-family: var(--mono);
   margin-top: 2px;
 }
+.ligne-fecu { font-size: 11px; font-weight: 700; color: var(--gold, #B8893A); letter-spacing: 0.3px; }
 .qte-ctrl {
   display: flex;
   align-items: center;
@@ -2840,7 +2841,7 @@ html, body {
   right: -380px;
   width: 360px;
   max-width: 90vw;
-  height: 100vh;
+  height: 100vh; height: 100dvh; /* 📐 v26.07-an : insensible à la barre Firefox/Chrome mobile */
   background: var(--surface);
   border-left: 1px solid var(--border);
   z-index: 6001;
@@ -5024,6 +5025,7 @@ html, body {
         </button>
         <button class="link-btn" onclick="ouvrirHistorique()">🧾 Historique</button>
         <button class="link-btn" onclick="ouvrirCloture()">🔒 Clôture Z</button>
+        <button class="link-btn" onclick="basculerPleinEcran()" title="Plein écran">⛶</button>
         <button class="link-btn btn-hamburger" id="btn-hamburger" onclick="ouvrirMenuHamburger()" title="Menu">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
@@ -6057,7 +6059,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-am</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ar</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -7923,6 +7925,26 @@ function modifierQte(uid, delta) {
   afficherTicket();
 }
 
+// 🍜🍚 v26.07-ar : la BASE du plat (Riz / Nouilles), visible pendant la
+//    frappe. Le CHOIX fait prime (formules, Loc Lac « riz ou nouilles ») ;
+//    sinon la famille du plat décide ; sushis/salades/bo bun : rien.
+function feculentDe(l) {
+  if (!l || l.lien_plat || l.recompense) return null;
+  const ob = l.options_base || (l.options && l.options.options_base) || {};
+  for (const k in ob) {
+    const v = String(ob[k] || '').toLowerCase();
+    if (/nouille/.test(v)) return 'Nouilles';
+    if (/riz/.test(v)) return 'Riz';
+  }
+  const p = produits.find(x => x.id === l.produit_id);
+  if (!p) return null;
+  const cat = categories.find(c => c.id === p.categorie_id);
+  const nc = ((cat ? cat.nom : '') + ' ' + (p.nom || '')).toLowerCase();
+  if (/nouille|pad tha/.test(nc)) return 'Nouilles';
+  if (/riz|crousty/.test(nc)) return 'Riz';
+  return null;
+}
+
 function afficherTicket() {
   const zone = document.getElementById('ticket-lignes');
   const btn = document.getElementById('btn-encaisser');
@@ -7958,7 +7980,7 @@ function afficherTicket() {
     return `
     <div class="ligne ${remiseLigne ? 'ligne-avec-remise' : ''}">
       <div class="ligne-info" onpointerdown="lpDown(${idx})" onpointerup="lpUp()" onpointerleave="lpUp()" onpointercancel="lpUp()" oncontextmenu="return false" onclick="ligneClick(${idx})" style="cursor:pointer; -webkit-user-select:none; user-select:none; touch-action:manipulation;">
-        <div class="ligne-nom">${escapeHtmlPos(l.nom)}</div>
+        <div class="ligne-nom">${escapeHtmlPos(l.nom)}${(() => { const f = feculentDe(l); return f ? ' <span class="ligne-fecu">' + f + '</span>' : ''; })()}</div>
         <div class="ligne-pu">${fmt(l.prix)} / unité ${remiseLigne ? '· <span style="color:var(--danger);font-weight:700;">Remise appliquée</span>' : ''}</div>
       </div>
       <div class="qte-ctrl">
@@ -9838,8 +9860,6 @@ function genererTicketProHTML(v) {
   //    Une ligne récap, total TTC, détail TVA, règlement, mentions légales.
   const E = escapeHtmlPos;
   const t = calculerTVA(v.total, RESTO_INFOS.tauxTVA);
-  const nbArt = (v.lignes_vente || []).reduce((sN, l) =>
-    sN + ((Number(l.prix_unitaire) > 0) ? (Number(l.quantite) || 1) : 0), 0);
   const MODES = { cb: 'Carte bancaire', carte: 'Carte bancaire', espece: 'Espèces',
                   especes: 'Espèces', tr: 'Ticket restaurant', ticket_resto: 'Ticket restaurant',
                   mixte: 'Règlement mixte' };
@@ -9865,7 +9885,7 @@ function genererTicketProHTML(v) {
     </div>
     <div style="border-top:1px dashed #111;margin:12px 0;"></div>
     <div style="display:flex;justify-content:space-between;font-size:14px;">
-      <span>Repas — ${nbArt} article(s)</span><span>${fmt(v.total)}</span>
+      <span>Repas</span><span>${fmt(v.total)}</span>
     </div>
     <div style="border-top:1px dashed #111;margin:12px 0;"></div>
     <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:800;">
@@ -9885,10 +9905,8 @@ function genererTicketProHTML(v) {
 // 💼 Version IMPRIMANTE de la note : mêmes règles, format ticketClient.
 function construireNoteProImpression() {
   const base = (derniereImpression && derniereImpression.ticketClient) || {};
-  const nbArt = (base.lignes || []).reduce((sN, l) =>
-    sN + ((Number(l.prix_unitaire) > 0) ? (Number(l.quantite) || 1) : 0), 0);
   return Object.assign({}, base, {
-    lignes: [{ nom_produit: 'Repas — ' + nbArt + ' article(s)', quantite: 1,
+    lignes: [{ nom_produit: 'Repas', quantite: 1,
                prix_unitaire: base.total, sous_total: base.total,
                details: [], est_boisson: false }],
     masquerReglement: false   // sur une note de frais, le règlement fait foi
@@ -10352,7 +10370,10 @@ function preparerImpression(lignesTicket, venteLocale) {
   const dateBon = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ' +
                   d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const caissierNom = (typeof caissierActif !== 'undefined' && caissierActif) ? caissierActif.nom : null;
-  const modeServiceBon = venteLocale.canal || null;
+  // 🎫 v26.07-aq : le relais du Pi parle le dialecte BORNE (« a_emporter »).
+  //    La caisse dit « emporter » → inconnu → le ticket retombait sur
+  //    « SUR PLACE ». On traduit à l'émission, une fois pour toutes.
+  const modeServiceBon = venteLocale.canal === 'emporter' ? 'a_emporter' : (venteLocale.canal || null);
 
   derniereImpression = {
     // 🔎 Badge de version envoyé au Pi — lu depuis LE marqueur du pied de
@@ -10444,7 +10465,8 @@ function preparerImpression(lignesTicket, venteLocale) {
       //    sur le ticket comptoir (ce serait faux : rien n'est encore encaissé).
       masquerReglement: (venteLocale.canal === 'livraison'),
       // 🍽️ Sur place / à emporter : indiqué en clair sur le ticket comptoir
-      modeService: venteLocale.canal,
+      //    (même traduction « emporter » → « a_emporter » que les bons — v26.07-aq)
+      modeService: venteLocale.canal === 'emporter' ? 'a_emporter' : venteLocale.canal,
       tva: calculerTVA(venteLocale.total, RESTO_INFOS.tauxTVA),
       tvaNum: RESTO_INFOS.tva,
       naf: RESTO_INFOS.naf,
@@ -10458,6 +10480,41 @@ function preparerImpression(lignesTicket, venteLocale) {
 // ============================================
 //  CLÔTURE DE CAISSE (Z)
 // ============================================
+// ⛶ v26.07-ao : PLEIN ÉCRAN natif — la barre du navigateur disparaît
+//    (Firefox Android inclus). Un tap : plein écran ; un autre : retour.
+function basculerPleinEcran() {
+  try {
+    const racine = document.documentElement;
+    const plein = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!plein) {
+      (racine.requestFullscreen || racine.webkitRequestFullscreen || function () {}).call(racine);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
+    }
+  } catch (e) { /* jamais bloquant */ }
+}
+
+// ⛶ v26.07-ap : MODE KIOSQUE (?kiosque=1 dans l'URL) — le PREMIER tap
+//    de la journée, n'importe où, bascule en plein écran. Si on en sort
+//    (bouton retour), le tap suivant le remet. Plein écran « direct »
+//    de fait : on travaille, l'écran suit.
+(function modeKiosque() {
+  try {
+    if (!/[?&]kiosque=1/.test(window.location.search)) return;
+    var armer = function () {
+      var main = function () {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) basculerPleinEcran();
+      };
+      document.addEventListener('touchend', main, { once: true, passive: true });
+      document.addEventListener('click', main, { once: true });
+    };
+    armer();
+    document.addEventListener('fullscreenchange', function () {
+      if (!document.fullscreenElement) armer();   // sorti → le prochain tap le remet
+    });
+  } catch (e) { /* jamais bloquant */ }
+})();
+
 function ouvrirCloture() {
   document.getElementById('overlay-cloture').classList.add('show');
   document.getElementById('cloture-actions').style.display = 'none';
