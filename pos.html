@@ -6059,7 +6059,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ar</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-as</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6111,6 +6111,17 @@ function posConfirm(msg, onOk, opts) {
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
 const RESTO_ID = 'gin-khao';
+// 🏪 v26.07-as : LE SITE de cette machine — réglable par URL, mémorisé.
+//    Ouvrir UNE FOIS  pos.html?site=st-antoine  (slugs : st-just, st-antoine,
+//    la-capelette, st-ferreol). Retour : ?site=reset. Défaut : st-just.
+let SITE_ACTUEL = 'st-just';
+try {
+  const _siteParam = new URLSearchParams(location.search).get('site');
+  if (_siteParam === 'reset') localStorage.removeItem('site_resto');
+  else if (_siteParam && /^[a-z][a-z-]{1,24}$/.test(_siteParam)) localStorage.setItem('site_resto', _siteParam);
+  SITE_ACTUEL = localStorage.getItem('site_resto') || 'st-just';
+} catch (e) { /* privé/incognito : défaut */ }
+
 // Client Supabase — avec un "lock" neutre : navigator.locks bloque à l'infini
 // dans certaines WebView Android (bug connu), ce qui gèle getSession().
 const sb = supabase.createClient(SB_URL, SB_KEY, {
@@ -9093,7 +9104,8 @@ async function validerVente() {
   p_taux_commission: CANAUX_COMMISSION.includes(canalVente) ? tauxCommission : null,
   p_caissier_id: caissierActif ? caissierActif.id : null,
   p_caissier_nom: caissierActif ? caissierActif.nom : null,
-  p_client_id: clientActif ? clientActif.id : null
+  p_client_id: clientActif ? clientActif.id : null,
+  p_site: SITE_ACTUEL          // 🏪 v26.07-as : la vente au bon restaurant
 });
     if (error) throw error;
 
