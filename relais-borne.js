@@ -13,6 +13,8 @@ const net = require('net');
 const { createClient } = require('@supabase/supabase-js');
 
 const CONFIG = {
+  site: 'st-just',              // 🏪 v2 : LE site de CE Pi — à changer par resto
+                                //    (st-just · st-antoine · la-capelette · st-ferreol)
   supabaseUrl: 'https://szpgbdnijyoquqmjhhjj.supabase.co',
   serviceRoleKey: require('fs').readFileSync(__dirname + '/cle.txt', 'utf8').trim(),
   restaurantId: 'gin-khao',
@@ -280,7 +282,7 @@ async function boucle(supabase) {
   const { data, error } = await supabase
     .from('impressions_borne')
     .select('*')
-    .eq('restaurant_id', CONFIG.restaurantId)
+    .eq('restaurant_id', CONFIG.restaurantId).eq('site', CONFIG.site)
     .eq('imprimee', false)
     .order('cree_le', { ascending: true })
     .limit(20);
@@ -305,7 +307,7 @@ async function main() {
   //    faisait disparaître des commandes PAYÉES pas encore sorties en cuisine.
   const limiteDemarrage = new Date(Date.now() - AGE_MAX_MS).toISOString();
   await supabase.from('impressions_borne').update({ imprimee: true })
-    .eq('restaurant_id', CONFIG.restaurantId).eq('imprimee', false)
+    .eq('restaurant_id', CONFIG.restaurantId).eq('site', CONFIG.site).eq('imprimee', false)
     .lt('cree_le', limiteDemarrage);
 
   console.log('=================================================');
