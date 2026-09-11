@@ -1,6 +1,6 @@
 // netlify/functions/borne-enregistrer-vente.js
 // ============================================================
-// Enregistrer une vente depuis la borne — v6 « serrure du coffre »
+// Enregistrer une vente depuis la borne — v7 « serrure du coffre »
 // ============================================================
 // La borne utilise la clé anon publique (lecture seule).
 // Pour ENREGISTRER une vente, on passe par cette function (service_role).
@@ -242,14 +242,17 @@ exports.handler = async function (event) {
 
   // ════════════════════ ENREGISTREMENT (inchangé) ════════════════════
   try {
-    const { data, error } = await sb.rpc('enregistrer_vente', {
+    // 🏪 v7 : le site validé (slug sobre) — défaut st-just
+  const siteVente = (typeof body.site === 'string' && /^[a-z][a-z-]{1,24}$/.test(body.site)) ? body.site : 'st-just';
+  const { data, error } = await sb.rpc('enregistrer_vente', {
       p_restaurant_id: restaurantId,
       p_mode_paiement: modePaiement,
       p_lignes: lignes,
       p_origine: 'borne',
       p_mode_service: modeService,
       p_canal: 'borne',
-      p_client_id: clientId
+      p_client_id: clientId,
+    p_site: siteVente          // 🏪 la chaîne fiscale du bon resto
     });
 
     if (error) {
