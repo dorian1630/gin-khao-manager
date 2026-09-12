@@ -815,6 +815,20 @@ html, body {
   padding-bottom: 4px;
   margin-top: 8px;
 }
+/* 🖥️ v26.07-az : la modale d'impression RESPIRE — large écran : les
+   documents (bon + ticket) côte à côte ; boutons plus généreux.
+   Les AUTRES modales gardent leur 440px. Mobile : l'empilement d'origine. */
+#overlay-ticket .modal { max-width: 800px; }
+#ticket-contenu {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  align-items: flex-start; gap: 24px;
+}
+#ticket-contenu .ticket-recu,
+#ticket-contenu .bon-cuisine { width: 340px; margin: 0; }
+.actions-ticket button { padding: 14px 16px; font-size: 15px; }
+@media (max-width: 860px) {
+  #overlay-ticket .modal { max-width: 440px; }
+}
 @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 .modal h3 {
   font-family: var(--display);
@@ -6059,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ay</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bc</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6645,7 +6659,7 @@ function passerEtapeParcours() {
     }
     finaliserParcours();
   } else if (e === 'formule_entree') {
-    if (composantsFixes(p).length > 0) { parcoursPlat.etape = 'fini'; passerEtapeParcours(); return; }
+    if (composantsFixes(p).length > 0 || estMenuEtudiantCaisse(p)) { parcoursPlat.etape = 'fini'; passerEtapeParcours(); return; }
     afficherModaleFormuleEntree();
   } else if (e === 'fini') {
     finaliserParcours();
@@ -6685,8 +6699,8 @@ function ajouterDirect() {
       const premiereBoisson = produits.find(pp => pp.categorie_id === catBoissons.id);
       if (premiereBoisson) parcoursPlat.formule_boisson_id = premiereBoisson.id;
     }
-    const estBox = composantsFixes(p).length > 0;
-    const catEntrees = estBox ? null : categories.find(c => /entr[eé]e/i.test(c.nom));
+    const dispenseEntree = composantsFixes(p).length > 0 || estMenuEtudiantCaisse(p);
+    const catEntrees = dispenseEntree ? null : categories.find(c => /entr[eé]e/i.test(c.nom));
     if (catEntrees && !parcoursPlat.formule_entree_id) {
       const premiereEntree = produits.find(pp => pp.categorie_id === catEntrees.id);
       if (premiereEntree) {
@@ -7270,7 +7284,7 @@ function rendreEditeur(modeAjout) {
         html += `<button class="mpp-option active" disabled style="opacity:.85;cursor:default;">${q > 1 ? q + '× ' : ''}${escapeHtmlPos(comp.label || (prod ? prod.nom : 'Composant'))}</button>`;
       });
       html += `</div></div>`;
-    } else {
+    } else if (!estMenuEtudiantCaisse(p)) {   // 🎓 v26.07-ba : jamais d'entrée pour l'Étudiant
       const catEntrees = categories.find(c => c.nom === 'Entrées');
       if (catEntrees) {
         // 🍱 visible_formule = false → l'entrée n'est pas proposée dans les formules
@@ -7356,11 +7370,18 @@ function verifierChoixComplets(l, p) {
   //   (une BOX a des composants fixes → pas d'entrée à choisir)
   if (p.est_formule === true) {
     if (!l.formule_boisson_id) return 'Veuillez choisir une boisson';
-    if (!estBoxCaisse(p) && !l.formule_entree_id) return 'Veuillez choisir une entrée';
+    if (!estBoxCaisse(p) && !estMenuEtudiantCaisse(p) && !l.formule_entree_id) return 'Veuillez choisir une entrée';
   }
   return null;
 }
 function estBoxCaisse(p) { return composantsFixes(p).length > 0; }
+// 🎓 v26.07-ba : le Menu Étudiant = plat + boisson, JAMAIS d'entrée.
+//    Même critère de détection que la borne (nom normalisé sans accents).
+function estMenuEtudiantCaisse(p) {
+  if (!p || !p.nom) return false;
+  const nom = String(p.nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return nom.indexOf('etudiant') !== -1;
+}
 
 // Valider l'ajout depuis la grande modale
 function validerAjoutEditeur() {
@@ -10192,7 +10213,7 @@ function genererBonLivraisonHTML(vente, client, lignesTicket) {
       
       <div class="bl-client">
         <div class="bl-client-nom">👤 ${escapeHtmlPos(client.nom || 'Client')}</div>
-        <div class="bl-client-tel">📞 ${escapeHtmlPos(client.telephone || '')}</div>
+        <div class="bl-client-tel">📞 ${escapeHtmlPos(formatTelFR(client.telephone || ''))}</div>
       </div>
       
       <div class="bl-adresse">
@@ -13022,8 +13043,6 @@ function afficherKDS() {
   const zone = document.getElementById('kds-zone');
   if (!zone) return;
   
-  console.log('[KDS] afficherKDS - total:', kdsCommandes.length, 'filtre:', kdsFiltreActif);
-  console.log('[KDS] Statuts présents:', kdsCommandes.map(c => c.statut));
   
   let commandes;
   if (kdsFiltreActif === 'actives') {
@@ -13047,7 +13066,6 @@ function afficherKDS() {
     commandes = kdsCommandes;
   }
   
-  console.log('[KDS] Commandes filtrées:', commandes.length);
   
   if (commandes.length === 0) {
     zone.innerHTML = '<div class="kds-vide"><div class="ic">📭</div><p>Aucune commande dans cette catégorie</p></div>';
@@ -13115,6 +13133,15 @@ document.getElementById('overlay-kds').addEventListener('click', e => {
 // ============================================
 //  UTILITAIRES
 // ============================================
+// 📞 v26.07-bc : le téléphone en tenue de livreur — 06.12.34.56.78
+//    Espaces/tirets avalés, +33 converti, les numéros exotiques passent intacts.
+function formatTelFR(tel) {
+  let t = String(tel || '').replace(/[^0-9+]/g, '');
+  if (t.startsWith('+33')) t = '0' + t.slice(3);
+  else if (t.startsWith('0033')) t = '0' + t.slice(4);
+  if (!/^0\d{9}$/.test(t)) return String(tel || '');
+  return t.match(/.{2}/g).join('.');
+}
 function fmt(n) {
   return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
