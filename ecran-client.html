@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gin Khao</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --fond: #0A0908; --or: #E4B860; --ivoire: #F5EFE4; --brun: #8a7350; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: var(--fond); color: var(--ivoire);
+    font-family: 'Jost', sans-serif; overflow: hidden; }
+
+  .scene { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; opacity: 0;
+    transition: opacity .6s ease; pointer-events: none; }
+  .scene.visible { opacity: 1; }
+
+  /* ── LA VEILLE : le logo ── */
+  #veille .marque { font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    font-size: clamp(64px, 12vw, 150px); color: var(--or); letter-spacing: 2px;
+    text-shadow: 0 0 60px rgba(228,184,96,.25); }
+  #veille .marque .k { color: var(--ivoire); }
+  #veille .tagline { margin-top: 14px; font-weight: 300; letter-spacing: 8px;
+    text-transform: uppercase; font-size: clamp(14px, 2.2vw, 24px); color: var(--brun); }
+  #veille .etoile { margin: 34px 0 0; color: var(--or); font-size: 26px;
+    animation: pulser 3.5s ease-in-out infinite; }
+  @keyframes pulser { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+
+  /* ── LA COMMANDE ── */
+  #commande { justify-content: flex-start; padding: 4vh 6vw; }
+  #commande .entete { font-family: 'Cormorant Garamond', serif; color: var(--or);
+    font-size: clamp(28px, 4.5vw, 52px); font-weight: 600; letter-spacing: 1px;
+    width: 100%; text-align: center; padding-bottom: 2vh;
+    border-bottom: 1px solid rgba(228,184,96,.25); }
+  #lignes { flex: 1; width: 100%; max-width: 900px; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 2vh 0; gap: 1.1vh; }
+  .l { display: flex; align-items: baseline; gap: 16px;
+    font-size: clamp(20px, 3.2vw, 38px); animation: entrer .35s ease; }
+  @keyframes entrer { from { opacity: 0; transform: translateY(14px); } }
+  .l .q { color: var(--or); font-weight: 600; min-width: 2.2em; text-align: right; }
+  .l .n { flex: 1; font-weight: 400; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; }
+  .l .p { color: var(--ivoire); font-weight: 300; font-variant-numeric: tabular-nums; }
+  .l.remise .n, .l.remise .p { color: #e07a5f; }
+  #total-bloc { width: 100%; max-width: 900px; border-top: 1px solid rgba(228,184,96,.25);
+    padding-top: 2.2vh; display: flex; justify-content: space-between; align-items: baseline; }
+  #total-bloc .lib { letter-spacing: 6px; text-transform: uppercase;
+    font-weight: 300; font-size: clamp(16px, 2.4vw, 26px); color: var(--brun); }
+  #total { font-family: 'Cormorant Garamond', serif; color: var(--or); font-weight: 600;
+    font-size: clamp(52px, 9vw, 110px); line-height: 1;
+    font-variant-numeric: tabular-nums; }
+
+  /* ── LE MERCI ── */
+  #merci .gros { font-family: 'Cormorant Garamond', serif; color: var(--or);
+    font-size: clamp(54px, 9vw, 120px); font-weight: 600; }
+  #merci .sous { margin-top: 12px; font-weight: 300; letter-spacing: 5px;
+    text-transform: uppercase; font-size: clamp(14px, 2.2vw, 22px); color: var(--brun); }
+</style>
+</head>
+<body>
+
+<section id="veille" class="scene visible">
+  <div class="marque">Gin <span class="k">Khao</span></div>
+  <div class="tagline">Street Food Thaï</div>
+  <div class="etoile">✦</div>
+</section>
+
+<section id="commande" class="scene">
+  <div class="entete">Votre commande</div>
+  <div id="lignes"></div>
+  <div id="total-bloc"><span class="lib">Total</span><span id="total">0,00 €</span></div>
+</section>
+
+<section id="merci" class="scene">
+  <div class="gros">Merci !</div>
+  <div class="sous">À très bientôt chez Gin Khao</div>
+</section>
+
+<script>
+// ============================================================
+// 🖥️ ÉCRAN CLIENT Gin Khao — v1
+//   Écoute la caisse (BroadcastChannel + repli storage) :
+//   panier vide → le logo · lignes → la commande · vente → Merci.
+// ============================================================
+(function () {
+  var scenes = { veille: document.getElementById('veille'),
+    commande: document.getElementById('commande'), merci: document.getElementById('merci') };
+  var zone = document.getElementById('lignes');
+  var elTotal = document.getElementById('total');
+  var minuteurMerci = null;
+
+  function montrer(nom) {
+    Object.keys(scenes).forEach(function (k) {
+      scenes[k].classList.toggle('visible', k === nom);
+    });
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmt(v) {
+    return Number(v || 0).toFixed(2).replace('.', ',') + ' €';
+  }
+
+  function afficher(paquet) {
+    // ⚠️ Le « merci » se teste EN PREMIER : son paquet n'a pas de lignes,
+    //    le test « panier vide » l'avalait et le Merci ne s'affichait jamais
+    //    (attrapé par l'audit avant la première salle).
+    if (paquet && paquet.type === 'merci') {
+      montrer('merci');
+      clearTimeout(minuteurMerci);
+      minuteurMerci = setTimeout(function () { minuteurMerci = null; montrer('veille'); }, 4500);
+      return;
+    }
+    if (!paquet || paquet.type === 'vide' || !(paquet.lignes || []).length) {
+      if (!minuteurMerci) montrer('veille');
+      return;
+    }
+    clearTimeout(minuteurMerci); minuteurMerci = null;
+    var html = '';
+    (paquet.lignes || []).slice(-14).forEach(function (l) {
+      html += '<div class="l' + (l.remise ? ' remise' : '') + '">'
+        + '<span class="q">' + (l.remise ? '' : esc(l.qte) + '×') + '</span>'
+        + '<span class="n">' + esc(l.nom) + '</span>'
+        + '<span class="p">' + fmt(l.st) + '</span></div>';
+    });
+    zone.innerHTML = html;
+    elTotal.textContent = fmt(paquet.total);
+    montrer('commande');
+  }
+
+  // Canal principal : BroadcastChannel (même navigateur, latence nulle)
+  try {
+    var bc = new BroadcastChannel('gk-ecran-client');
+    bc.onmessage = function (ev) { afficher(ev.data); };
+  } catch (e) { /* vieux moteur : le repli storage suffit */ }
+
+  // Repli : l'événement storage (autre fenêtre du même navigateur)
+  window.addEventListener('storage', function (ev) {
+    if (ev.key === 'gk_ecran_client' && ev.newValue) {
+      try { afficher(JSON.parse(ev.newValue)); } catch (e) {}
+    }
+  });
+
+  // Au chargement : l'état déjà mémorisé (si la caisse tourne déjà)
+  try {
+    var m = localStorage.getItem('gk_ecran_client');
+    if (m) afficher(JSON.parse(m));
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
