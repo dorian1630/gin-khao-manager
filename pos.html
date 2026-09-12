@@ -6059,7 +6059,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ax</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-ay</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6111,6 +6111,20 @@ function posConfirm(msg, onOk, opts) {
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
 const RESTO_ID = 'gin-khao';
+// 🗂️ v26.07-ay : les outils de l'ordre de la carte
+function normCat(nom) {
+  return String(nom || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+const CATS_MASQUEES_CAISSE = ['plat', 'plats', 'supplement', 'supplements'];
+const DEBUT_CATS = ['menu etudiant', 'entree', 'formule'];
+const FIN_CATS = ['boisson', 'dessert', 'sauce'];
+function poidsCat(nom) {
+  const n = normCat(nom);
+  for (let i = 0; i < DEBUT_CATS.length; i++) { if (n.includes(DEBUT_CATS[i])) return i; }
+  for (let i = 0; i < FIN_CATS.length; i++) { if (n.includes(FIN_CATS[i])) return 1000 + i; }
+  return 500; // le milieu : départagé par l'alphabet
+}
 // 🏪 v26.07-as : LE SITE de cette machine — réglable par URL, mémorisé.
 //    Ouvrir UNE FOIS  pos.html?site=st-antoine  (slugs : st-just, st-antoine,
 //    la-capelette, st-ferreol). Retour : ?site=reset. Défaut : st-just.
@@ -6288,39 +6302,24 @@ function afficherCats() {
   // Catégories TOP-LEVEL (pas de parent) qui ont du contenu (produits OU sous-cats)
   const topCats = categories.filter(c => !c.parent_id);
 const catsAvecContenu = topCats.filter(c => {
+  // 🚫 v26.07-ay : les onglets masqués en caisse (égalité stricte après
+  //    normalisation — « Plats du jour » ne serait PAS masqué). Les produits
+  //    restent en base et dans les modales (suppléments…).
+  if (CATS_MASQUEES_CAISSE.includes(normCat(c.nom))) return false;
   const aProduits = produits.some(p => p.categorie_id === c.id);
   const aSousCats = categories.some(sc => sc.parent_id === c.id);
   return aProduits || aSousCats;
 });
 
-// ✨ Tri custom : ordre choisi par Dorian
-const ORDRE_CATS = [
-  'formule', 
-  'loc lac', 
-  'riz thaï', 'riz thai', 'riz dynamite', 'dynamite',
-  'pad thaï', 'pad thai', 
-  'pad riz', 
-  'gin bo bun', 'bo bun', 'bobun',
-  'crousty khao', 'crousty', 'crispy',
-  'nouilles thaï', 'nouilles thai', 'nouille',
-  'sushi', 'sashimi', 'maki', 'california',
-  'entrée', 'entree',
-  'salade', 'pokébowl', 'pokebowl',
-  'boisson',
-  'dessert',
-  'sauce'
-];
-
-function positionCat(nom) {
-  if (!nom) return 999;
-  const n = nom.toLowerCase();
-  for (let i = 0; i < ORDRE_CATS.length; i++) {
-    if (n.includes(ORDRE_CATS[i])) return i;
-  }
-  return 999; // catégories non listées à la fin
-}
-
-catsAvecContenu.sort((a, b) => positionCat(a.nom) - positionCat(b.nom));
+// ✨ v26.07-ay : l'ordre de la carte, règle Dorian —
+//    DÉBUT fixe : Menu Étudiant · Entrées · Formules
+//    MILIEU : toutes les autres, par ordre ALPHABÉTIQUE
+//    FIN fixe : Boissons · Desserts · Sauces
+catsAvecContenu.sort((a, b) => {
+  const pa = poidsCat(a.nom), pb = poidsCat(b.nom);
+  if (pa !== pb) return pa - pb;
+  return normCat(a.nom).localeCompare(normCat(b.nom));
+});
   
   // Auto-sélection : 1ère catégorie au démarrage
   if (!catActive && catsAvecContenu.length > 0) {
