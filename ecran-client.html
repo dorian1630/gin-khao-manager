@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gin Khao</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root { --fond: #0A0908; --or: #E4B860; --ivoire: #F5EFE4; --brun: #8a7350; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -132,7 +133,24 @@
     montrer('commande');
   }
 
-  // Canal principal : BroadcastChannel (même navigateur, latence nulle)
+  // 🌐 v3 : LE CANAL RÉSEAU (Supabase Realtime) — la caisse et l'écran
+  //    peuvent vivre sur des appareils/navigateurs différents.
+  //    Le site se règle par URL : ecran-client.html?site=st-antoine
+  try {
+    var SITE = 'st-just';
+    try {
+      var p = new URLSearchParams(location.search).get('site');
+      if (p && /^[a-z][a-z-]{1,24}$/.test(p)) SITE = p;
+    } catch (e0) {}
+    var sbc = window.supabase.createClient(
+      'https://szpgbdnijyoquqmjhhjj.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak');
+    sbc.channel('gk-ecran:' + SITE)
+      .on('broadcast', { event: 'maj' }, function (msg) { afficher(msg.payload); })
+      .subscribe();
+  } catch (e) { /* hors ligne : les canaux locaux prennent le relais */ }
+
+  // Canal local : BroadcastChannel (même navigateur, latence nulle)
   try {
     var bc = new BroadcastChannel('gk-ecran-client');
     bc.onmessage = function (ev) { afficher(ev.data); };
