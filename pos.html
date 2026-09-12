@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bc</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bd</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6748,20 +6748,6 @@ function finaliserParcours() {
     formule_entree_label: parcoursPlat.formule_entree_label || null
   });
 
-  // 🌶️ "Sauce Piquante" (groupe Sauce Riz) facturée +0,50 € en sous-ligne liée
-  const choixSauceRiz = (parcoursPlat.options_base || {})['Sauce Riz'];
-  if (choixSauceRiz && /piquante/i.test(String(choixSauceRiz))) {
-    ticket.push({
-      produit_id: null,
-      nom: '  ↳ Sauce Piquante',
-      prix: 0.50,
-      quantite: 1,
-      stock_actif: false,
-      stock: 0,
-      categorie_id: null,
-      lien_plat: uid
-    });
-  }
   // Ajouter les suppléments en lignes séparées (regroupés : x2, x3…)
   grouperIds(parcoursPlat.supplements).forEach(g => {
     const supp = produits.find(pp => pp.id === g.id);
@@ -6971,15 +6957,6 @@ function reconstruireSousLignes(uid) {
     (main.sauces_sel || []).forEach(id => {
       const s = produits.find(pp => pp.id === id);
       if (s && parseFloat(s.prix) > 0) subs.push(sousLignePlat(s, '  ↳ ' + s.nom, parseFloat(s.prix), uid));
-    });
-  }
-  // 🌶️ "Sauce Piquante" (groupe Sauce Riz) : +0,50 € — recréée (ou retirée)
-  //    à chaque modification dans l'éditeur (changement de sauce compris)
-  const srPiq = (main.options_base || {})['Sauce Riz'];
-  if (srPiq && /piquante/i.test(String(srPiq))) {
-    subs.push({
-      produit_id: null, nom: '  ↳ Sauce Piquante', prix: 0.50, quantite: 1,
-      stock_actif: false, stock: 0, categorie_id: null, lien_plat: uid
     });
   }
   if (main.est_formule) {
