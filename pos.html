@@ -6059,7 +6059,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-as</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-aw</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -7956,6 +7956,35 @@ function feculentDe(l) {
   return null;
 }
 
+// 🖥️ v26.07-au : L'ÉCRAN CLIENT — la caisse diffuse son ticket
+//    (BroadcastChannel + localStorage) vers ecran-client.html.
+//    Jamais bloquant : la caisse vit sa vie, l'écran suit s'il existe.
+let _canalEcranClient = null;
+function diffuserEcranClient(paquet) {
+  try {
+    if (_canalEcranClient === null) {
+      // typeof : les très vieux moteurs sans BroadcastChannel basculent
+      // proprement sur le repli localStorage (l'événement storage).
+      _canalEcranClient = (typeof BroadcastChannel !== 'undefined')
+        ? new window.BroadcastChannel('gk-ecran-client') : false;
+    }
+    if (_canalEcranClient) _canalEcranClient.postMessage(paquet);
+    localStorage.setItem('gk_ecran_client', JSON.stringify(paquet));
+  } catch (e) { /* jamais bloquant */ }
+}
+function construirePaquetEcranClient() {
+  if (!ticket.length) return { type: 'vide' };
+  return {
+    type: 'commande',
+    lignes: ticket.map((l) => ({
+      nom: l.nom, qte: l.quantite || 1,
+      st: (Number(l.prix) || 0) * (l.quantite || 1),
+      remise: (Number(l.prix) || 0) < 0 || l.recompense === true
+    })),
+    total: totalTicket()
+  };
+}
+
 function afficherTicket() {
   const zone = document.getElementById('ticket-lignes');
   const btn = document.getElementById('btn-encaisser');
@@ -8064,6 +8093,7 @@ function afficherTicket() {
   // 🎫 Idem pour le client attaché par téléphone : ses boutons récompense
   //    n'apparaissent que si un article éligible est au ticket.
   rafraichirFidBandeau();
+  diffuserEcranClient(construirePaquetEcranClient());   // 🖥️ v26.07-au
 }
 
 // Met à jour seulement le bloc fidélité sans tout reconstruire (évite les boucles)
@@ -8899,6 +8929,21 @@ async function validerVente() {
       posAlert('Ajoutez au moins un mode de paiement.');
       return;
     }
+    // 💶 v26.07-aw : le TROP-saisi n'est légitime que rendu en ESPÈCES.
+    //    10 € CB + 20 € esp sur 25 € → rendu 5 € ✓ (affiché au caissier).
+    //    20 € CB + 20 € CB sur 25 € → erreur de saisie, bloquée.
+    if (reste < -0.01) {
+      const trop = -reste;
+      const especesSaisies = paiementsMixtes
+        .filter((p) => p.mode === 'especes')
+        .reduce((sEsp, p) => sEsp + p.montant, 0);
+      if (especesSaisies + 0.001 < trop) {
+        posAlert('💳 Trop saisi de ' + fmt(trop) + ' — impossible à rendre '
+          + '(le rendu se fait en espèces, or il n\'y en a que ' + fmt(especesSaisies) + ').<br>Corrige les montants.');
+        return;
+      }
+      posAlert('💵 Rendu à faire : <b>' + fmt(trop) + '</b> en espèces.');
+    }
     // On stocke en libellé combiné pour mode_paiement
     modePaiement = paiementsMixtes.map(p => p.mode).join('+');
   }
@@ -9203,6 +9248,7 @@ async function validerVente() {
     remise = null;
     clientActif = null;  // ✨ Reset client téléphone
     fraisLivraison = 0; infoLivraison = null; fraisLivraisonManuel = null;  // 🚗 Reset frais livraison
+    diffuserEcranClient({ type: 'merci' });               // 🖥️ v26.07-au : « Merci ! » côté client
     afficherBandeauClient();
     
     // Reset visuel ticket-num
@@ -10630,7 +10676,7 @@ async function _confirmerClotureConfirme() {
   btn.textContent = 'Clôture…';
 
   try {
-    const { data, error } = await sb.rpc('cloturer_journee', { p_restaurant_id: RESTO_ID });
+    const { data, error } = await sb.rpc('cloturer_journee', { p_restaurant_id: RESTO_ID, p_site: SITE_ACTUEL });   // 🏪 v26.07-av : le Z du bon resto
     if (error) throw error;
     if (data && data.ok === false) throw new Error(data.erreur || 'Clôture impossible');
 
@@ -12274,7 +12320,8 @@ async function _majFraisLivraisonCoeur() {
   }
   if (jeton !== majFraisJeton) return;   // 🎫
   if (!coords) {
-    fraisLivraison = 0; infoLivraison = { erreur: 'Adresse introuvable' };
+    fraisLivraison = 0;
+    infoLivraison = { erreur: 'Adresse introuvable : « ' + adresse + ' » — vérifie la fiche ou fixe les frais ✏️' };
     majTotal(); afficherBandeauClient(); afficherTicket();
     return;
   }
@@ -12340,8 +12387,12 @@ function modifierFraisLivraison() {
 }
 function setFraisLivr(v) { const i = document.getElementById('fl-input'); if (i) i.value = v; }
 function validerFraisLivr() {
-  const v = parseFloat(document.getElementById('fl-input').value);
-  if (isNaN(v) || v < 0) { posAlert('Montant invalide'); return; }
+  // 💶 v26.07-at : la virgule française acceptée (« 3,50 ») ; un champ vide
+  //    (saisie rejetée par le clavier) reçoit un message qui explique.
+  const brut = String(document.getElementById('fl-input').value || '').trim();
+  if (!brut) { posAlert('Saisis un montant (ex : 3.50)'); return; }
+  const v = parseFloat(brut.replace(',', '.'));
+  if (isNaN(v) || v < 0) { posAlert('Montant invalide — utilise le point : 3.50'); return; }
   fraisLivraisonManuel = Math.round(v * 100) / 100;
   fraisLivraison = fraisLivraisonManuel;
   infoLivraison = Object.assign({}, infoLivraison, { manuel: true, frais: fraisLivraison });
@@ -12349,9 +12400,16 @@ function validerFraisLivr() {
   majTotal(); afficherBandeauClient(); afficherTicket();
 }
 function fraisLivraisonAuto() {
-  fraisLivraisonManuel = null;
-  fermerFraisLivr();
-  majFraisLivraison();
+  // 🛡️ v26.07-at : ce bouton vit juste sous « Valider » — un doigt pressé
+  //    le tapait en croyant valider, le montant partait au vide et la garde
+  //    rebouclait. S'il y a une saisie en cours, on demande confirmation.
+  const enCours = String((document.getElementById('fl-input') || {}).value || '').trim();
+  const basculer = () => { fraisLivraisonManuel = null; fermerFraisLivr(); majFraisLivraison(); };
+  if (enCours) {
+    posConfirm('Abandonner le montant saisi (' + escapeHtmlPos(enCours) + ' €) et revenir au calcul automatique ?', basculer);
+    return;
+  }
+  basculer();
 }
 function fermerFraisLivr() {
   const ov = document.getElementById('overlay-frais-livr');
