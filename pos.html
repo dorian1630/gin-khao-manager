@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-be</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bf</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6286,6 +6286,22 @@ async function init() {
 // ============================================
 //  CHARGEMENT DU MENU
 // ============================================
+// 🏪 v26.07-bf : la DISPONIBILITÉ est PAR RESTAURANT (table dispo_site).
+//    La carte reste commune ; chaque site n'y voit et n'y coupe que SES produits.
+async function chargerRupturesSite() {
+  try {
+    const { data, error } = await sb.from('dispo_site')
+      .select('produit_id')
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL).eq('indisponible', true);
+    if (error) throw error;
+    return new Set((data || []).map((d) => d.produit_id));
+  } catch (e) { return null; }   // réseau : on garde l'état courant
+}
+function appliquerRupturesSite(ruptures) {
+  if (!ruptures) return;
+  produits.forEach((p) => { p.indisponible = ruptures.has(p.id); });
+}
+
 async function chargerMenu() {
   // Catégories
   const { data: cats } = await sb.from('categories')
@@ -6302,6 +6318,7 @@ async function chargerMenu() {
     return;
   }
   produits = prods || [];
+  appliquerRupturesSite(await chargerRupturesSite());   // 🏪 v26.07-bf : les ruptures de CE resto
   // 🧩 Le noyau partagé (routage + détails + bons) travaille sur le MÊME
   //    catalogue que la borne. Toutes les catégories (non filtrées) pour que
   //    le routage connaisse Sauces/Suppléments.
@@ -7408,9 +7425,13 @@ async function basculerDispoProduit(id) {
   p.indisponible = nouvelEtat;
   afficherProduits();
   try {
-    const { error } = await sb.from('produits').update({ indisponible: nouvelEtat }).eq('id', id);
+    // 🏪 v26.07-bf : la coupure ne touche QUE ce restaurant (dispo_site)
+    const { error } = await sb.from('dispo_site').upsert(
+      { restaurant_id: RESTO_ID, site: SITE_ACTUEL, produit_id: id,
+        indisponible: nouvelEtat, maj_le: new Date().toISOString() },
+      { onConflict: 'restaurant_id,site,produit_id' });
     if (error) throw error;
-    afficherToast(p.nom, nouvelEtat ? 'Mis en indisponible 🚫' : 'Remis en vente ✅', 'Borne + caisse');
+    afficherToast(p.nom, nouvelEtat ? 'Mis en indisponible 🚫' : 'Remis en vente ✅', 'Borne + caisse de ce restaurant');
   } catch (e) {
     p.indisponible = !nouvelEtat;
     afficherProduits();
