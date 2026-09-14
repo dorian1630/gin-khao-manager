@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bf</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bh</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -9815,17 +9815,42 @@ async function _annulerVenteConfirme(venteId, numero) {
 // ============================================
 //  TICKET (reçu) — aperçu, réimpression
 // ============================================
-const RESTO_INFOS = {
-  nom: 'Gin Khao',
-  sousTitre: 'Street Food Thaï',
-  adresse: 'Saint Just · Marseille',
-  tel: '',                 // ☎ tel resto (laisser vide tant que pas confirmé)
-  siret: '',               // n° SIRET
-  tva: 'FR76922266960',    // n° TVA intracom
-  naf: '5610C',            // code NAF / APE
-  tauxTVA: 5.5,            // % TVA (5,5 % sur tout)
-  mentionTva: ''
+// 🏪 v26.07-bg : LA FICHE LÉGALE PAR RESTAURANT — chaque société imprime
+//    SON adresse, SON SIRET, SON n° de TVA (tickets client, pro, Z).
+//    Une case vide = la ligne n'est pas imprimée (jamais un faux numéro).
+const SITES_INFOS = {
+  'st-just': {
+    nom: 'Gin Khao', sousTitre: 'Street Food Thaï',
+    adresse: '78 av. de Saint-Just · 13013 Marseille',
+    tel: '04 91 89 38 50',
+    siret: '92226696000017',       // SAS ACK (SIREN 922 266 960)
+    tva: 'FR52922266960',          // clé 52 = (12 + 3×(SIREN mod 97)) mod 97 — l'ancien FR76 était invalide
+    naf: '5610C', tauxTVA: 5.5, mentionTva: ''
+  },
+  'st-antoine': {
+    nom: 'Gin Khao', sousTitre: 'Street Food Thaï',
+    adresse: '40 bd de Saint-Antoine · 13015 Marseille',
+    tel: '',
+    siret: '',                     // SAS SABA 1 (SIREN 107 671 984) — probable 10767198400014, à confirmer sur l'avis SIRENE
+    tva: 'FR47107671984',
+    naf: '5610C', tauxTVA: 5.5, mentionTva: ''
+  },
+  'la-capelette': {
+    nom: 'Gin Khao', sousTitre: 'Street Food Thaï',
+    adresse: '203 av. de la Capelette · 13010 Marseille',
+    tel: '',
+    siret: '',                     // SAS SABA 2 (SIREN 107 658 999) — probable 10765899900019, à confirmer sur l'avis SIRENE
+    tva: 'FR86107658999',
+    naf: '5610C', tauxTVA: 5.5, mentionTva: ''
+  },
+  'st-ferreol': {
+    nom: 'Gin Khao', sousTitre: 'Street Food Thaï',
+    adresse: '',                   // société en cours d'immatriculation
+    tel: '', siret: '', tva: '',
+    naf: '5610C', tauxTVA: 5.5, mentionTva: ''
+  }
 };
+const RESTO_INFOS = SITES_INFOS[SITE_ACTUEL] || SITES_INFOS['st-just'];
 
 // Ventilation TVA à partir d'un total TTC (taux unique)
 function calculerTVA(ttc, taux) {
