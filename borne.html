@@ -3006,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ad</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ag</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3026,11 +3026,17 @@ const ETUDIANT_H_FIN   = 14;   // jusqu'à 13:59:59
 // 📍 v26.08-o : SITE de cette borne — "?site=saint-just" une fois dans l'URL → mémorisé.
 //    Même convention que la caisse/pointeuse. Repli : saint-just.
 const SITE_BORNE = (function () {
+  // 🏪 v26.08-ae : LE standard des slugs = celui de la base (st-just,
+  //    st-antoine, la-capelette, st-ferreol). Les anciennes mémoires
+  //    « saint-* » sont traduites — aucune borne n'écrit dans un site fantôme.
+  const TRAD = { 'saint-just': 'st-just', 'saint-antoine': 'st-antoine',
+                 'saint-ferreol': 'st-ferreol', 'saint-férréol': 'st-ferreol' };
   try {
     const p = new URLSearchParams(location.search).get('site');
     if (p) localStorage.setItem('gk_site', p.trim().toLowerCase());
-    return localStorage.getItem('gk_site') || 'saint-just';
-  } catch (e) { return 'saint-just'; }
+    const brut = localStorage.getItem('gk_site') || 'st-just';
+    return TRAD[brut] || brut;
+  } catch (e) { return 'st-just'; }
 })();
 
 // ===== CONFIG (même base que la caisse et l'appli) =====
@@ -3569,6 +3575,21 @@ async function init() {
   }
 }
 
+// 🏪 v26.08-ag : la DISPONIBILITÉ est PAR RESTAURANT (table dispo_site).
+async function chargerRupturesSite() {
+  try {
+    const { data, error } = await sb.from('dispo_site')
+      .select('produit_id')
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_BORNE).eq('indisponible', true);
+    if (error) throw error;
+    return new Set((data || []).map((d) => d.produit_id));
+  } catch (e) { return null; }
+}
+function appliquerRupturesSite(ruptures) {
+  if (!ruptures) return;
+  produits.forEach((p) => { p.indisponible = ruptures.has(p.id); });
+}
+
 async function chargerMenu() {
   const { data: cats, error: eCats } = await sb.from('categories')
     .select('*').eq('restaurant_id', RESTO_ID).order('ordre');
@@ -3584,6 +3605,7 @@ async function chargerMenu() {
   // On garde TOUS les produits actifs (y compris sauces/suppléments/extras
   // pour les retrouver via leurs UUIDs dans le parcours plat et upsell)
   produits = prods || [];
+  appliquerRupturesSite(await chargerRupturesSite());   // 🏪 v26.08-ag : les ruptures de CE resto
   // Le noyau partagé (routage, détails, bons) travaille sur le MÊME catalogue.
   // On lui passe TOUTES les catégories (non filtrées) pour que le routage
   // connaisse Sauces/Suppléments, cachées côté affichage borne.
@@ -4355,21 +4377,6 @@ function finaliserParcoursPlat() {
   }
   const uidPlat = lignePlat.ligne_uid;
 
-  // 🌶️ "Sauce Piquante" (groupe Sauce Riz) est facturée +0,50 € :
-  //    les choix d'options n'ayant pas de prix, on ajoute une sous-ligne liée.
-  const choixSauceRiz = options.options_base && options.options_base['Sauce Riz'];
-  if (choixSauceRiz && /piquante/i.test(String(choixSauceRiz))) {
-    panier.push({
-      ligne_uid: bUid(),
-      produit_id: null,
-      nom: '  ↳ Sauce Piquante',
-      prix: 0.50,
-      quantite: 1,
-      emoji: '🌶️',
-      lien_plat: uidPlat
-    });
-  }
-
   // Ajouter chaque supplément comme ligne séparée.
   // qte_unitaire = quantité PAR plat : quand la quantité du plat change,
   // la sous-ligne devient plat.quantite × qte_unitaire (2x crevettes sur
@@ -4904,7 +4911,6 @@ function afficherModaleOptionsBase() {
         ${groupeEnCours.choix.map(choix => `
           <div class="parcours-option-radio" onclick="selectionnerOptionBase('${escJs(groupeEnCours.groupe)}', '${escJs(choix)}', this)">
             <span class="parcours-option-label">${esc(choix)}</span>
-            ${/piquante/i.test(choix) ? '<span class="parcours-option-prix">+0,50 €</span>' : ''}
           </div>
         `).join('')}
       </div>
@@ -5495,7 +5501,7 @@ function stationPourLigne(l) {
   //    au stylo par la cuisine). Elles restent sur le ticket comptoir (prix).
   //    Les entrées de formule, elles, continuent de sortir en cuisine.
   if (l.lien_plat) {
-    if (!self) return 'comptoir';   // sous-ligne sans produit (ex. Sauce Piquante +0,50)
+    if (!self) return 'comptoir';   // sous-ligne sans produit
     const catSelf2 = categories.find(c => c.id === self.categorie_id);
     const nomSelf2 = normNomCat(catSelf2 ? catSelf2.nom : '');
     if (nomSelf2 === 'supplements' || nomSelf2 === 'sauces') return 'comptoir';
@@ -5740,6 +5746,7 @@ async function envoyerImpressionCuisine(numero, methode) {
 
     const { error } = await sb.from('impressions_borne').insert({
       restaurant_id: RESTO_ID,
+      site: SITE_BORNE,          // 🏪 v26.08-ae : le Pi du bon resto
       numero: String(numero),
       mode_service: modeService,
       mode_paiement: methode,
@@ -5751,7 +5758,7 @@ async function envoyerImpressionCuisine(numero, methode) {
       console.error('Insert impressions_borne KO:', error.message, '— réessai…');
       // 🔁 Un réessai (micro-coupure réseau) avant d'alerter le personnel
       const { error: e2 } = await sb.from('impressions_borne').insert({
-        restaurant_id: RESTO_ID, numero: String(numero), mode_service: modeService,
+        restaurant_id: RESTO_ID, site: SITE_BORNE, numero: String(numero), mode_service: modeService,
         mode_paiement: methode,
         client_nom: clientFid ? clientFid.nom : null,
         total: imp.ticketClient.total, lignes: lignes
@@ -6655,6 +6662,7 @@ async function payer(methode) {
         commande_uid: commandeUid,   // 🔑 idempotence (à dédupliquer côté serveur)
         // 🎫 v3 : le ctid SumUp — la fonction vérifie le paiement RÉEL (statut
         //    + montant) auprès de SumUp et verrouille l'anti-double.
+        site: SITE_BORNE,        // 🏪 v26.08-ae : la vente au bon restaurant
         client_transaction_id: (methode === 'carte' && paiementEnCours)
           ? paiementEnCours.clientTransactionId : null,
         client_id: clientFid ? clientFid.id : null,
@@ -6679,6 +6687,7 @@ async function payer(methode) {
       try {
         const totalCmd = Math.round(lignes.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.quantite) || 1), 0) * 100) / 100;
         await sb.from('commandes_en_cours').insert({
+          site: SITE_BORNE,      // 🏪 le KDS/la caisse du bon resto
           restaurant_id: RESTO_ID,
           numero: numAffiche,
           source: 'borne',
@@ -6824,14 +6833,16 @@ setInterval(() => {
 setInterval(async () => {
   try {
     const { data, error } = await sb.from('produits')
-      .select('id, indisponible, stock, actif')
+      .select('id, stock, actif')
       .eq('restaurant_id', RESTO_ID);
     if (error || !data) return;
+    const ruptures = await chargerRupturesSite();   // 🏪 v26.08-ag : les ruptures de CE resto seulement
     let change = false;
     data.forEach(d => {
       const p = produits.find(x => x.id === d.id);
       if (!p) return;
-      if (p.indisponible !== d.indisponible) { p.indisponible = d.indisponible; change = true; }
+      const indispo = ruptures ? ruptures.has(p.id) : p.indisponible;
+      if (p.indisponible !== indispo) { p.indisponible = indispo; change = true; }
       if (p.stock !== d.stock) { p.stock = d.stock; change = true; }
       if (p.actif !== d.actif) { p.actif = d.actif; change = true; }
     });
