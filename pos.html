@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bd</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-be</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -9638,7 +9638,7 @@ async function chargerHistorique() {
     //    clients(...) échoue — en const, ce filet de sécurité crashait
     //    (Assignment to constant variable) au lieu de sauver l'historique.
     let { data: ventes, error } = await sb.from('ventes')
-.select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, clients(nom, telephone, adresse, code_postal, ville, notes), lignes_vente(*)')      .eq('restaurant_id', RESTO_ID)
+.select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, clients(nom, telephone, adresse, code_postal, ville, notes), lignes_vente(*)')      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .gte('cree_le', debut.toISOString())
       .order('numero', { ascending: false });
     if (error) {
@@ -9648,7 +9648,7 @@ async function chargerHistorique() {
       console.error('Erreur historique (jointure ?):', error);
       const r2 = await sb.from('ventes')
         .select('id, numero, total, mode_paiement, statut, cree_le, canal, montant_net, client_id, lignes_vente(*)')
-        .eq('restaurant_id', RESTO_ID)
+        .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
         .gte('cree_le', debut.toISOString())
         .order('numero', { ascending: false });
       if (r2.error) throw r2.error;
@@ -9659,7 +9659,7 @@ async function chargerHistorique() {
     // 2) Commandes borne ANNULÉES uniquement (les encaissées ont créé une vente liée)
     const { data: bornesAnnulees } = await sb.from('commandes_en_cours')
       .select('id, numero, total, source, statut, cree_le, lignes, client_nom, client_telephone')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .eq('statut', 'annulee')
       .gte('cree_le', debut.toISOString());
 
@@ -10600,7 +10600,7 @@ async function calculerApercuCloture() {
     // Trouve la dernière clôture pour connaître le début de période
     const { data: dernieres } = await sb.from('clotures')
       .select('periode_fin')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .order('periode_fin', { ascending: false })
       .limit(1);
 
@@ -10614,7 +10614,7 @@ async function calculerApercuCloture() {
 
     const { data: ventes, error } = await sb.from('ventes')
       .select('total, mode_paiement, statut, cree_le, montant_net')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .gte('cree_le', debut.toISOString());
 
     if (error) throw error;
@@ -10868,7 +10868,7 @@ async function chargerVentesParJourDuMois(annee, mois) {
   try {
     const { data } = await sb.from('ventes')
       .select('cree_le')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .eq('statut', 'validee')
       .gte('cree_le', debut)
       .lte('cree_le', fin);
@@ -10899,7 +10899,7 @@ async function chargerStatsJour(iso) {
   try {
     const { data: ventes, error } = await sb.from('ventes')
       .select('id, numero, total, mode_paiement, statut, cree_le, canal, client_id, lignes_vente(nom_produit, quantite, prix_unitaire)')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .gte('cree_le', debut)
       .lte('cree_le', fin);
     
@@ -11060,7 +11060,7 @@ async function chargerVentesAnnulees() {
   try {
     const { data, error } = await sb.from('ventes')
       .select('id, numero, total, mode_paiement, cree_le, lignes_vente(nom_produit, quantite)')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .eq('statut', 'annulee')
       .order('cree_le', { ascending: false })
       .limit(100);
@@ -11117,7 +11117,7 @@ async function chargerCloturesPassees() {
   try {
     const { data, error } = await sb.from('clotures')
       .select('*')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .order('periode_fin', { ascending: false })
       .limit(60);
     
@@ -11314,7 +11314,7 @@ async function ouvrirCaissierInfo() {
   try {
     const { data, error } = await sb.from('ventes')
       .select('total')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .eq('caissier_id', caissierActif.id)
       .eq('statut', 'validee')
       .gte('cree_le', debut.toISOString());
@@ -11589,7 +11589,7 @@ async function chargerPerformanceEquipe() {
     // Charger ventes de la période avec caissier_id
     const { data: ventes, error } = await sb.from('ventes')
       .select('id, total, mode_paiement, cree_le, caissier_id, caissier_nom')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .eq('statut', 'validee')
       .gte('cree_le', debut)
       .lte('cree_le', fin);
@@ -11761,7 +11761,7 @@ async function ouvrirFicheCaissier(caissierId, nom) {
     // Charger ventes du caissier
     let query = sb.from('ventes')
       .select('id, total, mode_paiement, cree_le, lignes_vente(nom_produit, quantite, prix_unitaire)')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .eq('statut', 'validee')
       .gte('cree_le', debut)
       .lte('cree_le', fin);
@@ -12639,6 +12639,7 @@ function demarrerKDSRealtime() {
       filter: 'restaurant_id=eq.' + RESTO_ID
     }, (payload) => {
       const nouvelle = payload.new;
+      if (nouvelle && nouvelle.site && nouvelle.site !== SITE_ACTUEL) return;   // 🏪 v26.07-be : pas mon resto
       kdsCommandes.unshift(nouvelle);
       majBadgeKDS();
       afficherPopupNotif(nouvelle);
@@ -12651,6 +12652,7 @@ function demarrerKDSRealtime() {
       event: 'UPDATE', schema: 'public', table: 'commandes_en_cours',
       filter: 'restaurant_id=eq.' + RESTO_ID
     }, (payload) => {
+      if (payload.new && payload.new.site && payload.new.site !== SITE_ACTUEL) return;   // 🏪 v26.07-be
       const idx = kdsCommandes.findIndex(c => c.id === payload.new.id);
       if (idx >= 0) kdsCommandes[idx] = payload.new;
       majBadgeKDS();
@@ -12666,7 +12668,7 @@ async function chargerCommandesKDS() {
     const il_y_a_24h = new Date(Date.now() - 24*3600*1000).toISOString();
     const { data, error } = await sb.from('commandes_en_cours')
       .select('*')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .gte('cree_le', il_y_a_24h)
       .order('cree_le', { ascending: false });
     if (error) throw error;
