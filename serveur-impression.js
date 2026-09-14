@@ -21,7 +21,16 @@ const CONFIG = {
     // ⚠️ À MODIFIER : remplacer XXX par la vraie IP de l'imprimante borne
     borne:    { ip: '192.168.123.100', port: 9100, nom: 'Borne client' }
   },
-  largeur: 42
+  largeur: 42,
+  // 🏪 v8 : LA FICHE LÉGALE DE CE RESTAURANT (propre à ce Pi) — imprimée
+  //    sur le ticket client de la borne. Une case vide = ligne non imprimée.
+  resto: {
+    adresse: '78 av. de Saint-Just - 13013 Marseille',
+    siret:   '92226696000017',
+    tva:     'FR52922266960',
+    naf:     '5610C',
+    tel:     '04 91 89 38 50'
+  }
 };
 
 const ESC = '\x1B';
@@ -94,8 +103,9 @@ function genererBonPreparationEscPos(data, titre) {
 
   // Mode de service (A emporter / Sur place)
   const modeLbl = modeService === 'sur_place' ? 'Sur place'
-                : modeService === 'emporter' ? 'A emporter'
+                : (modeService === 'emporter' || modeService === 'a_emporter') ? 'A emporter'
                 : modeService === 'livraison' ? 'Livraison'
+                : (modeService === 'cc_comptoir' || modeService === 'cc_enligne' || modeService === 'click_collect') ? 'Click & Collect'
                 : modeService ? A(modeService) : '';
   if (modeLbl) s += CMD.taille2 + CMD.boldOn + modeLbl + '\n' + CMD.boldOff + CMD.largeOff;
   if (origine === 'borne') s += '[BORNE]\n';
@@ -265,7 +275,7 @@ function genererTicketClientEscPos(data) {
   if (tel) s += 'Tel : ' + A(tel) + '\n';
   // 🍽️ Mode de service bien visible (sur place / à emporter / …)
   const svc = modeService === 'sur_place' ? 'SUR PLACE'
-            : modeService === 'emporter' ? 'A EMPORTER'
+            : (modeService === 'emporter' || modeService === 'a_emporter') ? 'A EMPORTER'
             : modeService === 'livraison' ? 'LIVRAISON'
             : (modeService === 'cc_comptoir' || modeService === 'cc_enligne' || modeService === 'click_collect') ? 'CLICK & COLLECT'
             : '';
@@ -346,11 +356,17 @@ function genererTicketBorneClientEscPos(data) {
 
   // En-tête
   s += CMD.alignCenter + CMD.doubleOn + A(restoNom || 'Gin Khao') + '\n' + CMD.doubleOff;
-  s += 'Street Food Thai\n' + CMD.feed(1);
+  s += 'Street Food Thai\n';
+  if (CONFIG.resto && CONFIG.resto.adresse) s += A(CONFIG.resto.adresse) + '\n';   // 🏪 v8
+  s += CMD.feed(1);
 
   // Mode service
   if (modeService) {
-    const icone = modeService === 'sur_place' ? 'SUR PLACE' : 'A EMPORTER';
+    const icone = modeService === 'sur_place' ? 'SUR PLACE'
+                : (modeService === 'emporter' || modeService === 'a_emporter') ? 'A EMPORTER'
+                : modeService === 'livraison' ? 'LIVRAISON'
+                : (modeService === 'cc_comptoir' || modeService === 'cc_enligne' || modeService === 'click_collect') ? 'CLICK & COLLECT'
+                : 'A EMPORTER';
     s += CMD.boldOn + '[' + icone + ']\n' + CMD.boldOff;
   }
 
@@ -400,6 +416,15 @@ function genererTicketBorneClientEscPos(data) {
     s += 'Vous serez appele(e) par votre numero.\n';
   }
 
+  // 🏪 v8 : les mentions légales de CE restaurant
+  if (CONFIG.resto) {
+    const legal = [];
+    if (CONFIG.resto.siret) legal.push('SIRET : ' + CONFIG.resto.siret);
+    if (CONFIG.resto.tva)   legal.push('TVA : ' + CONFIG.resto.tva);
+    if (CONFIG.resto.naf)   legal.push('NAF : ' + CONFIG.resto.naf);
+    if (CONFIG.resto.tel)   legal.push('Tel : ' + CONFIG.resto.tel);
+    if (legal.length) s += CMD.feed(1) + CMD.alignCenter + legal.join('\n') + '\n';
+  }
   s += CMD.feed(2) + 'Merci pour votre commande !\n';
   s += CMD.feed(5) + CMD.cut;
   return s;
