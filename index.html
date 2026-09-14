@@ -3481,11 +3481,11 @@ html, body {
 </style>
 </head>
 <body>
-<!-- 🏪 Lot C : le sélecteur de restaurant -->
-<div id="mgr-site-bar" style="position:fixed;top:8px;right:12px;z-index:9999;display:none;gap:6px;background:rgba(10,9,8,.92);padding:6px 8px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.35);font-family:inherit;"></div>
+<!-- 🏪 Lot C : le sélecteur de restaurant vit dans le sous-titre de l'accueil (.resto) -->
 <style>
-  #mgr-site-bar button { border:0; background:transparent; color:#cfc6b8; font-size:12px; font-weight:600; padding:6px 10px; border-radius:999px; cursor:pointer; }
-  #mgr-site-bar button.actif { background:#E4B860; color:#0A0908; }
+  #mgr-site-select { -webkit-appearance:none; appearance:none; border:0; background:transparent; color:var(--gold); font:inherit; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; padding:0 18px 0 0; margin:0; cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23E4B860' stroke-width='1.6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right center; }
+  #mgr-site-select option { color:#0A0908; background:#fff; text-transform:none; letter-spacing:0; }
 </style>
 
 <!-- ====== ÉCRAN DE CONNEXION ====== -->
@@ -3545,7 +3545,7 @@ html, body {
           <div class="greeting-block">
             <div class="hello" id="home-date">—</div>
             <div class="name" id="home-greeting">Bonjour</div>
-            <div class="resto">Gin Khao · Saint Just</div>
+            <div class="resto" id="mgr-site-libelle">Gin Khao · Saint-Just</div>
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
             <button class="bell" aria-label="Notifications">
@@ -5648,13 +5648,14 @@ async function chargerDroitsManager() {
   return true;
 }
 function construireBarreSites() {
-  const bar = document.getElementById('mgr-site-bar');
-  if (!bar) return;
-  const boutons = SITES_AUTORISES.map((s) => ({ v: s, l: SITES_MGR[s] }));
-  if (SITES_AUTORISES.length > 1) boutons.push({ v: 'tous', l: 'Mes ' + SITES_AUTORISES.length + ' restos' });
-  bar.innerHTML = boutons.map((b) => '<button type="button" data-site="' + b.v + '"'
-    + (b.v === MGR_SITE ? ' class="actif"' : '') + ' onclick="changerSiteManager(\'' + b.v + '\')">' + b.l + '</button>').join('');
-  bar.style.display = boutons.length > 1 ? 'flex' : 'none';   // un seul resto : rien à choisir, barre masquée
+  const zone = document.getElementById('mgr-site-libelle');
+  if (!zone) return;
+  const choix = SITES_AUTORISES.map((s) => ({ v: s, l: SITES_MGR[s] }));
+  if (SITES_AUTORISES.length > 1) choix.push({ v: 'tous', l: 'Mes ' + SITES_AUTORISES.length + ' restos' });
+  if (choix.length === 1) { zone.textContent = 'Gin Khao · ' + choix[0].l; return; }   // un seul resto : texte simple
+  zone.innerHTML = 'Gin Khao · <select id="mgr-site-select" onchange="changerSiteManager(this.value)">'
+    + choix.map((c) => '<option value="' + c.v + '"' + (c.v === MGR_SITE ? ' selected' : '') + '>' + c.l + '</option>').join('')
+    + '</select>';
 }
 
 // ===== AUTHENTIFICATION (login gérant) =====
