@@ -3481,6 +3481,12 @@ html, body {
 </style>
 </head>
 <body>
+<!-- 🏪 Lot C : le sélecteur de restaurant -->
+<div id="mgr-site-bar" style="position:fixed;top:8px;right:12px;z-index:9999;display:none;gap:6px;background:rgba(10,9,8,.92);padding:6px 8px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.35);font-family:inherit;"></div>
+<style>
+  #mgr-site-bar button { border:0; background:transparent; color:#cfc6b8; font-size:12px; font-weight:600; padding:6px 10px; border-radius:999px; cursor:pointer; }
+  #mgr-site-bar button.actif { background:#E4B860; color:#0A0908; }
+</style>
 
 <!-- ====== ÉCRAN DE CONNEXION ====== -->
 <div id="login-screen" style="position:fixed; inset:0; z-index:1000; background:radial-gradient(circle at 20% 10%, rgba(230,57,70,0.12), transparent 50%), radial-gradient(circle at 80% 90%, rgba(228,184,96,0.10), transparent 50%), linear-gradient(180deg,#0a0908,#0d0a07); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 22px; font-family:'Manrope',sans-serif;">
@@ -5507,9 +5513,11 @@ async function insererFactureDansSupabase(facture) {
   const montant_ttc = Number(facture.montant_ttc) || 0;
   const categorie = mapperCategorieIA(facture.categorie);
 
+  const siteFacture = siteSaisieOuStop(); if (!siteFacture) return;   // 🏪 Lot C
   try {
     const { data, error } = await sbClient.from('charges').insert({
       restaurant_id: RESTO_ID,
+      site: siteFacture,
       categorie,
       date_charge,
       fournisseur,
@@ -5591,7 +5599,63 @@ function compresserImage(file) {
 const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
 const RESTO_ID = 'gin-khao';
+// 🏪 Lot C : LE RESTAURANT CONSULTÉ — Saint-Just par défaut, bascule par le
+//    sélecteur en haut de page (mémorisé). « tous » = les 4 côte à côte.
+//    MGR_SITES alimente .in('site', …) : un resto, ou les quatre.
+const SITES_MGR = { 'st-just': 'Saint-Just', 'st-antoine': 'Saint-Antoine', 'la-capelette': 'La Capelette', 'st-ferreol': 'Saint-Ferréol' };
+let MGR_SITE = 'st-just';
+try {
+  const _m = localStorage.getItem('mgr_site');
+  if (_m && (_m === 'tous' || SITES_MGR[_m])) MGR_SITE = _m;
+} catch (e) { /* privé : défaut */ }
+let MGR_SITES = [MGR_SITE];          // recalculé après lecture des droits du compte
+let SITES_AUTORISES = [];             // 🔐 les restos du compte connecté (table acces_manager)
+function changerSiteManager(s) {
+  if (s !== 'tous' && !SITES_MGR[s]) return;
+  try { localStorage.setItem('mgr_site', s); } catch (e) { /* ignore */ }
+  location.reload();
+}
+function siteSaisieOuStop() {
+  // une facture / un FEC appartiennent à UNE société : jamais en mode « tous »
+  if (MGR_SITE === 'tous') { alert('Choisis un restaurant (en haut de page) avant cette action : elle appartient à une seule société.'); return null; }
+  return MGR_SITE;
+}
 const sbClient = supabase.createClient(SB_URL, SB_KEY);
+// 🔐 Lot C : LES DROITS DU COMPTE — un email = ses restaurants, rien d'autre.
+//    Sans ligne de droits : aucun accès (fermé par défaut), déconnexion.
+async function chargerDroitsManager() {
+  let email = '';
+  try {
+    const { data: { session } } = await sbClient.auth.getSession();
+    email = String((session && session.user && session.user.email) || '').toLowerCase();
+  } catch (e) { email = ''; }
+  let sites = [];
+  try {
+    const { data } = await sbClient.from('acces_manager').select('sites').ilike('email', email).maybeSingle();
+    sites = (data && Array.isArray(data.sites)) ? data.sites.filter((x) => SITES_MGR[x]) : [];
+  } catch (e) { sites = []; }
+  SITES_AUTORISES = sites;
+  if (!SITES_AUTORISES.length) {
+    alert('Ce compte n\'a accès à aucun restaurant.\nDemande à l\'administrateur de l\'ajouter dans les droits (acces_manager).');
+    try { await sbClient.auth.signOut(); } catch (e) { /* ignore */ }
+    location.reload();
+    return false;
+  }
+  if (MGR_SITE === 'tous' && SITES_AUTORISES.length === 1) MGR_SITE = SITES_AUTORISES[0];
+  if (MGR_SITE !== 'tous' && !SITES_AUTORISES.includes(MGR_SITE)) MGR_SITE = SITES_AUTORISES[0];
+  MGR_SITES = MGR_SITE === 'tous' ? SITES_AUTORISES.slice() : [MGR_SITE];
+  construireBarreSites();
+  return true;
+}
+function construireBarreSites() {
+  const bar = document.getElementById('mgr-site-bar');
+  if (!bar) return;
+  const boutons = SITES_AUTORISES.map((s) => ({ v: s, l: SITES_MGR[s] }));
+  if (SITES_AUTORISES.length > 1) boutons.push({ v: 'tous', l: 'Mes ' + SITES_AUTORISES.length + ' restos' });
+  bar.innerHTML = boutons.map((b) => '<button type="button" data-site="' + b.v + '"'
+    + (b.v === MGR_SITE ? ' class="actif"' : '') + ' onclick="changerSiteManager(\'' + b.v + '\')">' + b.l + '</button>').join('');
+  bar.style.display = boutons.length > 1 ? 'flex' : 'none';   // un seul resto : rien à choisir, barre masquée
+}
 
 // ===== AUTHENTIFICATION (login gérant) =====
 async function verifierSession() {
@@ -5608,7 +5672,9 @@ async function verifierSession() {
   }
 }
 
-function afficherApp() {
+async function afficherApp() {
+  const ok = await chargerDroitsManager();   // 🔐 Lot C : les droits d'abord
+  if (!ok) return;
   document.getElementById('login-screen').style.display = 'none';
   // on retire le display:none inline pour laisser le CSS gérer (flex desktop / block mobile)
   document.getElementById('app-stage').style.display = '';
@@ -5658,7 +5724,7 @@ async function chargerStatsJour() {
 
     const { data, error } = await sbClient.from('ventes')
       .select('total, statut, cree_le')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .eq('statut', 'validee')
       .gte('cree_le', debut.toISOString());
 
@@ -5711,7 +5777,7 @@ async function chargerHistoriqueApp() {
 
     const { data: ventes, error } = await sbClient.from('ventes')
       .select('id, numero, total, mode_paiement, statut, cree_le, lignes_vente(nom_produit, quantite)')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .gte('cree_le', debut.toISOString())
       .order('numero', { ascending: false });
 
@@ -5964,7 +6030,7 @@ async function chargerRoiFidelite() {
   try {
     const [{ data: mvts, error: e1 }, { data: ventesMembres, error: e2 }] = await Promise.all([
       sbClient.from('fidelite_mouvements').select('points_delta, palier, created_at').lt('points_delta', 0),
-      sbClient.from('ventes').select('total, client_id').eq('restaurant_id', RESTO_ID).eq('statut', 'validee').not('client_id', 'is', null)
+      sbClient.from('ventes').select('total, client_id').eq('restaurant_id', RESTO_ID).in('site', MGR_SITES).eq('statut', 'validee').not('client_id', 'is', null)
     ]);
     if (e1) throw e1;
     if (e2) throw e2;
@@ -7126,11 +7192,13 @@ async function genererFEC() {
   
   try {
     // Appel de la fonction SQL
+    const siteFec = siteSaisieOuStop(); if (!siteFec) return;   // 🏪 Lot C : un FEC = une société
     const { data, error } = await sbClient.rpc('generer_fec', {
       p_restaurant_id: RESTO_ID,
       p_date_debut: dates.debut,
       p_date_fin: dates.fin,
-      p_taux_tva: fecTauxTVA
+      p_taux_tva: fecTauxTVA,
+      p_site: siteFec
     });
     
     if (error) throw error;
@@ -7558,7 +7626,7 @@ async function chargerKpisHome() {
 
     const { data: ventes, error } = await sbClient.from('ventes')
       .select('total, statut')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .gte('cree_le', debut.toISOString())
       .eq('statut', 'validee');
 
@@ -7592,7 +7660,7 @@ async function chargerVentesParHeureHome() {
 
     const { data: ventes, error } = await sbClient.from('ventes')
       .select('total, cree_le, statut')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .gte('cree_le', debut.toISOString())
       .eq('statut', 'validee');
 
@@ -7643,7 +7711,7 @@ async function chargerTopPlatsHome() {
     const [{ data: lignes, error }, exclusHome] = await Promise.all([
       sbClient.from('lignes_vente')
         .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
-        .eq('ventes.restaurant_id', RESTO_ID)
+        .eq('ventes.restaurant_id', RESTO_ID).in('ventes.site', MGR_SITES)
         .eq('ventes.statut', 'validee')
         .gte('ventes.cree_le', debut.toISOString()),
       getProduitsExclusTop()
@@ -7788,7 +7856,7 @@ async function chargerChargesData() {
   try {
     const { data, error } = await sbClient.from('charges')
       .select('*')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .order('date_charge', { ascending: false });
     if (error) throw error;
     chargesData = data || [];
@@ -7974,8 +8042,10 @@ async function sauverCharge() {
       }).eq('id', chargesEnEdition.id);
       if (error) throw error;
     } else {
+      const siteFacture = siteSaisieOuStop(); if (!siteFacture) return;   // 🏪 Lot C
       const { error } = await sbClient.from('charges').insert({
         restaurant_id: RESTO_ID,
+        site: siteFacture,
         categorie, date_charge, fournisseur, description,
         montant_ht, tva, montant_ttc, recurrent, notes,
         source: 'manuel'
@@ -8034,7 +8104,7 @@ async function autoDupliquerRecurrentes() {
     // Récupère les charges récurrentes du mois précédent
     const { data: recurrentes, error } = await sbClient.from('charges')
       .select('*')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .eq('recurrent', true)
       .eq('mois', moisPrecedentStr);
     if (error) return;
@@ -8043,7 +8113,7 @@ async function autoDupliquerRecurrentes() {
     // Récupère les charges récurrentes déjà créées ce mois-ci
     const { data: dejaCe, error: e2 } = await sbClient.from('charges')
       .select('fournisseur, categorie')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .eq('recurrent', true)
       .eq('mois', moisActuel);
     if (e2) return;
@@ -8061,6 +8131,7 @@ async function autoDupliquerRecurrentes() {
     const dateAuj = aujourdhui.toISOString().slice(0, 10);
     const nouvelles = aDupliquer.map(c => ({
       restaurant_id: RESTO_ID,
+      site: c.site || 'st-just',          // 🏪 Lot C : la récurrente garde sa société
       categorie: c.categorie,
       date_charge: dateAuj,
       fournisseur: c.fournisseur,
@@ -8139,7 +8210,7 @@ async function recupererCAetCommissions(moisYYYYMM) {
 
   const { data: ventes, error } = await sbClient.from('ventes')
     .select('total, montant_net, mode_paiement, canal, statut')
-    .eq('restaurant_id', RESTO_ID)
+    .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
     .gte('cree_le', debut)
     .lt('cree_le', fin)
     .eq('statut', 'validee');
@@ -8163,7 +8234,7 @@ async function recupererCAetCommissions(moisYYYYMM) {
 async function recupererCharges(moisYYYYMM) {
   const { data, error } = await sbClient.from('charges')
     .select('categorie, montant_ttc, montant_ht, tva')
-    .eq('restaurant_id', RESTO_ID)
+    .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
     .eq('mois', moisYYYYMM);
 
   if (error) {
@@ -8726,7 +8797,7 @@ async function chargerKpisVentes() {
 
     let qk = sbClient.from('ventes')
       .select('total, statut, canal, mode_paiement')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .gte('cree_le', debut.toISOString());
     if (fin) qk = qk.lt('cree_le', fin.toISOString());
     const { data: ventes, error } = await qk;
@@ -8774,7 +8845,7 @@ async function chargerDonutCanaux() {
 
     let qd = sbClient.from('ventes')
       .select('total, canal, statut')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .eq('statut', 'validee')
       .gte('cree_le', debut.toISOString());
     if (fin) qd = qd.lt('cree_le', fin.toISOString());
@@ -8866,7 +8937,7 @@ async function chargerTopPlatsVentes() {
     const finTop = dateFinPeriode(ventesPeriode);
     let qt = sbClient.from('lignes_vente')
       .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
-      .eq('ventes.restaurant_id', RESTO_ID)
+      .eq('ventes.restaurant_id', RESTO_ID).in('ventes.site', MGR_SITES)
       .eq('ventes.statut', 'validee')
       .gte('ventes.cree_le', debut.toISOString());
     if (finTop) qt = qt.lt('ventes.cree_le', finTop.toISOString());
@@ -8984,7 +9055,7 @@ async function chargerCalendrierVentes() {
 
     const { data: ventes, error } = await sbClient.from('ventes')
       .select('total, cree_le, statut')
-      .eq('restaurant_id', RESTO_ID)
+      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .eq('statut', 'validee')
       .gte('cree_le', debut.toISOString())
       .lt('cree_le', fin.toISOString());
@@ -9061,12 +9132,12 @@ async function ouvrirJourCal(annee, mois, jour) {
     const [{ data: ventes, error }, { data: lignes }] = await Promise.all([
       sbClient.from('ventes')
         .select('total, canal, statut, mode_paiement')
-        .eq('restaurant_id', RESTO_ID)
+        .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
         .gte('cree_le', debut.toISOString())
         .lt('cree_le', fin.toISOString()),
       sbClient.from('lignes_vente')
         .select('nom_produit, prix_unitaire, quantite, ventes!inner(restaurant_id, statut, cree_le)')
-        .eq('ventes.restaurant_id', RESTO_ID)
+        .eq('ventes.restaurant_id', RESTO_ID).in('ventes.site', MGR_SITES)
         .eq('ventes.statut', 'validee')
         .gte('ventes.cree_le', debut.toISOString())
         .lt('ventes.cree_le', fin.toISOString())
@@ -9689,7 +9760,7 @@ async function eqEnvoyerCharges() {
       + '\n\nRe-cliquer plus tard METTRA À JOUR le montant (pas de doublon).')) return;
     const b = eqBornesMois(mois);
     const { data: existantes, error: eSel } = await sbClient.from('charges')
-      .select('id').eq('restaurant_id', RESTO_ID).eq('source', 'pointeuse')
+      .select('id').eq('restaurant_id', RESTO_ID).in('site', MGR_SITES).eq('source', 'pointeuse')
       .gte('date_charge', mois + '-01').lte('date_charge', b.dernierJour).limit(1);
     if (eSel) throw eSel;
     const champs = {
@@ -9704,7 +9775,8 @@ async function eqEnvoyerCharges() {
       if (error) throw error;
       eqToast('📤 Charge Salaires mise à jour : ' + eqFmtEuro(total));
     } else {
-      const { error } = await sbClient.from('charges').insert(Object.assign({ restaurant_id: RESTO_ID, source: 'pointeuse', recurrent: false }, champs));
+      const siteSalaires = siteSaisieOuStop(); if (!siteSalaires) return;   // 🏪 Lot C
+      const { error } = await sbClient.from('charges').insert(Object.assign({ restaurant_id: RESTO_ID, site: siteSalaires, source: 'pointeuse', recurrent: false }, champs));
       if (error) throw error;
       eqToast('📤 ' + eqFmtEuro(total) + ' envoyés dans les charges (' + lbl + ')');
     }
