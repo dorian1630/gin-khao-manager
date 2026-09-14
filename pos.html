@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bh</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bi</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6676,7 +6676,7 @@ function passerEtapeParcours() {
     }
     finaliserParcours();
   } else if (e === 'formule_entree') {
-    if (composantsFixes(p).length > 0 || estMenuEtudiantCaisse(p)) { parcoursPlat.etape = 'fini'; passerEtapeParcours(); return; }
+    if (composantsFixes(p).length > 0 || estMenuSansEntreeCaisse(p)) { parcoursPlat.etape = 'fini'; passerEtapeParcours(); return; }
     afficherModaleFormuleEntree();
   } else if (e === 'fini') {
     finaliserParcours();
@@ -6716,7 +6716,7 @@ function ajouterDirect() {
       const premiereBoisson = produits.find(pp => pp.categorie_id === catBoissons.id);
       if (premiereBoisson) parcoursPlat.formule_boisson_id = premiereBoisson.id;
     }
-    const dispenseEntree = composantsFixes(p).length > 0 || estMenuEtudiantCaisse(p);
+    const dispenseEntree = composantsFixes(p).length > 0 || estMenuSansEntreeCaisse(p);
     const catEntrees = dispenseEntree ? null : categories.find(c => /entr[eé]e/i.test(c.nom));
     if (catEntrees && !parcoursPlat.formule_entree_id) {
       const premiereEntree = produits.find(pp => pp.categorie_id === catEntrees.id);
@@ -7278,7 +7278,7 @@ function rendreEditeur(modeAjout) {
         html += `<button class="mpp-option active" disabled style="opacity:.85;cursor:default;">${q > 1 ? q + '× ' : ''}${escapeHtmlPos(comp.label || (prod ? prod.nom : 'Composant'))}</button>`;
       });
       html += `</div></div>`;
-    } else if (!estMenuEtudiantCaisse(p)) {   // 🎓 v26.07-ba : jamais d'entrée pour l'Étudiant
+    } else if (!estMenuSansEntreeCaisse(p)) {   // 🎓 v26.07-ba / 🧒 -bi : jamais d'entrée pour l'Étudiant ni l'Enfant
       const catEntrees = categories.find(c => c.nom === 'Entrées');
       if (catEntrees) {
         // 🍱 visible_formule = false → l'entrée n'est pas proposée dans les formules
@@ -7364,7 +7364,7 @@ function verifierChoixComplets(l, p) {
   //   (une BOX a des composants fixes → pas d'entrée à choisir)
   if (p.est_formule === true) {
     if (!l.formule_boisson_id) return 'Veuillez choisir une boisson';
-    if (!estBoxCaisse(p) && !estMenuEtudiantCaisse(p) && !l.formule_entree_id) return 'Veuillez choisir une entrée';
+    if (!estBoxCaisse(p) && !estMenuSansEntreeCaisse(p) && !l.formule_entree_id) return 'Veuillez choisir une entrée';
   }
   return null;
 }
@@ -7375,6 +7375,12 @@ function estMenuEtudiantCaisse(p) {
   if (!p || !p.nom) return false;
   const nom = String(p.nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   return nom.indexOf('etudiant') !== -1;
+}
+// 🧒 v26.07-bi : les menus SANS entrée — Étudiant ET Enfant (plat + boisson).
+function estMenuSansEntreeCaisse(p) {
+  if (!p || !p.nom) return false;
+  const nom = String(p.nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return nom.indexOf('etudiant') !== -1 || nom.indexOf('enfant') !== -1;
 }
 
 // Valider l'ajout depuis la grande modale
