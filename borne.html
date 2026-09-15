@@ -3006,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ai</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ak</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3025,23 +3025,36 @@ const ETUDIANT_H_DEBUT = 11;   // dès 11:00:00
 const ETUDIANT_H_FIN   = 14;   // jusqu'à 13:59:59
 // 📍 v26.08-o : SITE de cette borne — "?site=saint-just" une fois dans l'URL → mémorisé.
 //    Même convention que la caisse/pointeuse. Repli : saint-just.
-const SITE_BORNE = (function () {
-  // 🏪 v26.08-ae : LE standard des slugs = celui de la base (st-just,
-  //    st-antoine, la-capelette, st-ferreol). Les anciennes mémoires
-  //    « saint-* » sont traduites — aucune borne n'écrit dans un site fantôme.
-  const TRAD = { 'saint-just': 'st-just', 'saint-antoine': 'st-antoine',
-                 'saint-ferreol': 'st-ferreol', 'saint-férréol': 'st-ferreol' };
-  try {
-    const p = new URLSearchParams(location.search).get('site');
-    if (p) localStorage.setItem('gk_site', p.trim().toLowerCase());
-    const brut = localStorage.getItem('gk_site') || 'st-just';
-    return TRAD[brut] || brut;
-  } catch (e) { return 'st-just'; }
-})();
+// 🏗️ v26.08-ak : LA FICHE D'INSTALLATION EST OBLIGATOIRE — injectée par Netlify
+//    (window.GK_CONFIG : supabaseUrl, supabaseKey, site). Sans fiche valide, la page
+//    s'arrête : aucune borne ne peut parler à une base qui n'est pas la sienne.
+//    Le site vient de la fiche, et d'elle seule.
+function gkFicheObligatoire() {
+  const f = (typeof window !== 'undefined' && window.GK_CONFIG && typeof window.GK_CONFIG === 'object') ? window.GK_CONFIG : null;
+  const ok = !!f && typeof f.supabaseUrl === 'string' && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(f.supabaseUrl)
+    && typeof f.supabaseKey === 'string' && f.supabaseKey.length > 40
+    && typeof f.site === 'string' && /^[a-z][a-z-]{1,24}$/.test(f.site);
+  if (ok) return { supabaseUrl: f.supabaseUrl, supabaseKey: f.supabaseKey, site: f.site };
+  const peindre = () => {
+    document.documentElement.innerHTML = '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0A0908;color:#F3EDE2;font-family:system-ui,sans-serif;text-align:center;padding:24px;">'
+      + '<div><div style="font-size:56px;margin-bottom:16px;">🏗️</div><div style="font-size:22px;font-weight:700;margin-bottom:10px;">Fiche d\'installation absente</div>'
+      + '<div style="font-size:15px;line-height:1.5;color:#cfc6b8;max-width:520px;">Cette page n\'est reliée à aucun restaurant.<br>La fiche (window.GK_CONFIG) doit être injectée par Netlify — voir la checklist d\'installation, étape 5.</div></div></body>';
+  };
+  if (document.body) peindre(); else document.addEventListener('DOMContentLoaded', peindre);
+  throw new Error('GK_CONFIG absente ou invalide : page arrêtée');
+}
+const GK_INSTALL = gkFicheObligatoire();
+// 🏪 v26.08-ak : LE SITE de cette borne = celui de la fiche d'installation, et rien d'autre.
+const SITE_BORNE = GK_INSTALL.site;
+try { localStorage.removeItem('gk_site'); } catch (e) { /* ignore */ }
+try {   // le site au marqueur de version (le marqueur précède ce script dans la page)
+  const _mvSite = document.getElementById('marqueur-version');
+  if (_mvSite) _mvSite.textContent += ' · ' + SITE_BORNE;
+} catch (e) { /* ignore */ }
 
 // ===== CONFIG (même base que la caisse et l'appli) =====
-const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
+const SB_URL = GK_INSTALL.supabaseUrl;
+const SB_KEY = GK_INSTALL.supabaseKey;
 const RESTO_ID = 'gin-khao';
 // ⚠️ La clé anon est publique par nature : TOUTE la sécurité repose sur les
 //    politiques RLS Supabase et sur la validation serveur (voir commentaire en tête).
