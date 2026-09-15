@@ -3483,8 +3483,9 @@ html, body {
 <body>
 <!-- 🏪 Lot C : le sélecteur de restaurant vit dans le sous-titre de l'accueil (.resto) -->
 <style>
-  #mgr-site-select { -webkit-appearance:none; appearance:none; border:0; background:transparent; color:var(--gold); font:inherit; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; padding:0 18px 0 0; margin:0; cursor:pointer;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23E4B860' stroke-width='1.6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right center; }
+  /* 🏪 Lot C : le sélecteur — une pastille dorée, évidente au doigt (iOS masque le chevron natif) */
+  #mgr-site-select { -webkit-appearance:none; appearance:none; border:1px solid var(--gold); border-radius:999px; background:rgba(228,184,96,.12); color:var(--gold); font:inherit; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:6px 30px 6px 12px; margin:2px 0 0; cursor:pointer; line-height:1.2; max-width:100%;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1.5 1.5l5.5 5.5 5.5-5.5' fill='none' stroke='%23E4B860' stroke-width='2'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
   #mgr-site-select option { color:#0A0908; background:#fff; text-transform:none; letter-spacing:0; }
 </style>
 
@@ -5257,6 +5258,26 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
 });
 
+// 🩺 Lot C : LES ERREURS SONT VISIBLES — un bandeau discret plutôt qu'une console muette
+function signalerErreurManager(msg) {
+  try {
+    let b = document.getElementById('mgr-erreur');
+    if (!b) {
+      b = document.createElement('div'); b.id = 'mgr-erreur';
+      b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:99999;background:#7a1f1f;color:#fff;font:12px/1.35 -apple-system,system-ui,sans-serif;padding:10px 40px 10px 12px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.4);';
+      const x = document.createElement('button'); x.textContent = '✕';
+      x.style.cssText = 'position:absolute;right:8px;top:6px;border:0;background:transparent;color:#fff;font-size:16px;cursor:pointer;';
+      x.onclick = () => b.remove();
+      b.appendChild(x);
+      const t = document.createElement('div'); t.id = 'mgr-erreur-txt'; b.appendChild(t);
+      document.body.appendChild(b);
+    }
+    document.getElementById('mgr-erreur-txt').textContent = '⚠️ ' + String(msg || 'Erreur inconnue').slice(0, 300);
+  } catch (e) { /* jamais bloquant */ }
+}
+window.addEventListener('error', (ev) => { if (ev && ev.message) signalerErreurManager(ev.message); });
+window.addEventListener('unhandledrejection', (ev) => { const r = ev && ev.reason; signalerErreurManager((r && (r.message || r.details)) || r); });
+
 // ===== PERIOD TABS =====
 document.querySelectorAll('.tabs .tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -5596,14 +5617,33 @@ function compresserImage(file) {
   });
 }
   // ===== FIDÉLITÉ : LECTURE DES VRAIS CLIENTS (Supabase) =====
-const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
+// 🏗️ Lot C7 : LA FICHE D'INSTALLATION EST OBLIGATOIRE — injectée par Netlify
+//    (window.GK_CONFIG : supabaseUrl, supabaseKey, site). Sans fiche valide, la page
+//    s'arrête : aucune page Manager ne peut parler à une base qui n'est pas la sienne.
+//    Le site vient de la fiche, et d'elle seule.
+function gkFicheObligatoire() {
+  const f = (typeof window !== 'undefined' && window.GK_CONFIG && typeof window.GK_CONFIG === 'object') ? window.GK_CONFIG : null;
+  const ok = !!f && typeof f.supabaseUrl === 'string' && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(f.supabaseUrl)
+    && typeof f.supabaseKey === 'string' && f.supabaseKey.length > 40
+    && typeof f.site === 'string' && /^[a-z][a-z-]{1,24}$/.test(f.site);
+  if (ok) return { supabaseUrl: f.supabaseUrl, supabaseKey: f.supabaseKey, site: f.site };
+  const peindre = () => {
+    document.documentElement.innerHTML = '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0A0908;color:#F3EDE2;font-family:system-ui,sans-serif;text-align:center;padding:24px;">'
+      + '<div><div style="font-size:56px;margin-bottom:16px;">🏗️</div><div style="font-size:22px;font-weight:700;margin-bottom:10px;">Fiche d\'installation absente</div>'
+      + '<div style="font-size:15px;line-height:1.5;color:#cfc6b8;max-width:520px;">Cette page n\'est reliée à aucun restaurant.<br>La fiche (window.GK_CONFIG) doit être injectée par Netlify — voir la checklist d\'installation, étape 5.</div></div></body>';
+  };
+  if (document.body) peindre(); else document.addEventListener('DOMContentLoaded', peindre);
+  throw new Error('GK_CONFIG absente ou invalide : page arrêtée');
+}
+const GK_INSTALL = gkFicheObligatoire();
+const SB_URL = GK_INSTALL.supabaseUrl;
+const SB_KEY = GK_INSTALL.supabaseKey;
 const RESTO_ID = 'gin-khao';
 // 🏪 Lot C : LE RESTAURANT CONSULTÉ — Saint-Just par défaut, bascule par le
 //    sélecteur en haut de page (mémorisé). « tous » = les 4 côte à côte.
 //    MGR_SITES alimente .in('site', …) : un resto, ou les quatre.
 const SITES_MGR = { 'st-just': 'Saint-Just', 'st-antoine': 'Saint-Antoine', 'la-capelette': 'La Capelette', 'st-ferreol': 'Saint-Ferréol' };
-let MGR_SITE = 'st-just';
+let MGR_SITE = GK_INSTALL.site;   // 🏗️ C7 : le site de l'installation
 try {
   const _m = localStorage.getItem('mgr_site');
   if (_m && (_m === 'tous' || SITES_MGR[_m])) MGR_SITE = _m;
@@ -8784,6 +8824,8 @@ function brancherTabsVentes() {
       ventesPeriode = p;
       // Mise à jour visuelle des tabs
       document.querySelectorAll('#screen-sales .tab').forEach(b => b.classList.toggle('active', b === btn));
+      // 🩺 accusé de réception immédiat : le libellé bascule avant même les requêtes
+      const elLbl = document.getElementById('ventes-ca-label'); if (elLbl) elLbl.textContent = libellePeriode(p) + ' · chargement…';
       // Recharger toutes les sections
       rafraichirVentes();
     });
@@ -8835,6 +8877,7 @@ async function chargerKpisVentes() {
     if (elCALabel) elCALabel.textContent = libellePeriode(ventesPeriode) + ' · en direct';
   } catch (e) {
     console.error('Erreur KPIs ventes:', e);
+    signalerErreurManager('Ventes (' + libellePeriode(ventesPeriode) + ') : ' + (e && (e.message || e.details) || e));
   }
 }
 
