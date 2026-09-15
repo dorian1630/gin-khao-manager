@@ -233,7 +233,8 @@ function genererTicketZEscPos(z) {
   let s = CMD.init;
   s += CMD.alignCenter + CMD.doubleOn + 'Gin Khao' + '\n' + CMD.doubleOff;
   s += 'Street Food Thai' + '\n';
-  s += '78 Av. de Saint-Just, 13013 Marseille' + '\n';
+  // 🏪 v9 : l'adresse de CE restaurant (fiche du Pi), plus rien de figé
+  if (CONFIG.resto && CONFIG.resto.adresse) s += A(CONFIG.resto.adresse) + '\n';
   s += CMD.feed(1);
   s += CMD.taille2 + CMD.boldOn + 'CLOTURE Z' + '\n' + CMD.boldOff + CMD.doubleOff;
   s += CMD.taille3 + CMD.boldOn + 'Z n.' + A(String(z.numero_z)) + '\n' + CMD.boldOff + CMD.doubleOff;
@@ -250,14 +251,21 @@ function genererTicketZEscPos(z) {
   const carteCaisse = z.total_carte_caisse != null ? z.total_carte_caisse : z.total_carte;
   s += ligneGD('Carte comptoir (TPE)', eur(carteCaisse)) + '\n';
   s += ligneGD('Carte borne (SumUp)', eur(z.total_carte_borne)) + '\n';
+  // 🧾 v9 : les autres règlements (tickets resto, plateformes, mixte) — le total
+  //    est toujours la somme des lignes affichées
+  if (Number(z.total_autre) > 0) s += ligneGD('Autres (TR, plateformes)', eur(z.total_autre)) + '\n';
   s += separateur('=') + '\n';
   s += CMD.boldOn + CMD.taille2;
   s += ligneGD('TOTAL Z', eur(z.total_ttc), Math.floor(CONFIG.largeur / 2)) + '\n';
   s += CMD.doubleOff + CMD.boldOff;
   s += separateur('=') + '\n';
   s += CMD.alignCenter;
-  s += 'TVA intracom FR76922266960' + '\n';
-  s += 'NAF/APE 5610C' + '\n';
+  // 🏪 v9 : les mentions légales de CE restaurant (fiche du Pi) — jamais un faux numéro
+  if (CONFIG.resto) {
+    if (CONFIG.resto.siret) s += 'SIRET ' + CONFIG.resto.siret + '\n';
+    if (CONFIG.resto.tva)   s += 'TVA intracom ' + CONFIG.resto.tva + '\n';
+    if (CONFIG.resto.naf)   s += 'NAF/APE ' + CONFIG.resto.naf + '\n';
+  }
   s += 'Document de gestion - a conserver' + '\n';
   s += CMD.feed(5) + CMD.cut;
   return s;
