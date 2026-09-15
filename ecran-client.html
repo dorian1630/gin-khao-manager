@@ -137,14 +137,17 @@
   //    peuvent vivre sur des appareils/navigateurs différents.
   //    Le site se règle par URL : ecran-client.html?site=st-antoine
   try {
-    var SITE = 'st-just';
-    try {
-      var p = new URLSearchParams(location.search).get('site');
-      if (p && /^[a-z][a-z-]{1,24}$/.test(p)) SITE = p;
-    } catch (e0) {}
-    var sbc = window.supabase.createClient(
-      'https://szpgbdnijyoquqmjhhjj.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak');
+    // 🏗️ v5 : la fiche d'installation (window.GK_CONFIG, injectée par Netlify) est OBLIGATOIRE.
+    var GK = (window.GK_CONFIG && typeof window.GK_CONFIG === 'object') ? window.GK_CONFIG : null;
+    var GK_OK = !!GK && typeof GK.supabaseUrl === 'string' && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(GK.supabaseUrl)
+      && typeof GK.supabaseKey === 'string' && GK.supabaseKey.length > 40
+      && typeof GK.site === 'string' && /^[a-z][a-z-]{1,24}$/.test(GK.site);
+    if (!GK_OK) {
+      document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0A0908;color:#F3EDE2;font-family:system-ui,sans-serif;text-align:center;padding:24px;"><div><div style="font-size:56px;margin-bottom:16px;">🏗️</div><div style="font-size:22px;font-weight:700;">Fiche d\'installation absente</div><div style="color:#cfc6b8;margin-top:8px;">Cette page n\'est reliée à aucun restaurant (voir la checklist, étape 5).</div></div></div>';
+      throw new Error('GK_CONFIG absente ou invalide : page arrêtée');
+    }
+    var SITE = GK.site;
+    var sbc = window.supabase.createClient(GK.supabaseUrl, GK.supabaseKey);
     sbc.channel('gk-ecran:' + SITE)
       .on('broadcast', { event: 'maj' }, function (msg) { afficher(msg.payload); })
       .subscribe();
