@@ -3006,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ag</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ah</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3590,6 +3590,38 @@ function appliquerRupturesSite(ruptures) {
   produits.forEach((p) => { p.indisponible = ruptures.has(p.id); });
 }
 
+// 🖼️ v26.08-ah : IMAGES OPTIMISÉES — Cloudinary redimensionne et compresse à la volée
+//    (format moderne, 600 px max, qualité auto) : ~30 Ko au lieu de ~2 Mo par visuel.
+//    Appliqué une fois au chargement : tous les affichages en profitent.
+function optimiserImageUrl(u) {
+  u = String(u == null ? '' : u).trim();
+  if (!u) return u;
+  // URL Cloudinary « brute » (version directement après /upload/) → on insère la transformation
+  return u.replace(/(res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)/i, '$1f_auto,q_auto,w_600,c_limit/$2');
+}
+function optimiserImagesCatalogue() {
+  produits.forEach((p) => { if (p && p.image_url) p.image_url = optimiserImageUrl(p.image_url); });
+  categories.forEach((c) => { if (c && c.image_url) c.image_url = optimiserImageUrl(c.image_url); });
+}
+// Préchargement discret : 4 images à la fois, après l'affichage — le cache se remplit,
+// les changements de catégorie deviennent instantanés.
+function prechargerImagesCatalogue() {
+  try {
+    const urls = [];
+    produits.forEach((p) => { if (p && p.image_url) urls.push(p.image_url); });
+    categories.forEach((c) => { if (c && c.image_url) urls.push(c.image_url); });
+    const uniques = Array.from(new Set(urls));
+    let i = 0;
+    const suivant = () => {
+      if (i >= uniques.length) return;
+      const img = new window.Image();
+      img.onload = img.onerror = suivant;
+      img.src = uniques[i++];
+    };
+    setTimeout(() => { for (let k = 0; k < 4; k++) suivant(); }, 800);
+  } catch (e) { /* jamais bloquant */ }
+}
+
 async function chargerMenu() {
   const { data: cats, error: eCats } = await sb.from('categories')
     .select('*').eq('restaurant_id', RESTO_ID).order('ordre');
@@ -3606,6 +3638,8 @@ async function chargerMenu() {
   // pour les retrouver via leurs UUIDs dans le parcours plat et upsell)
   produits = prods || [];
   appliquerRupturesSite(await chargerRupturesSite());   // 🏪 v26.08-ag : les ruptures de CE resto
+  optimiserImagesCatalogue();                            // 🖼️ v26.08-ah
+  prechargerImagesCatalogue();
   // Le noyau partagé (routage, détails, bons) travaille sur le MÊME catalogue.
   // On lui passe TOUTES les catégories (non filtrées) pour que le routage
   // connaisse Sauces/Suppléments, cachées côté affichage borne.
