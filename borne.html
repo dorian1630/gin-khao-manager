@@ -3006,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ah</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ai</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -6860,6 +6860,22 @@ setInterval(() => {
   carrouselIndex = (carrouselIndex + 1) % slides.length;
   slides[carrouselIndex].classList.add('visible');
 }, 5000);
+
+// 🎓 v26.08-ai : VEILLEUR DU CRÉNEAU ÉTUDIANT — à 11h00 et à 14h00 précises,
+//    le menu se redessine tout seul (les vignettes Étudiant s'ouvrent / se ferment)
+//    sans attendre un tap ni une coupure. Jamais pendant un parcours en cours.
+let _creneauEtuPrecedent = creneauEtudiantOuvert();
+setInterval(() => {
+  try {
+    const ouvert = creneauEtudiantOuvert();
+    if (ouvert === _creneauEtuPrecedent) return;
+    _creneauEtuPrecedent = ouvert;
+    const modale = document.getElementById('modal-parcours');
+    const enParcours = (modale && modale.classList.contains('actif')) || parcoursPlatEnCours;
+    const surMenu = document.getElementById('ecran-menu').classList.contains('actif');
+    if (surMenu && !enParcours) afficherMenu();
+  } catch (e) { /* jamais bloquant */ }
+}, 20000);
 
 // 🔄 Synchro auto des disponibilités (coupures faites depuis la caisse).
 //    Toutes les 30 s, on relit uniquement les champs utiles et on rafraîchit
