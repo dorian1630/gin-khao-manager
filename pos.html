@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bj</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bl</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6122,8 +6122,27 @@ function posConfirm(msg, onOk, opts) {
 // ============================================
 //  CONFIG — même base que l'app Gin Khao
 // ============================================
-const SB_URL = 'https://szpgbdnijyoquqmjhhjj.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cGdiZG5panlvcXVxbWpoaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTMwNDUsImV4cCI6MjA5NTE4OTA0NX0.fKarVKMIOc4Ez2kOvE6xyvVibuENSGev6RsouYDb8ak';
+// 🏗️ v26.07-bl : LA FICHE D'INSTALLATION EST OBLIGATOIRE — injectée par Netlify
+//    (window.GK_CONFIG : supabaseUrl, supabaseKey, site). Sans fiche valide, la page
+//    s'arrête : aucune caisse ne peut parler à une base qui n'est pas la sienne.
+//    Le site vient de la fiche, et d'elle seule.
+function gkFicheObligatoire() {
+  const f = (typeof window !== 'undefined' && window.GK_CONFIG && typeof window.GK_CONFIG === 'object') ? window.GK_CONFIG : null;
+  const ok = !!f && typeof f.supabaseUrl === 'string' && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(f.supabaseUrl)
+    && typeof f.supabaseKey === 'string' && f.supabaseKey.length > 40
+    && typeof f.site === 'string' && /^[a-z][a-z-]{1,24}$/.test(f.site);
+  if (ok) return { supabaseUrl: f.supabaseUrl, supabaseKey: f.supabaseKey, site: f.site };
+  const peindre = () => {
+    document.documentElement.innerHTML = '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0A0908;color:#F3EDE2;font-family:system-ui,sans-serif;text-align:center;padding:24px;">'
+      + '<div><div style="font-size:56px;margin-bottom:16px;">🏗️</div><div style="font-size:22px;font-weight:700;margin-bottom:10px;">Fiche d\'installation absente</div>'
+      + '<div style="font-size:15px;line-height:1.5;color:#cfc6b8;max-width:520px;">Cette page n\'est reliée à aucun restaurant.<br>La fiche (window.GK_CONFIG) doit être injectée par Netlify — voir la checklist d\'installation, étape 5.</div></div></body>';
+  };
+  if (document.body) peindre(); else document.addEventListener('DOMContentLoaded', peindre);
+  throw new Error('GK_CONFIG absente ou invalide : page arrêtée');
+}
+const GK_INSTALL = gkFicheObligatoire();
+const SB_URL = GK_INSTALL.supabaseUrl;
+const SB_KEY = GK_INSTALL.supabaseKey;
 const RESTO_ID = 'gin-khao';
 // 🗂️ v26.07-ay : les outils de l'ordre de la carte
 function normCat(nom) {
@@ -6139,16 +6158,14 @@ function poidsCat(nom) {
   for (let i = 0; i < FIN_CATS.length; i++) { if (n.includes(FIN_CATS[i])) return 1000 + i; }
   return 500; // le milieu : départagé par l'alphabet
 }
-// 🏪 v26.07-as : LE SITE de cette machine — réglable par URL, mémorisé.
-//    Ouvrir UNE FOIS  pos.html?site=st-antoine  (slugs : st-just, st-antoine,
-//    la-capelette, st-ferreol). Retour : ?site=reset. Défaut : st-just.
-let SITE_ACTUEL = 'st-just';
-try {
-  const _siteParam = new URLSearchParams(location.search).get('site');
-  if (_siteParam === 'reset') localStorage.removeItem('site_resto');
-  else if (_siteParam && /^[a-z][a-z-]{1,24}$/.test(_siteParam)) localStorage.setItem('site_resto', _siteParam);
-  SITE_ACTUEL = localStorage.getItem('site_resto') || 'st-just';
-} catch (e) { /* privé/incognito : défaut */ }
+// 🏪 v26.07-bl : LE SITE de cette caisse = celui de la fiche d'installation, et rien
+//    d'autre (plus de paramètre d'URL ni de mémoire locale : une installation = un resto).
+const SITE_ACTUEL = GK_INSTALL.site;
+try { localStorage.removeItem('site_resto'); } catch (e) { /* ignore */ }
+try {   // le site au marqueur de version (badge de diagnostic, lu jusque dans les logs du Pi)
+  const _mvSite = document.getElementById('marqueur-version');
+  if (_mvSite) _mvSite.textContent += ' · ' + SITE_ACTUEL;
+} catch (e) { /* ignore */ }
 
 // Client Supabase — avec un "lock" neutre : navigator.locks bloque à l'infini
 // dans certaines WebView Android (bug connu), ce qui gèle getSession().
@@ -13254,17 +13271,13 @@ document.getElementById('overlay-cloture').addEventListener('click', e => {
 const POINTEUSE_URL = '/.netlify/functions/pointer';
 const SITES_POINTEUSE = ['saint-just', 'la-capelette', 'saint-fereol', 'saint-antoine'];
 let SITE_CAISSE = 'saint-just';
-// 📍 Site réglable PAR TABLETTE, sans redéploiement (même recette que ?relais=) :
-//    ouvrir UNE FOIS  pos.html?site=la-capelette  (mémorisé) · retour : ?site=reset
-try {
-  const _siteParam = new URLSearchParams(location.search).get('site');
-  if (_siteParam === 'reset') localStorage.removeItem('pointeuse_site');
-  else if (_siteParam && SITES_POINTEUSE.includes(_siteParam.trim().toLowerCase())) {
-    localStorage.setItem('pointeuse_site', _siteParam.trim().toLowerCase());
-  }
-  const _siteMemo = localStorage.getItem('pointeuse_site');
-  if (_siteMemo && SITES_POINTEUSE.includes(_siteMemo)) SITE_CAISSE = _siteMemo;
-} catch (e) { console.warn('Site pointeuse : repli saint-just (' + e.message + ')'); }
+// 📍 v26.07-bl : le site de la pointeuse SUIT LA FICHE D'INSTALLATION (traduit dans le
+//    dialecte de la pointeuse). Plus de réglage par URL ni de mémoire locale.
+{
+  const POINTEUSE_PAR_SITE = { 'st-just': 'saint-just', 'st-antoine': 'saint-antoine', 'la-capelette': 'la-capelette', 'st-ferreol': 'saint-fereol' };
+  SITE_CAISSE = POINTEUSE_PAR_SITE[SITE_ACTUEL] || SITE_ACTUEL;
+  try { localStorage.removeItem('pointeuse_site'); } catch (e) { /* ignore */ }
+}
 // Le site actif s'affiche au marqueur de version (contrôle visuel immédiat,
 // et il voyage dans le badge version lu par le Pi — source unique du pied de page)
 try {
