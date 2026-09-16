@@ -12,14 +12,33 @@
 const http = require('http');
 const net = require('net');
 
-const CONFIG = {
+// 🗂️ v11 : LA FICHE DU PI (pi-config.json, à côté de ce fichier) — site, base, imprimantes,
+//    fiche légale. Un seul programme pour les 4 restaurants. Sans fiche : les valeurs
+//    intégrées ci-dessous (Saint-Just) restent en vigueur.
+function lirePiConfig() {
+  try {
+    const brut = require('fs').readFileSync(__dirname + '/pi-config.json', 'utf8');
+    const f = JSON.parse(brut);
+    if (!f || typeof f !== 'object') return null;
+    return f;
+  } catch (e) { return null; }
+}
+const PI_FICHE = lirePiConfig();
+function fusionnerImprimantes(defauts, fiche) {
+  if (!fiche || typeof fiche !== 'object') return defauts;
+  const out = {};
+  Object.keys(defauts).forEach((n) => { out[n] = Object.assign({}, defauts[n], fiche[n] || {}); });
+  Object.keys(fiche).forEach((n) => { if (!out[n]) out[n] = Object.assign({ port: 9100 }, fiche[n]); });
+  return out;
+}
+const CONFIG_INTEGREE = {
   port: 9100,
   imprimantes: {
     cuisine:  { ip: '192.168.1.245', port: 9100, nom: 'Cuisine (SAGA)' },
     comptoir: { ip: '192.168.1.246', port: 9100, nom: 'Comptoir (Epson)' },
     sushi:    { ip: '192.168.1.149', port: 9100, nom: 'Station Sushi' },
     // ⚠️ À MODIFIER : remplacer XXX par la vraie IP de l'imprimante borne
-    borne:    { ip: '192.168.123.100', port: 9100, nom: 'Borne client' }
+    borne:    { ip: '192.168.123.100', port: 9100, nom: 'Borne client', actif: false }   // non branchée : ignorée par /sante
   },
   largeur: 42,
   // 🏪 v8 : LA FICHE LÉGALE DE CE RESTAURANT (propre à ce Pi) — imprimée
@@ -32,6 +51,16 @@ const CONFIG = {
     tel:     '04 91 89 38 50'
   }
 };
+const CONFIG = {
+  port: (PI_FICHE && Number(PI_FICHE.port)) || CONFIG_INTEGREE.port,
+  imprimantes: fusionnerImprimantes(CONFIG_INTEGREE.imprimantes, PI_FICHE && PI_FICHE.imprimantes),
+  largeur: (PI_FICHE && Number(PI_FICHE.largeur)) || CONFIG_INTEGREE.largeur,
+  resto: Object.assign({}, CONFIG_INTEGREE.resto, (PI_FICHE && PI_FICHE.resto) || {}),
+  site: (PI_FICHE && PI_FICHE.site) || 'st-just',
+  source: PI_FICHE ? 'pi-config.json' : 'intégrée (Saint-Just)'
+};
+// 🍣 Un resto sans station sushi (imprimante déclarée inactive) : les bons sushi sortent en cuisine.
+function imprimanteSushi() { const s = CONFIG.imprimantes.sushi; return (s && s.actif !== false) ? s : CONFIG.imprimantes.cuisine; }
 
 const ESC = '\x1B';
 const GS = '\x1D';
@@ -145,6 +174,14 @@ function genererBonPreparationEscPos(data, titre) {
 
 // 📦 BON DE LIVRAISON — pour le livreur (imprimé au comptoir).
 // Grand format : le livreur doit lire l'adresse d'un coup d'œil.
+// 📞 v12 : le téléphone du client en 06.58.03.99.66 (+33 traduit, exotiques intacts)
+function formaterTel(tel) {
+  let t = String(tel || '').replace(/[^0-9+]/g, '');
+  if (t.startsWith('+33')) t = '0' + t.slice(3);
+  else if (t.startsWith('0033')) t = '0' + t.slice(4);
+  if (!/^0\d{9}$/.test(t)) return String(tel || '');
+  return t.match(/.{2}/g).join('.');
+}
 function genererBonLivraisonEscPos(data) {
   const { numero, date, client, items, total, modePaiement, fraisLivraison, appoint } = data;
   const A = versAscii;
@@ -161,7 +198,8 @@ function genererBonLivraisonEscPos(data) {
   // Client : nom + téléphone en gros (le livreur appelle depuis la rue)
   s += CMD.largeOn + CMD.boldOn;
   s += A((c.nom || 'Client').toUpperCase()) + '\n';
-  if (c.telephone) s += A(c.telephone) + '\n';
+  // 📞 v12 : téléphone DEUX FOIS PLUS GROS (hauteur + largeur), pointé
+  if (c.telephone) s += CMD.doubleOn + A(formaterTel(c.telephone)) + '\n' + CMD.largeOn;
   s += CMD.boldOff + CMD.largeOff;
   s += separateur('-') + '\n';
 
@@ -438,6 +476,22 @@ function genererTicketBorneClientEscPos(data) {
   return s;
 }
 
+// 🩺 v10 : SANTÉ d'une imprimante — une connexion TCP (1,5 s max), rien n'est imprimé.
+function testerImprimante(imprimante) {
+  return new Promise((resolve) => {
+    const debut = Date.now();
+    const client = new net.Socket();
+    let fini = false;
+    const conclure = (ok, detail) => { if (fini) return; fini = true; try { client.destroy(); } catch (e) { /* ignore */ }
+      resolve({ nom: imprimante.nom, ip: imprimante.ip, ok, ms: Date.now() - debut, detail: detail || null }); };
+    client.setTimeout(1500);
+    client.connect(imprimante.port, imprimante.ip, () => conclure(true));
+    client.on('timeout', () => conclure(false, 'timeout'));
+    client.on('error', (err) => conclure(false, err.code || err.message));
+  });
+}
+const DEMARRE_LE = Date.now();
+const VERSION_SERVEUR = 'v12';
 function envoyerVersImprimante(imprimante, donneesEscPos) {
   return new Promise((resolve, reject) => {
     const client = new net.Socket();
@@ -487,6 +541,20 @@ const serveur = http.createServer((req, res) => {
     return;
   }
 
+  // 🩺 v10 : /sante — l'état du serveur et de chaque imprimante, en JSON, pour la
+  //    clinique d'installation, le battement de cœur du relais et le dépannage.
+  if (req.method === 'GET' && req.url === '/sante') {
+    const noms = Object.keys(CONFIG.imprimantes).filter((n) => CONFIG.imprimantes[n].actif !== false);   // les imprimantes déclarées inactives ne comptent pas
+    Promise.all(noms.map((n) => testerImprimante(CONFIG.imprimantes[n])))
+      .then((etats) => {
+        const imprimantes = {};
+        noms.forEach((n, i) => { imprimantes[n] = etats[i]; });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, version: VERSION_SERVEUR, source: CONFIG.source, site: CONFIG.site, port: CONFIG.port, adresse: (CONFIG.resto && CONFIG.resto.adresse) || null,
+          siret: (CONFIG.resto && CONFIG.resto.siret) || null, uptime_s: Math.round((Date.now() - DEMARRE_LE) / 1000), imprimantes, heure: new Date().toISOString() }));
+      });
+    return;
+  }
   if (req.method === 'GET' && req.url === '/test-cuisine') {
     const escpos = genererBonPreparationEscPos({ numero: 'TEST', heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
       items: [{ quantite: 1, nom: 'Pad Thai Poulet' }, { quantite: 2, nom: 'Curry Vert Boeuf' }] }, 'BON CUISINE');
@@ -499,7 +567,7 @@ const serveur = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/test-sushi') {
     const escpos = genererBonPreparationEscPos({ numero: 'TEST', heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
       items: [{ quantite: 1, nom: 'California Saumon' }, { quantite: 2, nom: 'Maki Concombre' }] }, 'BON SUSHI');
-    envoyerVersImprimante(CONFIG.imprimantes.sushi, escpos)
+    envoyerVersImprimante(imprimanteSushi(), escpos)
       .then(r => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, message: 'Envoyé à ' + r.imprimante })); })
       .catch(e => { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, erreur: e.message })); });
     return;
@@ -541,7 +609,7 @@ const serveur = http.createServer((req, res) => {
 
         if (data.bonSushi) {
           const escpos = genererBonPreparationEscPos(Object.assign({}, data.bonSushi, { refBorne: data.refBorne }), 'BON SUSHI');
-          try { const r = await envoyerVersImprimante(CONFIG.imprimantes.sushi, escpos); resultats.push({ type: 'sushi', ok: true, imprimante: r.imprimante }); }
+          try { const r = await envoyerVersImprimante(imprimanteSushi(), escpos); resultats.push({ type: 'sushi', ok: true, imprimante: r.imprimante }); }
           catch (e) { resultats.push({ type: 'sushi', ok: false, erreur: e.message }); }
         }
 
