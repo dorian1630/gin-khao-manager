@@ -5433,8 +5433,15 @@ async function scanFacture(input) {
 
 // Convertit une date au format ISO YYYY-MM-DD, peu importe le format d'entrée
 // Gère : "31/05/2026", "31-05-2026", "2026-05-31", "05/31/2026", "31/05/26", etc.
+// 📅 C8 : LES JOURS SONT LOCAUX (heure de Marseille), jamais UTC. toISOString()
+//    basculait minuit local sur la veille : le FEC « du mois » allait du 31 août
+//    au 29 septembre, une charge saisie à 00h30 était datée de la veille, etc.
+function ymdLocal(d) {
+  d = d instanceof Date ? d : new Date(d);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function normaliserDate(dateStr) {
-  if (!dateStr) return new Date().toISOString().slice(0, 10);
+  if (!dateStr) return ymdLocal(new Date());
   const s = String(dateStr).trim();
 
   // Déjà au format ISO ?
@@ -5452,11 +5459,11 @@ function normaliserDate(dateStr) {
   // Fallback : tenter de parser via Date()
   const d = new Date(s);
   if (!isNaN(d.getTime())) {
-    return d.toISOString().slice(0, 10);
+    return ymdLocal(d);
   }
 
   // Si rien ne marche, utiliser aujourd'hui
-  return new Date().toISOString().slice(0, 10);
+  return ymdLocal(new Date());
 }
 
 // Convertit une catégorie texte (de l'IA / Google Sheets) vers les 8 catégories Supabase
@@ -6944,7 +6951,7 @@ function ouvrirEditionClient() {
   document.getElementById('ed-client-tel').value = c.telephone || '';
   document.getElementById('ed-client-email').value = c.email || '';
   document.getElementById('ed-client-anniv').value = c.date_anniversaire || '';
-  document.getElementById('ed-client-anniv').max = new Date().toISOString().slice(0, 10);
+  document.getElementById('ed-client-anniv').max = ymdLocal(new Date());
   document.getElementById('ed-client-points').value = c.points || 0;
 }
 
@@ -7018,7 +7025,7 @@ function ouvrirCreationClientApp() {
   document.getElementById('nc-tel').value = '';
   document.getElementById('nc-email').value = '';
   document.getElementById('nc-anniv').value = '';
-  document.getElementById('nc-anniv').max = new Date().toISOString().slice(0, 10);
+  document.getElementById('nc-anniv').max = ymdLocal(new Date());
 
   setTimeout(() => document.getElementById('nc-nom').focus(), 100);
 }
@@ -7164,8 +7171,8 @@ function choisirPeriodeFEC(btn) {
   // Pré-remplir les dates si custom
   if (fecPeriode === 'custom') {
     const now = new Date();
-    const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-    const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    const debutMois = ymdLocal(new Date(now.getFullYear(), now.getMonth(), 1));   // 📅 C8 : le 1er du mois, pas la veille
+    const finMois = ymdLocal(new Date(now.getFullYear(), now.getMonth() + 1, 0));
     const inputDebut = document.getElementById('fec-date-debut');
     const inputFin = document.getElementById('fec-date-fin');
     if (!inputDebut.value) inputDebut.value = debutMois;
@@ -7206,8 +7213,8 @@ function calculerDatesFEC() {
   }
   
   return {
-    debut: debut.toISOString().slice(0, 10),
-    fin: fin.toISOString().slice(0, 10)
+    debut: ymdLocal(debut),   // 📅 C8
+    fin: ymdLocal(fin)
   };
 }
 
@@ -8030,7 +8037,7 @@ function ouvrirEditeurCharge(id) {
   } else {
     // Nouveau : valeurs par défaut
     document.getElementById('ch-categorie').value = 'matieres_premieres';
-    document.getElementById('ch-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('ch-date').value = ymdLocal(new Date());
     document.getElementById('ch-fournisseur').value = '';
     document.getElementById('ch-description').value = '';
     document.getElementById('ch-ht').value = '';
@@ -8169,7 +8176,7 @@ async function autoDupliquerRecurrentes() {
     if (!confirm(`📅 ${aDupliquer.length} charge${aDupliquer.length > 1 ? 's' : ''} récurrente${aDupliquer.length > 1 ? 's' : ''} à dupliquer pour ce mois :\n\n${liste}\n\nVeux-tu les ajouter automatiquement ?`)) return;
 
     // Insertion en masse, mêmes montants, date = aujourd'hui
-    const dateAuj = aujourdhui.toISOString().slice(0, 10);
+    const dateAuj = ymdLocal(aujourdhui);   // 📅 C8
     const nouvelles = aDupliquer.map(c => ({
       restaurant_id: RESTO_ID,
       site: c.site || 'st-just',          // 🏪 Lot C : la récurrente garde sa société
@@ -8760,7 +8767,7 @@ function libellePeriode(periode) {
 function ouvrirFiltrePeriode() {
   const overlay = document.getElementById('modal-periode');
   if (!overlay) return;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = ymdLocal(new Date());   // 📅 C8
   const inDeb = document.getElementById('periode-debut');
   const inFin = document.getElementById('periode-fin');
   if (inDeb) { inDeb.max = today; inDeb.value = ventesDateDebut || today; }
@@ -9286,7 +9293,12 @@ function brancherInitVentes() {
 // gérant connecté ; pointages en lecture seule — inaltérables). Les
 // corrections et la clôture des oublis passent par la fonction serveur
 // /equipe (gardée par la session), seule détentrice de la clé service.
-const EQ_SITES = { 'saint-just': 'Saint-Just', 'la-capelette': 'La Capelette', 'saint-fereol': 'Saint-Féréol', 'saint-antoine': 'Saint-Antoine' };
+const EQ_SITES_TOUS = { 'saint-just': 'Saint-Just', 'la-capelette': 'La Capelette', 'saint-fereol': 'Saint-Féréol', 'saint-antoine': 'Saint-Antoine' };
+// 🏪 C8 : une installation = un restaurant → l'Équipe ne propose que SON site
+//    (traduit dans le dialecte de la pointeuse). Les libellés restent connus pour l'affichage.
+const EQ_SITE_INSTALL = ({ 'st-just': 'saint-just', 'st-antoine': 'saint-antoine', 'la-capelette': 'la-capelette', 'st-ferreol': 'saint-fereol' })[GK_INSTALL.site] || null;
+const EQ_SITES = (EQ_SITE_INSTALL && EQ_SITES_TOUS[EQ_SITE_INSTALL]) ? { [EQ_SITE_INSTALL]: EQ_SITES_TOUS[EQ_SITE_INSTALL] } : EQ_SITES_TOUS;
+const eqLibelleSite = (s) => EQ_SITES_TOUS[s] || EQ_SITES[s] || s;   // l'affichage garde tous les libellés
 const EQ_TYPES = { entree: '🟢 Entrée', pause: '⏸️ Pause', reprise: '▶️ Reprise', sortie: '👋 Sortie' };
 let eqEmployes = [];
 let eqHoraires = [];
@@ -9452,7 +9464,7 @@ function eqRendreDirect(points20h) {
     const lblEtat = l.etat === 'present' ? 'En poste' : (l.etat === 'pause' ? 'En pause' : 'Absent');
     let sous = '—';
     if (l.dernier && l.etat !== 'absent') {
-      sous = (EQ_SITES[l.dernier.site] || l.dernier.site) + ' · depuis ' + eqHeureParis(l.dernier.horodatage) + ' · ' + eqFmtMin(l.cumul) + ' aujourd\u2019hui';
+      sous = eqLibelleSite(l.dernier.site) + ' · depuis ' + eqHeureParis(l.dernier.horodatage) + ' · ' + eqFmtMin(l.cumul) + ' aujourd\u2019hui';
     } else if (l.dernier) {
       sous = 'Parti à ' + eqHeureParis(l.dernier.horodatage) + (l.cumul ? ' · ' + eqFmtMin(l.cumul) + ' aujourd\u2019hui' : '');
     }
@@ -9581,7 +9593,7 @@ function eqRendreListe() {
     return '<div class="eq-ligne" style="' + (e.actif ? '' : 'opacity:0.5;') + '">'
       + '<div class="eq-avatar">' + eqEsc(eqInitiales(e.prenom, e.nom)) + '</div>'
       + '<div class="eq-info"><div class="eq-nom">' + eqEsc(e.prenom + ' ' + e.nom) + (e.actif ? '' : ' <span style="font-size:10px;color:var(--text-dim);">(désactivé)</span>') + '</div>'
-      + '<div class="eq-sous">' + eqEsc(EQ_SITES[e.site_principal] || e.site_principal || '—') + '</div></div>'
+      + '<div class="eq-sous">' + eqEsc(eqLibelleSite(e.site_principal) || '—') + '</div></div>'
       + '<button class="eq-mini" onclick="eqOuvrirFiche(\'' + e.id + '\')">🪪 Badge</button>'
       + '</div>';
   }).join('');
@@ -9669,7 +9681,7 @@ function eqHtmlCarte(e, dataUrl) {
     + '<img src="' + dataUrl + '" alt="QR">'
     + '<div class="ct"><div class="marque">GIN KHAO</div>'
     + '<div class="nomemp">' + eqEsc(e.prenom) + '<br>' + eqEsc((e.nom || '').toUpperCase()) + '</div>'
-    + '<div class="siteemp">' + eqEsc(EQ_SITES[e.site_principal] || '') + '</div></div></div>';
+    + '<div class="siteemp">' + eqEsc(e.site_principal ? eqLibelleSite(e.site_principal) : '') + '</div></div></div>';
 }
 function eqOuvrirImpression(cartesHtml) {
   const w = window.open('', '_blank');
@@ -9940,7 +9952,7 @@ async function eqAjouterPointage() {
   else eqToast('⚠️ ' + ((r && r.erreur) || 'échec'));
 }
 async function eqCloturerOublis() {
-  if (!confirm('Fermer automatiquement les journées restées ouvertes (> 14 h) sur les 4 sites ?')) return;
+  if (!confirm('Fermer automatiquement les journées restées ouvertes (> 14 h) ?')) return;
   let total = 0, echec = null;
   const sites = Object.keys(EQ_SITES);
   for (let i = 0; i < sites.length; i++) {
