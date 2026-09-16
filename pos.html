@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bo</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bp</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -10625,7 +10625,7 @@ function preparerImpression(lignesTicket, venteLocale) {
       date: dateBon,
       client: {
         nom: venteLocale.client.nom || '',
-        telephone: venteLocale.client.telephone || '',
+        telephone: formatTelFR(venteLocale.client.telephone || ''),   // 📞 v26.07-bp : pointé (06.58.03.99.66) sur le bon livreur
         adresse: venteLocale.client.adresse || '',
         code_postal: venteLocale.client.code_postal || '',
         ville: venteLocale.client.ville || '',
