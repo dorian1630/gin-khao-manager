@@ -3008,7 +3008,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-ak</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-al</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3729,7 +3729,7 @@ function afficherMenu() {
     return `
       <div class="plat-wrapper">
         <div class="plat-prix-top">${prixAffiche}</div>
-        <div class="plat-card ${rupture?'rupture':''} ${indispo?'indispo':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}')" ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
+        <div class="plat-card ${rupture?'rupture':''} ${indispo?'indispo':''} ${hasImage?'has-image':''}" onclick="ajouter('${p.id}', event)" ${hasImage?`style="background-image:url('${imgUrl}')"`:''}>
           ${horsCreneauEtu ? '<div class="plat-indispo-badge">🎓 LE MIDI<br>11 h – 14 h</div>' : (indispo ? '<div class="plat-indispo-badge">VICTIME DE<br>SON SUCCÈS</div>' : '')}
           ${rupture ? '<div class="plat-rupture-badge">Épuisé</div>' : ''}
           ${!hasImage ? `
@@ -3744,7 +3744,7 @@ function afficherMenu() {
 }
 
 // ===== PANIER =====
-function ajouter(produitId) {
+function ajouter(produitId, ev) {
   const p = produits.find(x => x.id === produitId);
   if (!p) return;
   // 🎓 Hors créneau : message poli (au lieu du refus silencieux)
@@ -3769,7 +3769,14 @@ function ajouter(produitId) {
   }
 
   // Sinon, ajout direct au panier (comportement original)
+  // 🛒 v26.08-al : l'image du plat s'envole jusqu'au panier (produits sans parcours :
+  //    pokébowls, boissons, desserts…) — même animation que les cartes d'upsell.
+  const avant = nbArticles();
   ajouterDirect(p);
+  if (nbArticles() > avant) {
+    const carte = ev && ev.target && ev.target.closest ? ev.target.closest('.plat-card') : null;
+    if (carte) animerVolVersPanier(carte);
+  }
 }
 
 // Ajout direct au panier (sans options)
