@@ -5260,7 +5260,7 @@ navBtns.forEach(btn => {
 
 // 🏷️ C10 : LE MARQUEUR DE VERSION — visible en bas à gauche (comme la caisse) :
 //    on sait enfin quelle version un téléphone exécute vraiment.
-const VERSION_MANAGER = 'Manager C11';
+const VERSION_MANAGER = 'Manager C12';
 document.addEventListener('DOMContentLoaded', () => {
   try {
     const m = document.createElement('div');
@@ -5273,6 +5273,22 @@ document.addEventListener('DOMContentLoaded', () => {
 // ⏱️ C10 : GARDE-TEMPS — une requête qui ne répond jamais (Safari iOS en particulier)
 //    devient une erreur visible après 15 s, avec un bouton Réessayer, au lieu d'un
 //    « Chargement… » éternel.
+// 📚 C12 : TOUTES LES LIGNES — Supabase plafonne chaque requête à 1 000 lignes ;
+//    au-delà, les données sont COUPÉES en silence (calendrier arrêté au 12,
+//    7 j / 30 j sous-estimés, compta fausse). On pagine par tranches de 1 000 :
+//    fabrique() rend une requête neuve, on l'appelle page par page.
+async function toutesLesLignes(fabrique, libelle) {
+  const PAGE = 1000, MAX = 50;
+  let tout = [];
+  for (let page = 0; page < MAX; page++) {
+    const debutIdx = page * PAGE;
+    const { data, error } = await avecDelai(fabrique().range(debutIdx, debutIdx + PAGE - 1), 20000, libelle || 'requête');
+    if (error) return { data: null, error };
+    tout = tout.concat(data || []);
+    if (!data || data.length < PAGE) break;
+  }
+  return { data: tout, error: null };
+}
 function avecDelai(promesse, ms, libelle) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error(libelle + ' : la base n\'a pas répondu en ' + Math.round(ms / 1000) + ' s')), ms);
@@ -8282,12 +8298,12 @@ async function recupererCAetCommissions(moisYYYYMM) {
   const debut = new Date(annee, mois - 1, 1).toISOString();
   const fin = new Date(annee, mois, 1).toISOString();
 
-  const { data: ventes, error } = await sbClient.from('ventes')
+  const { data: ventes, error } = await toutesLesLignes(() => sbClient.from('ventes')   // 📚 C12 : paginé (le mois entier)
     .select('total, montant_net, mode_paiement, canal, statut')
     .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
     .gte('cree_le', debut)
     .lt('cree_le', fin)
-    .eq('statut', 'validee');
+    .eq('statut', 'validee').order('cree_le', { ascending: true }), 'Compta CA');
 
   if (error) {
     console.error('Erreur CA:', error);
@@ -8880,12 +8896,15 @@ async function chargerKpisVentes() {
     const debut = dateDebutPeriode(ventesPeriode);
     const fin = dateFinPeriode(ventesPeriode);
 
-    let qk = sbClient.from('ventes')
-      .select('total, statut, canal, mode_paiement')
-      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
-      .gte('cree_le', debut.toISOString());
-    if (fin) qk = qk.lt('cree_le', fin.toISOString());
-    const { data: ventes, error } = await avecDelai(qk, 15000, 'KPI ventes');   // ⏱️ C10
+    const fabriqueK = () => {   // 📚 C12 : paginé (plus de plafond à 1 000)
+      let q = sbClient.from('ventes')
+        .select('total, statut, canal, mode_paiement')
+        .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
+        .gte('cree_le', debut.toISOString()).order('cree_le', { ascending: true });
+      if (fin) q = q.lt('cree_le', fin.toISOString());
+      return q;
+    };
+    const { data: ventes, error } = await toutesLesLignes(fabriqueK, 'KPI ventes');
 
     if (error) throw error;
 
@@ -8929,13 +8948,16 @@ async function chargerDonutCanaux() {
     const debut = dateDebutPeriode(ventesPeriode);
     const fin = dateFinPeriode(ventesPeriode);
 
-    let qd = sbClient.from('ventes')
-      .select('total, canal, statut')
-      .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
-      .eq('statut', 'validee')
-      .gte('cree_le', debut.toISOString());
-    if (fin) qd = qd.lt('cree_le', fin.toISOString());
-    const { data: ventes, error } = await avecDelai(qd, 15000, 'Répartition canaux');   // ⏱️ C10
+    const fabriqueD = () => {   // 📚 C12 : paginé
+      let q = sbClient.from('ventes')
+        .select('total, canal, statut')
+        .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
+        .eq('statut', 'validee')
+        .gte('cree_le', debut.toISOString()).order('cree_le', { ascending: true });
+      if (fin) q = q.lt('cree_le', fin.toISOString());
+      return q;
+    };
+    const { data: ventes, error } = await toutesLesLignes(fabriqueD, 'Répartition canaux');
 
     if (error) throw error;
 
@@ -9022,13 +9044,16 @@ async function chargerTopPlatsVentes() {
     const debut = dateDebutPeriode(ventesPeriode);
 
     const finTop = dateFinPeriode(ventesPeriode);
-    let qt = sbClient.from('lignes_vente')
-      .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
-      .eq('ventes.restaurant_id', RESTO_ID).in('ventes.site', MGR_SITES)
-      .eq('ventes.statut', 'validee')
-      .gte('ventes.cree_le', debut.toISOString());
-    if (finTop) qt = qt.lt('ventes.cree_le', finTop.toISOString());
-    const [{ data: lignes, error }, exclus] = await avecDelai(Promise.all([qt, getProduitsExclusTop()]), 15000, 'Plats du jour');   // ⏱️ C10
+    const fabriqueT = () => {   // 📚 C12 : paginé
+      let q = sbClient.from('lignes_vente')
+        .select('nom_produit, prix_unitaire, quantite, sous_total, ventes!inner(restaurant_id, statut, cree_le)')
+        .eq('ventes.restaurant_id', RESTO_ID).in('ventes.site', MGR_SITES)
+        .eq('ventes.statut', 'validee')
+        .gte('ventes.cree_le', debut.toISOString()).order('id', { ascending: true });
+      if (finTop) q = q.lt('ventes.cree_le', finTop.toISOString());
+      return q;
+    };
+    const [{ data: lignes, error }, exclus] = await Promise.all([toutesLesLignes(fabriqueT, 'Plats du jour'), getProduitsExclusTop()]);
 
     if (error) throw error;
 
@@ -9141,12 +9166,12 @@ async function chargerCalendrierVentes() {
     const debut = new Date(calAnnee, calMois, 1, 0, 0, 0);
     const fin = new Date(calAnnee, calMois + 1, 1, 0, 0, 0);
 
-    const { data: ventes, error } = await sbClient.from('ventes')
+    const { data: ventes, error } = await toutesLesLignes(() => sbClient.from('ventes')   // 📚 C12 : paginé (le mois entier)
       .select('total, cree_le, statut')
       .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .eq('statut', 'validee')
       .gte('cree_le', debut.toISOString())
-      .lt('cree_le', fin.toISOString());
+      .lt('cree_le', fin.toISOString()).order('cree_le', { ascending: true }), 'Calendrier');
 
     if (error) throw error;
 
