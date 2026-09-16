@@ -5258,6 +5258,32 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
 });
 
+// 🏷️ C10 : LE MARQUEUR DE VERSION — visible en bas à gauche (comme la caisse) :
+//    on sait enfin quelle version un téléphone exécute vraiment.
+const VERSION_MANAGER = 'Manager C10';
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const m = document.createElement('div');
+    m.id = 'marqueur-version';
+    m.style.cssText = 'position:fixed;bottom:2px;left:6px;font-size:9px;color:rgba(255,255,255,.28);z-index:99990;pointer-events:none;';
+    m.textContent = VERSION_MANAGER + ' · ' + ((window.GK_CONFIG && window.GK_CONFIG.site) || '?');
+    document.body.appendChild(m);
+  } catch (e) { /* ignore */ }
+});
+// ⏱️ C10 : GARDE-TEMPS — une requête qui ne répond jamais (Safari iOS en particulier)
+//    devient une erreur visible après 15 s, avec un bouton Réessayer, au lieu d'un
+//    « Chargement… » éternel.
+function avecDelai(promesse, ms, libelle) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(libelle + ' : la base n\'a pas répondu en ' + Math.round(ms / 1000) + ' s')), ms);
+    Promise.resolve(promesse).then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
+  });
+}
+function htmlErreurSection(e, relance) {
+  const msg = String(e && (e.message || e.details) || e).replace(/</g, '&lt;');
+  return '<div style="padding:14px;color:#c0392b;font-size:12px;line-height:1.4;">⚠️ ' + msg
+    + (relance ? '<br><button type="button" onclick="' + relance + '" style="margin-top:8px;border:1px solid #c0392b;background:transparent;color:#c0392b;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;">↻ Réessayer</button>' : '') + '</div>';
+}
 // 🩺 Lot C : LES ERREURS SONT VISIBLES — un bandeau discret plutôt qu'une console muette
 function signalerErreurManager(msg) {
   try {
@@ -8850,7 +8876,7 @@ async function chargerKpisVentes() {
       .eq('restaurant_id', RESTO_ID).in('site', MGR_SITES)
       .gte('cree_le', debut.toISOString());
     if (fin) qk = qk.lt('cree_le', fin.toISOString());
-    const { data: ventes, error } = await qk;
+    const { data: ventes, error } = await avecDelai(qk, 15000, 'KPI ventes');   // ⏱️ C10
 
     if (error) throw error;
 
@@ -8900,7 +8926,7 @@ async function chargerDonutCanaux() {
       .eq('statut', 'validee')
       .gte('cree_le', debut.toISOString());
     if (fin) qd = qd.lt('cree_le', fin.toISOString());
-    const { data: ventes, error } = await qd;
+    const { data: ventes, error } = await avecDelai(qd, 15000, 'Répartition canaux');   // ⏱️ C10
 
     if (error) throw error;
 
@@ -8957,6 +8983,7 @@ async function chargerDonutCanaux() {
     }).join('');
   } catch (e) {
     console.error('Erreur donut canaux:', e); signalerErreurManager('donut canaux : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
+    const legErr = document.getElementById('ventes-donut-legend'); if (legErr) legErr.innerHTML = htmlErreurSection(e, 'chargerDonutCanaux()');
   }
 }
 
@@ -8992,7 +9019,7 @@ async function chargerTopPlatsVentes() {
       .eq('ventes.statut', 'validee')
       .gte('ventes.cree_le', debut.toISOString());
     if (finTop) qt = qt.lt('ventes.cree_le', finTop.toISOString());
-    const [{ data: lignes, error }, exclus] = await Promise.all([qt, getProduitsExclusTop()]);
+    const [{ data: lignes, error }, exclus] = await avecDelai(Promise.all([qt, getProduitsExclusTop()]), 15000, 'Plats du jour');   // ⏱️ C10
 
     if (error) throw error;
 
@@ -9041,7 +9068,7 @@ async function chargerTopPlatsVentes() {
     }).join('');
   } catch (e) {
     console.error('Erreur top plats ventes:', e); signalerErreurManager('top plats ventes : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
-    const zoneErr = document.getElementById('ventes-plats-liste'); if (zoneErr) zoneErr.innerHTML = '<div style="padding:16px;color:#c0392b;font-size:12px;">⚠️ ' + String(e && (e.message || e.details) || e).replace(/</g, '&lt;') + '</div>';
+    const zoneErr = document.getElementById('ventes-plats-liste'); if (zoneErr) zoneErr.innerHTML = htmlErreurSection(e, 'chargerTopPlatsVentes()');
   }
 }
 
