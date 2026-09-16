@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bl</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bn</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -10344,6 +10344,39 @@ try {
   RELAIS_BASE = localStorage.getItem('relais_url') || RELAIS_BASE;
 } catch (e) { console.warn('Cible relais : repli localhost (' + e.message + ')'); }
 const RELAIS_URL = RELAIS_BASE + '/imprimer';
+
+// 🫀 v26.07-bm : LE BADGE DU PI — le relais dépose un battement chaque minute
+//    (relais_heartbeat). La caisse le lit : silence quand tout va bien, badge ROUGE
+//    si le Pi se tait (> 3 min), si le serveur d'impression est arrêté, ou si une
+//    imprimante est injoignable. Le problème se voit AVANT le rush.
+function diagnostiquerRelais(h, maintenant) {
+  if (!h || !h.battu_le) return null;   // jamais de battement : inconnu (la clinique le dit), pas d'alarme
+  const age = (maintenant - new Date(h.battu_le).getTime()) / 60000;
+  if (!(age >= 0) || age > 3) return { ok: false, msg: '🖨️ Pi silencieux depuis ' + Math.max(1, Math.round(age)) + ' min' };
+  if (h.serveur_impression_ok === false) return { ok: false, msg: '🖨️ Serveur d\'impression arrêté sur le Pi' };
+  const ko = Object.keys(h.imprimantes || {}).filter((n) => h.imprimantes[n] && h.imprimantes[n].ok === false);
+  if (ko.length) return { ok: false, msg: '🖨️ Imprimante injoignable : ' + ko.join(', ') };
+  return { ok: true };
+}
+function afficherBadgePi(diag) {
+  let b = document.getElementById('badge-pi');
+  if (!diag || diag.ok) { if (b) b.remove(); return; }
+  if (!b) {
+    b = document.createElement('div'); b.id = 'badge-pi';
+    b.style.cssText = 'position:fixed;right:12px;bottom:28px;z-index:9998;background:#B3261E;color:#fff;font:600 13px/1.3 system-ui,sans-serif;padding:8px 12px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.35);pointer-events:none;';
+    document.body.appendChild(b);
+  }
+  b.textContent = diag.msg;
+}
+async function verifierSanteRelais() {
+  try {
+    const { data } = await sb.from('relais_heartbeat').select('battu_le, serveur_impression_ok, imprimantes')
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL).maybeSingle();
+    afficherBadgePi(diagnostiquerRelais(data, Date.now()));
+  } catch (e) { /* jamais bloquant */ }
+}
+setTimeout(verifierSanteRelais, 8000);
+setInterval(verifierSanteRelais, 60000);
 // Affiche la cible dans le marqueur de version (contrôle visuel immédiat)
 try {
   const _mv = document.getElementById('marqueur-version');
@@ -10992,6 +11025,7 @@ function selectionnerJour(iso) {
   chargerStatsJour(iso);
 }
 
+let ticketsJourCache = {};   // 🧾 v26.07-bn : les ventes du jour affiché, pour la réimpression
 async function chargerStatsJour(iso) {
   const zone = document.getElementById('cal-stats');
   zone.innerHTML = '<div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto;"></div></div>';
@@ -11001,7 +11035,7 @@ async function chargerStatsJour(iso) {
   
   try {
     const { data: ventes, error } = await sb.from('ventes')
-      .select('id, numero, total, mode_paiement, statut, cree_le, canal, client_id, lignes_vente(nom_produit, quantite, prix_unitaire)')
+      .select('id, numero, total, mode_paiement, statut, cree_le, canal, client_id, lignes_vente(*)')   // 🧾 v26.07-bn : lignes complètes (réimpression)
       .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .gte('cree_le', debut)
       .lte('cree_le', fin);
@@ -11010,6 +11044,8 @@ async function chargerStatsJour(iso) {
     
     const valides = (ventes || []).filter(v => v.statut === 'validee');
     const annulees = (ventes || []).filter(v => v.statut === 'annulee');
+    ticketsJourCache = {};
+    valides.forEach(v => { ticketsJourCache[v.id] = v; });
     
     if (valides.length === 0) {
       const dateLue = new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -11130,6 +11166,11 @@ async function chargerStatsJour(iso) {
         <div class="cal-heures">${heuresHtml}</div>
         <div class="cal-heures-labels">${heuresLabels}</div>
       </div>
+
+      <div class="cal-section">
+        <div class="cal-section-titre">🧾 Tickets du jour — toucher 🖨️ pour un duplicata</div>
+        ${rendreListeTicketsJour(valides)}
+      </div>
       
       ${annulees.length > 0 ? `
         <div class="cal-section">
@@ -11140,6 +11181,78 @@ async function chargerStatsJour(iso) {
     `;
   } catch (e) {
     zone.innerHTML = `<div style="text-align:center; padding:30px; color: var(--danger);">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ============================================
+//  🧾 v26.07-bn : HISTORIQUE — RÉIMPRESSION D'UN TICKET (DUPLICATA)
+//    Depuis « Statistiques par jour » (n'importe quel jour, n'importe quel mois) :
+//    chaque vente validée a son bouton 🖨️. Le ticket sort sur l'imprimante comptoir,
+//    reconstruit depuis la base (lignes, total, mode, heure d'origine), avec la
+//    mention DUPLICATA — REIMPRESSION (obligatoire sur une réimpression).
+// ============================================
+function rendreListeTicketsJour(valides) {
+  if (!valides.length) return '<div style="color:var(--muted);font-size:13px;">Aucun ticket.</div>';
+  const tries = valides.slice().sort((a, b) => new Date(b.cree_le) - new Date(a.cree_le));
+  const modeLbl = { especes: 'Espèces', carte: 'Carte', plateforme: 'Plateforme', ticket_resto: 'TR' };
+  return '<div class="tickets-jour">' + tries.map(v => {
+    const d = new Date(v.cree_le);
+    const h = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    const mode = modeLbl[v.mode_paiement] || (v.mode_paiement || '').replace('+', ' + ');
+    const canal = v.canal === 'livraison' ? ' · 🛵' : (v.canal === 'sur_place' ? ' · 🍽️' : '');
+    return '<div class="ticket-jour" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid rgba(0,0,0,.06);font-size:13px;">'
+      + '<b style="min-width:58px;">#' + escapeHtmlPos(String(v.numero)) + '</b>'
+      + '<span style="min-width:44px;color:var(--muted);">' + h + '</span>'
+      + '<span style="flex:1;color:var(--muted);">' + escapeHtmlPos(mode) + canal + '</span>'
+      + '<b>' + fmt(v.total) + '</b>'
+      + '<button type="button" onclick="reimprimerTicket(\'' + escapeHtmlPos(String(v.id)) + '\')" style="border:1px solid rgba(0,0,0,.15);background:#fff;border-radius:8px;padding:6px 10px;font-size:15px;cursor:pointer;">🖨️</button>'
+      + '</div>';
+  }).join('') + '</div>';
+}
+function construireDuplicata(v) {
+  const d = new Date(v.cree_le);
+  const dateStr = d.toLocaleDateString('fr-FR') + ' à ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  const idsB = (typeof categoriesBoissons === 'function') ? (categoriesBoissons() || []) : [];   // 🥤 boisson seule : pas de « 1x »
+  return {
+    version: (document.getElementById('marqueur-version') || {}).textContent || 'marqueur introuvable',
+    bonCuisine: null, bonSushi: null, bonLivraison: null,
+    ticketClient: {
+      numero: v.numero,
+      date: dateStr,
+      lignes: (v.lignes_vente || [])
+        .filter(l => !(l.lien_plat && Number(l.prix_unitaire) === 0 && /\(box\)\s*$/i.test(l.nom_produit || l.nom || '')))
+        .map(lv => Object.assign({}, lv, { est_boisson: idsB.includes(lv.categorie_id) })),
+      total: v.total,
+      modePaiement: v.mode_paiement,
+      restoNom: RESTO_INFOS.nom,
+      restoSousTitre: '*** DUPLICATA - REIMPRESSION ***',
+      restoAdresse: RESTO_INFOS.adresse,
+      masquerReglement: false,
+      modeService: v.canal === 'emporter' ? 'a_emporter' : v.canal,
+      tva: calculerTVA(v.total, RESTO_INFOS.tauxTVA),
+      tvaNum: RESTO_INFOS.tva,
+      naf: RESTO_INFOS.naf,
+      siret: RESTO_INFOS.siret,
+      tel: RESTO_INFOS.tel,
+      annulee: v.statut === 'annulee'
+    }
+  };
+}
+async function reimprimerTicket(id) {
+  const v = ticketsJourCache[id];
+  if (!v) { posAlert('Ticket introuvable dans la journée affichée.'); return; }
+  if (impressionEnCours) { afficherToast('⏳', 'Impression en cours…', 'un instant'); return; }
+  impressionEnCours = true;
+  afficherToast('🖨️', 'Duplicata #' + v.numero + '…', 'vers le comptoir');
+  try {
+    const reponse = await fetchRelais(construireDuplicata(v));
+    const data = await reponse.json();
+    if (data.ok) afficherToast('#' + v.numero, 'Duplicata imprimé ✓', 'Comptoir');
+    else posAlert('Problème d\'impression :\n\n' + ((data.resultats || []).map(r => r.ok ? '✓ ' + r.type : '✗ ' + r.type + ' : ' + r.erreur).join('\n') || data.erreur || 'Erreur inconnue'));
+  } catch (e) {
+    posAlert('Le relais d\'impression ne répond pas (' + e.message + ').');
+  } finally {
+    impressionEnCours = false;
   }
 }
 
