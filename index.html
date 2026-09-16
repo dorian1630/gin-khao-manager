@@ -6123,7 +6123,7 @@ async function chargerRoiFidelite() {
         : `Les membres fidélité ont généré <strong style="color:var(--gold);">${Math.round(caMembres).toLocaleString('fr-FR')}€</strong> de CA jusqu'ici.`;
     }
   } catch (e) {
-    console.error('Erreur ROI fidélité:', e);
+    console.error('Erreur ROI fidélité:', e); signalerErreurManager('ROI fidélité : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
     zone.innerHTML = '<p style="font-size:12.5px; color:var(--sriracha); text-align:center; padding:14px;">Impossible de charger la rentabilité.</p>';
   }
 }
@@ -6397,7 +6397,7 @@ async function sauverConfigOffre() {
       message_manuel: mode === 'manuel' ? msgManuel : null,
       modifie_le: new Date().toISOString()
     }, { onConflict: 'restaurant_id' });
-  } catch (e) { console.error('Erreur sauvegarde config offre:', e); }
+  } catch (e) { console.error('Erreur sauvegarde config offre:', e); signalerErreurManager('sauvegarde config offre : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */ }
 
   rafraichirAffichageOffre();
   fermerConfigOffre();
@@ -6926,7 +6926,7 @@ async function chargerHistoriqueClient(clientId) {
 
     zone.innerHTML = html;
   } catch (e) {
-    console.error('Erreur historique client:', e);
+    console.error('Erreur historique client:', e); signalerErreurManager('historique client : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
     zone.innerHTML = `<p style="color:var(--text-mute); font-size:12px; text-align:center; padding:14px;">Impossible de charger l'historique : ${e.message}</p>`;
   }
 }
@@ -7102,7 +7102,7 @@ async function toggleAutomatisation(cle, el) {
       modifie_le: new Date().toISOString()
     }, { onConflict: 'restaurant_id' });
   } catch (e) {
-    console.error('Erreur sauvegarde automatisation:', e);
+    console.error('Erreur sauvegarde automatisation:', e); signalerErreurManager('sauvegarde automatisation : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
   }
 }
 
@@ -7321,7 +7321,7 @@ async function chargerHistoriqueSMS() {
     smsHistoryCache = data || [];
     afficherResumeSMS();
   } catch (e) {
-    console.error('Erreur chargement SMS:', e);
+    console.error('Erreur chargement SMS:', e); signalerErreurManager('chargement SMS : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
   }
 }
 
@@ -7696,7 +7696,7 @@ async function chargerKpisHome() {
     const moyEl = document.getElementById('kpi-ticket-moyen');
     if (moyEl) moyEl.textContent = moyen.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
   } catch (e) {
-    console.error('Erreur chargement KPI home:', e);
+    console.error('Erreur chargement KPI home:', e); signalerErreurManager('chargement KPI home : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
   }
 }
 
@@ -7745,7 +7745,7 @@ async function chargerVentesParHeureHome() {
       barsContainer.appendChild(bar);
     }
   } catch (e) {
-    console.error('Erreur ventes par heure:', e);
+    console.error('Erreur ventes par heure:', e); signalerErreurManager('ventes par heure : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
   }
 }
 
@@ -7808,7 +7808,7 @@ async function chargerTopPlatsHome() {
         </div>`;
     }).join('');
   } catch (e) {
-    console.error('Erreur top plats:', e);
+    console.error('Erreur top plats:', e); signalerErreurManager('top plats : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
     const zone = document.getElementById('home-top-plats');
     if (zone) zone.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-mute, #8B7E6F); font-size: 13px;">Erreur de chargement</div>`;
   }
@@ -7912,7 +7912,7 @@ async function chargerChargesData() {
     afficherChargesMoisFiltre();
     afficherChargesRecap();
   } catch (e) {
-    console.error('Erreur charges:', e);
+    console.error('Erreur charges:', e); signalerErreurManager('charges : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
     document.getElementById('charges-liste').innerHTML =
       `<div class="prod-empty"><p>⚠️ Erreur : ${e.message}</p></div>`;
   }
@@ -8424,7 +8424,7 @@ async function rafraichirCompta() {
     document.getElementById('compta-tva-estim').textContent = `~${fmtEur(tvaAreverser)} à reverser`;
 
   } catch (e) {
-    console.error('Erreur rafraichirCompta:', e);
+    console.error('Erreur rafraichirCompta:', e); signalerErreurManager('rafraichirCompta : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
   }
 }
 
@@ -8956,7 +8956,7 @@ async function chargerDonutCanaux() {
         </div>`;
     }).join('');
   } catch (e) {
-    console.error('Erreur donut canaux:', e);
+    console.error('Erreur donut canaux:', e); signalerErreurManager('donut canaux : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
   }
 }
 
@@ -9040,7 +9040,8 @@ async function chargerTopPlatsVentes() {
         </div>`;
     }).join('');
   } catch (e) {
-    console.error('Erreur top plats ventes:', e);
+    console.error('Erreur top plats ventes:', e); signalerErreurManager('top plats ventes : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
+    const zoneErr = document.getElementById('ventes-plats-liste'); if (zoneErr) zoneErr.innerHTML = '<div style="padding:16px;color:#c0392b;font-size:12px;">⚠️ ' + String(e && (e.message || e.details) || e).replace(/</g, '&lt;') + '</div>';
   }
 }
 
@@ -9156,7 +9157,7 @@ async function chargerCalendrierVentes() {
         : 'Aucune vente ce mois-ci';
     }
   } catch (e) {
-    console.error('Erreur calendrier:', e);
+    console.error('Erreur calendrier:', e); signalerErreurManager('calendrier : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
     grille.innerHTML = '<div style="grid-column: 1 / -1; padding:16px; text-align:center; color:var(--sriracha); font-size:12px;">Erreur de chargement</div>';
   }
 }
