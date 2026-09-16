@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bn</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bo</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -9576,8 +9576,19 @@ function initialesFid(nom) {
   return (nom || '?').split(' ').map(m => m[0]).join('').slice(0, 2).toUpperCase();
 }
 
+// 📅 v26.07-bo : LES JOURS SONT LOCAUX (heure de Marseille), jamais UTC.
+//    toISOString() basculait minuit local sur la veille 22h UTC : « 10 août »
+//    cliqué → « 9 août » affiché, points décalés, fenêtre du jour de 02h à 02h.
+function isoJourLocal(d) {
+  d = d instanceof Date ? d : new Date(d);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function dateDepuisIsoLocal(iso, fin) {   // 'YYYY-MM-DD' → minuit (ou 23:59:59.999) LOCAL de ce jour
+  const [y, m, j] = iso.split('-').map(Number);
+  return fin ? new Date(y, m - 1, j, 23, 59, 59, 999) : new Date(y, m - 1, j, 0, 0, 0, 0);
+}
 function ymdAujourdhui() {
-  return new Date().toISOString().slice(0, 10);
+  return isoJourLocal(new Date());
 }
 
 // --- Récompenses fidélité (paliers unifiés 50/100/200/300) ---
@@ -10979,7 +10990,7 @@ async function afficherCalendrier() {
   // Jours du mois
   for (let j = 1; j <= dernierJour; j++) {
     const d = new Date(annee, mois, j);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = isoJourLocal(d);   // 📅 -bo
     const estAuj = iso === aujISO;
     const estFutur = d > aujDate;
     const estSelect = iso === calJourSelectionne;
@@ -11011,7 +11022,7 @@ async function chargerVentesParJourDuMois(annee, mois) {
     
     calVentesParJour = {};
     (data || []).forEach(v => {
-      const iso = new Date(v.cree_le).toISOString().slice(0, 10);
+      const iso = isoJourLocal(v.cree_le);   // 📅 -bo
       calVentesParJour[iso] = (calVentesParJour[iso] || 0) + 1;
     });
   } catch (e) {
@@ -11030,8 +11041,8 @@ async function chargerStatsJour(iso) {
   const zone = document.getElementById('cal-stats');
   zone.innerHTML = '<div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto;"></div></div>';
   
-  const debut = iso + 'T00:00:00';
-  const fin = iso + 'T23:59:59';
+  const debut = dateDepuisIsoLocal(iso, false).toISOString();   // 📅 -bo : le jour LOCAL, en UTC exact
+  const fin = dateDepuisIsoLocal(iso, true).toISOString();
   
   try {
     const { data: ventes, error } = await sb.from('ventes')
@@ -11048,7 +11059,7 @@ async function chargerStatsJour(iso) {
     valides.forEach(v => { ticketsJourCache[v.id] = v; });
     
     if (valides.length === 0) {
-      const dateLue = new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      const dateLue = dateDepuisIsoLocal(iso, false).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
       zone.innerHTML = `
         <div class="cal-stats-titre" style="text-transform:capitalize;">${dateLue}</div>
         <div class="cal-vide-jour">
@@ -11099,7 +11110,7 @@ async function chargerStatsJour(iso) {
     }).join('');
     const heuresLabels = heuresList.slice(0, 12).map(it => `<div>${it.h}h</div>`).join('');
     
-    const dateLue = new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const dateLue = dateDepuisIsoLocal(iso, false).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     
     zone.innerHTML = `
       <div class="cal-stats-titre" style="text-transform:capitalize;">${dateLue}</div>
@@ -11842,7 +11853,7 @@ async function chargerPerformanceEquipe() {
       // Grouper les ventes par jour
       const parJour = {};
       s.dates_ventes.forEach(d => {
-        const jour = d.toISOString().slice(0, 10);
+        const jour = isoJourLocal(d);   // 📅 -bo
         if (!parJour[jour]) parJour[jour] = [];
         parJour[jour].push(d);
       });
@@ -12007,7 +12018,7 @@ async function ouvrirFicheCaissier(caissierId, nom) {
     const parJour = {};
     ventes.forEach(v => {
       const d = new Date(v.cree_le);
-      const jour = d.toISOString().slice(0, 10);
+      const jour = isoJourLocal(d);   // 📅 -bo
       if (!parJour[jour]) parJour[jour] = [];
       parJour[jour].push(d);
     });
