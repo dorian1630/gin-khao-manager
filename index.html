@@ -5260,7 +5260,7 @@ navBtns.forEach(btn => {
 
 // 🏷️ C10 : LE MARQUEUR DE VERSION — visible en bas à gauche (comme la caisse) :
 //    on sait enfin quelle version un téléphone exécute vraiment.
-const VERSION_MANAGER = 'Manager C10';
+const VERSION_MANAGER = 'Manager C11';
 document.addEventListener('DOMContentLoaded', () => {
   try {
     const m = document.createElement('div');
@@ -8846,24 +8846,33 @@ function majBadgePeriode() {
 }
 
 // Branche les tabs Aujourd'hui / 7j / 30j
+// 📅 C11 : LES BOUTONS DE PÉRIODE (Aujourd'hui · 7 j · 30 j) — un seul écouteur au
+//    niveau du document, présent dès le chargement : ils répondent quel que soit le
+//    chemin par lequel l'écran Ventes a été ouvert (avant : muets si initVentes
+//    n'avait pas été déclenché par le clic sur l'onglet).
+function choisirPeriodeVentes(p, btn) {
+  if (!p) return;
+  ventesDateDebut = null;
+  ventesDateFin = null;
+  if (typeof majBadgePeriode === 'function') majBadgePeriode();
+  ventesPeriode = p;
+  document.querySelectorAll('#screen-sales .tab').forEach(b => b.classList.toggle('active', btn ? b === btn : b.dataset.period === p));
+  // accusé de réception immédiat : le libellé bascule avant même les requêtes
+  const elLbl = document.getElementById('ventes-ca-label'); if (elLbl) elLbl.textContent = libellePeriode(p) + ' · chargement…';
+  if (typeof initVentes === 'function') initVentes();   // idempotent : branche le temps réel si ce n'est pas déjà fait
+  rafraichirVentes();
+}
+let _tabsVentesBranches = false;
 function brancherTabsVentes() {
-  document.querySelectorAll('#screen-sales .tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const p = btn.dataset.period;
-      if (!p) return;
-      ventesDateDebut = null;
-      ventesDateFin = null;
-      if (typeof majBadgePeriode === 'function') majBadgePeriode();
-      ventesPeriode = p;
-      // Mise à jour visuelle des tabs
-      document.querySelectorAll('#screen-sales .tab').forEach(b => b.classList.toggle('active', b === btn));
-      // 🩺 accusé de réception immédiat : le libellé bascule avant même les requêtes
-      const elLbl = document.getElementById('ventes-ca-label'); if (elLbl) elLbl.textContent = libellePeriode(p) + ' · chargement…';
-      // Recharger toutes les sections
-      rafraichirVentes();
-    });
+  if (_tabsVentesBranches) return;
+  _tabsVentesBranches = true;
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target && ev.target.closest ? ev.target.closest('#screen-sales .tab[data-period]') : null;
+    if (!btn) return;
+    choisirPeriodeVentes(btn.dataset.period, btn);
   });
 }
+brancherTabsVentes();
 
 // Charge tous les KPIs de l'écran Ventes selon la période
 async function chargerKpisVentes() {
