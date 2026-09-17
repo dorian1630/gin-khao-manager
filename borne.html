@@ -3006,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-am</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-an</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3769,8 +3769,11 @@ function ajouter(produitId, ev) {
   const aRetirables = Array.isArray(p.ingredients_retirable) && p.ingredients_retirable.length > 0;
   const aSupplements = Array.isArray(p.supplements_ids) && p.supplements_ids.length > 0;
   const aSauces = Array.isArray(p.sauces_ids) && p.sauces_ids.length > 0;
+  // 🎛️ v26.08-an : un produit qui n'a QUE des groupes de choix (ex. « Salade ? »)
+  //    déclenche aussi son parcours (la caisse le faisait déjà, pas la borne)
+  const aOptionsBase = Array.isArray(p.options_base) && p.options_base.length > 0;
 
-  if (aVariantes || aRetirables || aSupplements || aSauces) {
+  if (aVariantes || aRetirables || aSupplements || aSauces || aOptionsBase) {
     // Lance le parcours plat (modales successives)
     demarrerParcoursPlat(p);
     return;
@@ -5155,7 +5158,7 @@ function afficherModaleSauces() {
         <!-- 🌶️ « Passer » TOUJOURS présent (comportement historique -e) :
              sauce_required met l'étape en avant (Valider grisé tant que vide)
              mais ne force JAMAIS l'achat d'une sauce payante — décision produit. -->
-        <button class="parcours-btn-passer" onclick="parcoursPlatEnCours.sauces = []; passerEtapeSuivante()">Passer (aucune sauce) →</button>
+        ${p.sauce_obligatoire === true ? '' : `<button class="parcours-btn-passer" onclick="parcoursPlatEnCours.sauces = []; passerEtapeSuivante()">Passer (aucune sauce) →</button>`}
         <button class="parcours-btn-valider" id="parcours-btn-valider" ${(obligatoire && dejaChoisies.length === 0) ? 'disabled' : ''} onclick="passerEtapeSuivante()">Valider ✓</button>
       </div>
     </div>
