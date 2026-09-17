@@ -2791,9 +2791,7 @@ body {
     <img class="carrousel-slide visible" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698474/3_kicfgi.png" alt="Gin Khao 1" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/1_xkwuty.png" alt="Gin Khao 2" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1783698475/2_ggpz3e.png" alt="Gin Khao 3" />
-    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1788533622/t%C3%A9l%C3%A9chargement_9_nhthyl.png" alt="Gin Khao 4" />
     <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1784326017/081B97AF-C4E6-496B-9D07-FB7C42E5699B_zg9ilq.png" alt="Gin Khao 5" />
-    <img class="carrousel-slide" src="https://res.cloudinary.com/dci5mreqo/image/upload/v1788447732/Gemini_Generated_Image_tk211ftk211ftk21_wgg4ms.jpg" alt="Gin Khao 6" />
   </div>
   <div class="accueil-bottom" onclick="allerMode()">
     <div class="accueil-cta" onclick="allerMode()">👆 Touchez pour commander</div>
@@ -3008,7 +3006,7 @@ body {
   <button id="fin-terminer" onclick="resetBorne()" style="margin-top:18px;padding:14px 36px;font-size:17px;font-weight:700;border:2px solid #d5d5d5;background:#fff;color:#333;border-radius:14px;cursor:pointer;font-family:inherit;">✓ Terminer</button>
 </div>
 
-<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-al</div>
+<div id="marqueur-version" style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;">borne v26.08-am</div>
 <!-- 📌 Version ÉPINGLÉE (plus de @2 flottant : une montée de version majeure/mineure
      silencieuse du CDN ne peut plus casser la borne pendant le service) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3107,8 +3105,18 @@ function estMenuEtudiant(p) {
   const nom = String(p.nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   return nom.indexOf('etudiant') !== -1;
 }
+// 🕐 v26.08-am : L'HEURE DE PARIS, quel que soit le réglage de la tablette (une
+//    tablette en UTC croyait qu'il était 9h à 11h : Menu Étudiant fermé jusqu'à 13h).
+function heureParis() {
+  try {
+    const part = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', hour12: false }).formatToParts(new Date()).find(p => p.type === 'hour');
+    const h = part ? Number(part.value) : NaN;
+    if (Number.isFinite(h)) return h % 24;
+  } catch (e) { /* repli ci-dessous */ }
+  return new Date().getHours();
+}
 function creneauEtudiantOuvert() {
-  const h = new Date().getHours();
+  const h = heureParis();
   return h >= ETUDIANT_H_DEBUT && h < ETUDIANT_H_FIN;
 }
 function estCommandable(p) {
