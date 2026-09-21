@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bt</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bu</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -6194,8 +6194,17 @@ let infoLivraison = null;      // { km, frais } ou { erreur } pour l'affichage
 let majFraisJeton = 0;         // 🎫 anti-course : seule la DERNIÈRE exécution
                                //    de majFraisLivraison a le droit d'écrire
 let fraisLivraisonManuel = null; // si défini, force le montant (override du calcul auto)
-const RESTO_ADRESSE_LIVRAISON = '78 avenue de Saint-Just 13013 Marseille';
-let RESTO_COORDS = { lat: 43.31600, lng: 5.39560 }; // fallback, raffiné via géocodage au 1er calcul
+// 🚗 v26.07-bu : LE POINT DE DÉPART DES LIVRAISONS EST CELUI DU RESTAURANT INSTALLÉ
+//    (avant : Saint-Just codé en dur — à Saint-Antoine, les kilomètres et les frais
+//    partaient du mauvais restaurant). Adresse = fiche légale du site ; repli GPS par site,
+//    raffiné par géocodage au premier calcul.
+const COORDS_REPLI_PAR_SITE = {
+  'st-just':      { lat: 43.31600, lng: 5.39560 },
+  'st-antoine':   { lat: 43.36900, lng: 5.37150 },
+  'la-capelette': { lat: 43.28100, lng: 5.40400 },
+  'st-ferreol':   { lat: 43.29500, lng: 5.37800 }
+};
+let RESTO_COORDS = Object.assign({}, COORDS_REPLI_PAR_SITE[SITE_ACTUEL] || COORDS_REPLI_PAR_SITE['st-just']); // repli, raffiné via géocodage au 1er calcul
 let restoGeocode = false;
 function fraisPourDistance(km) {
   // Grille des frais de livraison par distance (à vol d'oiseau depuis le resto) :
@@ -9919,6 +9928,12 @@ const SITES_INFOS = {
   }
 };
 const RESTO_INFOS = SITES_INFOS[SITE_ACTUEL] || SITES_INFOS['st-just'];
+// 🚗 v26.07-bu : l'adresse de départ des livraisons = celle du restaurant installé
+//    (« · » et « - » séparateurs remplacés par des espaces ; les traits d'union des noms restent)
+function adresseLivraisonResto() {
+  const f = SITES_INFOS[SITE_ACTUEL];
+  return (f && f.adresse) ? f.adresse.replace(/\s+[·-]\s+/g, ' ') : SITES_INFOS['st-just'].adresse.replace(/\s+[·-]\s+/g, ' ');
+}
 
 // Ventilation TVA à partir d'un total TTC (taux unique)
 function calculerTVA(ttc, taux) {
@@ -12585,7 +12600,7 @@ async function _majFraisLivraisonCoeur() {
 
   // Raffine les coordonnées du resto une seule fois
   if (!restoGeocode) {
-    const g = await geocoderAdresse(RESTO_ADRESSE_LIVRAISON);
+    const g = await geocoderAdresse(adresseLivraisonResto());   // 🚗 -bu : l'adresse du site installé
     if (g && !g.horsZone) RESTO_COORDS = g;
     restoGeocode = true;
   }
