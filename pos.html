@@ -6073,7 +6073,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-br</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bt</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -8990,7 +8990,7 @@ async function validerVente() {
   // 🚗 v26.07-ah : commande LIVRAISON → les frais doivent être RÉGLÉS avant
   //    d'encaisser. Trois trous fermés : calcul en cours, adresse en erreur,
   //    0 € non confirmé. Le 0 € VOLONTAIRE reste possible (éditeur 🚗).
-  if (clientActif && modeClientTel !== 'cc') {
+  if (clientActif && modeClientTel !== 'cc' && fraisLivraisonManuel == null) {   // 🛡️ -bs : un montant fixé à la main passe toujours
     if (infoLivraison && infoLivraison.calc) {
       posAlert('🚗 Le calcul des frais de livraison est en cours…<br>Attends 2 secondes puis réessaie.');
       return;
@@ -10473,6 +10473,26 @@ async function imprimerTicketZ() {
 //    caissier qui ré-appuie sur un bouton muet.
 let impressionEnCours = false;
 
+// 🖨️ v26.07-bt : réimprime le DERNIER Z depuis la base (survit au rechargement de la page)
+async function reimprimerDernierZ() {
+  if (impressionEnCours) { afficherToast('⏳', 'Impression en cours…', 'un instant'); return; }
+  try {
+    const { data, error } = await sb.from('clotures').select('*')
+      .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
+      .order('periode_fin', { ascending: false }).limit(1);
+    if (error) throw error;
+    const z = data && data[0];
+    if (!z) { posAlert('Aucun Z archivé.'); return; }
+    cloturesPassees = [z];
+    await imprimerZPasse(z.id);
+  } catch (e) {
+    posAlert('Réimpression impossible : ' + e.message);
+  }
+}
+function confirmerClotureVide() {
+  posConfirm('Aucune vente sur la période : le Z sera VIDE (0 vente, 0 €).<br><br>Le faire quand même ?', _confirmerClotureConfirme, { ic: '📋', okLabel: 'Faire un Z vide', nonLabel: 'Non' });
+}
+
 async function imprimerTicket(quoi) {  if (!derniereImpression) {
     posAlert('Aucun ticket à imprimer.');
     return;
@@ -10731,6 +10751,7 @@ function basculerPleinEcran() {
 function ouvrirCloture() {
   document.getElementById('overlay-cloture').classList.add('show');
   document.getElementById('cloture-actions').style.display = 'none';
+  document.getElementById('cloture-actions').innerHTML = '<button class="btn-annuler" onclick="fermerCloture()">Fermer</button><button class="btn-valider" id="btn-cloturer" onclick="confirmerCloture()">🔒 Clôturer la journée</button>';   // 🖨️ -bt : boutons d'origine
   document.getElementById('cloture-sous').textContent = 'Récapitulatif de la période en cours';
   document.getElementById('cloture-contenu').innerHTML =
     '<div style="text-align:center; padding:24px; color: var(--text-mute);"><div class="spinner" style="margin:0 auto 12px;"></div>Calcul en cours…</div>';
@@ -10746,14 +10767,15 @@ async function calculerApercuCloture() {
   try {
     // Trouve la dernière clôture pour connaître le début de période
     const { data: dernieres } = await sb.from('clotures')
-      .select('periode_fin')
+      .select('periode_fin, numero_z')
       .eq('restaurant_id', RESTO_ID).eq('site', SITE_ACTUEL)
       .order('periode_fin', { ascending: false })
       .limit(1);
 
-    let debut;
+    let debut, dernierZ = null;
     if (dernieres && dernieres.length > 0) {
       debut = new Date(dernieres[0].periode_fin);
+      dernierZ = dernieres[0];
     } else {
       debut = new Date();
       debut.setHours(0, 0, 0, 0);
@@ -10772,7 +10794,9 @@ async function calculerApercuCloture() {
     // Caisse PHYSIQUE = uniquement espèces + carte (l'argent réellement dans le tiroir/TPE)
     const especes = valides.filter(v => v.mode_paiement === 'especes').reduce((s, v) => s + Number(v.total || 0), 0);
     const carte = valides.filter(v => v.mode_paiement === 'carte').reduce((s, v) => s + Number(v.total || 0), 0);
-    const totalCaisse = especes + carte;
+    // 🧾 v26.07-bs : TR, paiements mixtes et autres modes ne disparaissent plus de l'aperçu
+    const autres = valides.filter(v => !['especes', 'carte', 'plateforme'].includes(v.mode_paiement)).reduce((s, v) => s + Number(v.total || 0), 0);
+    const totalCaisse = especes + carte + autres;
 
     // Ventes PLATEFORME = encaissées par Uber/Deliveroo/etc. (hors caisse physique)
     const ventesPlateforme = valides.filter(v => v.mode_paiement === 'plateforme');
@@ -10780,8 +10804,29 @@ async function calculerApercuCloture() {
     const netPlateforme = ventesPlateforme.reduce((s, v) => s + Number(v.montant_net != null ? v.montant_net : (v.total != null ? v.total : 0)), 0);
 
     const heureDebut = debut.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('cloture-sous').innerHTML =
-      `Période depuis le dernier Z (${heureDebut})`;
+    const memeJour = debut.toDateString() === new Date().toDateString();
+    const quandDebut = (memeJour ? '' : debut.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ') + heureDebut;
+    document.getElementById('cloture-sous').innerHTML = dernierZ
+      ? `Période depuis le dernier Z n°${dernierZ.numero_z} (${quandDebut})`
+      : `Période depuis ${quandDebut}`;
+    // 🧾 v26.07-bs : un zéro s'explique — sinon on croit à une panne
+    if (valides.length === 0 && nbAnnulees === 0) {
+      document.getElementById('cloture-contenu').innerHTML = `
+        <div class="cz-rapport">
+          <div class="cz-row" style="display:block; text-align:center; padding:18px 8px; line-height:1.5;">
+            <div style="font-size:28px;">🕐</div>
+            <b>Aucune vente depuis ${dernierZ ? 'le Z n°' + dernierZ.numero_z + ' fait à ' + quandDebut : quandDebut}.</b><br>
+            <span style="color:var(--text-mute); font-size:13px;">${dernierZ ? 'Ce Z est déjà fait : les ventes de la journée sont dedans. Un nouveau Z maintenant serait vide.' : 'Rien à clôturer pour l\'instant.'}</span>
+          </div>
+        </div>`;
+      // 🖨️ v26.07-bt : le Z ne s'est pas imprimé ? On le réimprime D'ICI, sans refaire de Z.
+      const actions = document.getElementById('cloture-actions');
+      actions.innerHTML = (dernierZ ? '<button class="btn-valider" onclick="reimprimerDernierZ()">🖨️ Réimprimer le Z n°' + dernierZ.numero_z + '</button>' : '')
+        + '<button class="btn-annuler" onclick="fermerCloture()">Fermer</button>'
+        + '<button class="btn-annuler" style="opacity:.6;" onclick="confirmerClotureVide()">Z vide quand même</button>';
+      actions.style.display = 'flex';
+      return;
+    }
 
     // Bloc plateformes affiché seulement s'il y en a
     const blocPlateforme = ventesPlateforme.length > 0 ? `
@@ -10806,6 +10851,7 @@ async function calculerApercuCloture() {
           <div class="cz-paie-card">
             <div class="ic">💳</div><div class="lbl">Carte</div><div class="val">${fmt(carte)}</div>
           </div>
+          ${autres > 0 ? `<div class="cz-paie-card"><div class="ic">🍽️</div><div class="lbl">TR / mixte / autres</div><div class="val">${fmt(autres)}</div></div>` : ''}
         </div>
         <div class="cz-row total"><span class="lbl">Total caisse physique</span><span class="val">${fmt(totalCaisse)}</span></div>
         ${blocPlateforme}
@@ -12432,7 +12478,7 @@ async function geocoderAdresse(adresse) {
     // 🛡️ Zone de livraison : Marseille + communes voisines. Tout résultat
     //    ailleurs (ex. Arles pour une rue homonyme) = adresse non localisée.
 const VILLES_LIVRAISON = /marseille|plan[- ]de[- ]cuques|allauch|septemes|septèmes|la penne|penne[- ]sur[- ]huveaune|aubagne|pennes[- ]mirabeau/i;
-       if (f.properties && f.properties.city && !VILLES_LIVRAISON.test(f.properties.city)) return null;
+       if (f.properties && f.properties.city && !VILLES_LIVRAISON.test(f.properties.city)) return { horsZone: f.properties.city };   // 🗺️ -bs : on sait POURQUOI
     const [lng, lat] = f.geometry.coordinates;
     return { lat, lng };
   } catch (e) { console.error('Géocodage échoué :', e); return null; }
@@ -12520,7 +12566,7 @@ async function _majFraisLivraisonCoeur() {
   // Montant forcé manuellement → on l'utilise tel quel (pas de recalcul auto)
   if (fraisLivraisonManuel != null) {
     fraisLivraison = fraisLivraisonManuel;
-    infoLivraison = Object.assign({}, infoLivraison, { manuel: true, frais: fraisLivraisonManuel });
+    infoLivraison = { manuel: true, frais: fraisLivraisonManuel, km: (infoLivraison && infoLivraison.km != null) ? infoLivraison.km : undefined };   // 🛡️ -bs : sans erreur résiduelle
     majTotal(); afficherBandeauClient(); afficherTicket();
     return;
   }
@@ -12540,7 +12586,7 @@ async function _majFraisLivraisonCoeur() {
   // Raffine les coordonnées du resto une seule fois
   if (!restoGeocode) {
     const g = await geocoderAdresse(RESTO_ADRESSE_LIVRAISON);
-    if (g) RESTO_COORDS = g;
+    if (g && !g.horsZone) RESTO_COORDS = g;
     restoGeocode = true;
   }
   if (jeton !== majFraisJeton) return;   // 🎫 une exécution plus récente a pris la main
@@ -12548,6 +12594,13 @@ async function _majFraisLivraisonCoeur() {
   let coords = (c.lat && c.lng) ? { lat: c.lat, lng: c.lng } : null;
   if (!coords) {
     coords = await geocoderAdresse(adresse);
+    if (coords && coords.horsZone) {   // 🗺️ -bs : adresse réelle mais hors zone de livraison
+      if (jeton !== majFraisJeton) return;
+      fraisLivraison = 0;
+      infoLivraison = { erreur: 'Adresse à ' + coords.horsZone + ' — hors zone de livraison. Fixe les frais à la main ✏️ ou refuse la livraison' };
+      majTotal(); afficherBandeauClient(); afficherTicket();
+      return;
+    }
     if (coords) {
       c.lat = coords.lat; c.lng = coords.lng;
       sb.from('clients').update({ lat: coords.lat, lng: coords.lng }).eq('id', c.id).then(() => {}, () => {});
@@ -12630,7 +12683,9 @@ function validerFraisLivr() {
   if (isNaN(v) || v < 0) { posAlert('Montant invalide — utilise le point : 3.50'); return; }
   fraisLivraisonManuel = Math.round(v * 100) / 100;
   fraisLivraison = fraisLivraisonManuel;
-  infoLivraison = Object.assign({}, infoLivraison, { manuel: true, frais: fraisLivraison });
+  // 🛡️ v26.07-bs : un montant fixé à la main REMPLACE l'état précédent — l'erreur
+  //    d'adresse ne survit plus dans l'objet (elle relançait « Fixer les frais ? » en boucle)
+  infoLivraison = { manuel: true, frais: fraisLivraison, km: (infoLivraison && infoLivraison.km != null) ? infoLivraison.km : undefined };
   fermerFraisLivr();
   majTotal(); afficherBandeauClient(); afficherTicket();
 }
