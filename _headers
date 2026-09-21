@@ -1,0 +1,13 @@
+# 🧭 Gin Khao — règles de cache Netlify (fichier _headers, racine du dépôt)
+#    Les PAGES ne sont jamais gardées en vieille copie par une tablette :
+#    à chaque ouverture, Chrome revérifie la version en ligne (fin des
+#    « ma tablette affiche une ancienne caisse »). Les images restent en cache.
+
+/*.html
+  Cache-Control: no-cache, must-revalidate
+
+/*.js
+  Cache-Control: no-cache, must-revalidate
+
+/
+  Cache-Control: no-cache, must-revalidate
