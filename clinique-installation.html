@@ -102,8 +102,15 @@
       const r = await rest('sites?select=slug');
       if (!r.ok) { ligne('base', 'acces', 'ko', 'La base répond ' + r.status, r.status === 404 ? 'La table <code>sites</code> n\'existe pas : l\'installateur (1-installer) n\'a pas été exécuté.' : 'Vérifier l\'URL et la clé.'); return; }
       const slugs = (await r.json()).map((x) => x.slug);
-      ligne('base', 'acces', 'ok', 'Base jointe · sites déclarés : ' + esc(slugs.join(', ') || 'aucun'));
-      ligne('base', 'site', slugs.includes(SITE) ? 'ok' : 'ko', slugs.includes(SITE) ? 'Le site « ' + esc(SITE) + ' » existe dans la base' : 'Le site « ' + esc(SITE) + ' » n\'est PAS dans la table sites', slugs.includes(SITE) ? '' : 'Exécuter l\'installateur du bon restaurant (il insère le site).');
+      // 🩺 v2 : la table sites n'est lisible qu'avec un compte connecté (règle « authenticated ») —
+      //    sans compte, une liste vide n'est PAS une absence. La vraie vérification se fait en section 3.
+      if (slugs.length) {
+        ligne('base', 'acces', 'ok', 'Base jointe · sites déclarés : ' + esc(slugs.join(', ')));
+        ligne('base', 'site', slugs.includes(SITE) ? 'ok' : 'ko', slugs.includes(SITE) ? 'Le site « ' + esc(SITE) + ' » existe dans la base' : 'Le site « ' + esc(SITE) + ' » n\'est PAS dans la table sites', slugs.includes(SITE) ? '' : 'Exécuter l\'installateur du bon restaurant (il insère le site).');
+      } else {
+        ligne('base', 'acces', 'ok', 'Base jointe');
+        ligne('base', 'site', 'warn', 'Site « ' + esc(SITE) + ' » : à confirmer après la connexion du compte (section 3)', 'La table <code>sites</code> n\'est lisible qu\'une fois connecté.');
+      }
       const rp = await rest('produits?select=id&limit=1000'); const np = rp.ok ? (await rp.json()).length : -1;
       ligne('base', 'carte', np > 0 ? 'ok' : (np === 0 ? 'warn' : 'ko'), np > 0 ? 'Carte présente : ' + np + ' produit(s)' : (np === 0 ? 'Carte vide' : 'Table produits inaccessible'), np === 0 ? 'Exécuter <code>3-carte.sql</code> (carte de départ).' : '');
       const rh = await rest('relais_heartbeat?select=site,battu_le,serveur_impression_ok,imprimantes&site=eq.' + encodeURIComponent(SITE));
@@ -111,7 +118,7 @@
       else if (!rh.ok) ligne('base', 'heartbeat', 'ko', 'Battement de cœur : la base répond ' + rh.status);
       else {
         const h = (await rh.json())[0];
-        if (!h) ligne('base', 'heartbeat', 'warn', 'Aucun battement de cœur reçu du Pi pour ce site', 'Normal si le Pi n\'est pas encore installé (relais-borne v3). Sinon : vérifier le Pi.');
+        if (!h) ligne('base', 'heartbeat', 'warn', 'Aucun battement de cœur reçu du Pi pour ce site', 'Normal si le Pi n\'est pas encore installé (relais-borne v4+). Sinon : vérifier le Pi.');
         else {
           const age = Math.round((Date.now() - new Date(h.battu_le).getTime()) / 60000);
           const kos = Object.keys(h.imprimantes || {}).filter((n) => h.imprimantes[n] && h.imprimantes[n].ok === false);
@@ -135,6 +142,8 @@
       ligne('compte', 'droits', a && (a.sites || []).includes(SITE) ? 'ok' : 'ko', a ? 'Droits Manager : ' + esc((a.sites || []).join(', ')) : 'Aucun droit Manager pour ce compte', a && (a.sites || []).includes(SITE) ? '' : 'Exécuter <code>2-comptes-…sql</code> (avec cet email).');
       const rp = await rest('profils?select=role', { jeton: j.access_token }); const p = rp.ok ? (await rp.json())[0] : null;
       ligne('compte', 'admin', p && p.role === 'admin' ? 'ok' : 'ko', p ? 'Profil : ' + esc(p.role) : 'Aucun profil', p && p.role === 'admin' ? '' : 'Sans profil admin, le gérant ne peut pas modifier la carte ni les charges (2-comptes).');
+      const rs = await rest('sites?select=slug', { jeton: j.access_token }); const slugsA = rs.ok ? (await rs.json()).map((x) => x.slug) : [];
+      ligne('base', 'site', slugsA.includes(SITE) ? 'ok' : 'ko', slugsA.includes(SITE) ? 'Le site « ' + esc(SITE) + ' » existe dans la base (sites : ' + esc(slugsA.join(', ')) + ')' : 'Le site « ' + esc(SITE) + ' » n\'est PAS dans la table sites (' + esc(slugsA.join(', ') || 'vide') + ')', slugsA.includes(SITE) ? '' : 'Exécuter l\'installateur du bon restaurant (il insère le site).');
       const rv = await rest('ventes?select=id&limit=1', { jeton: j.access_token });
       ligne('compte', 'ventes', rv.ok ? 'ok' : 'ko', rv.ok ? 'Lecture des ventes autorisée (historique, RAZ)' : 'Lecture des ventes refusée (' + rv.status + ')');
     } catch (e) { ligne('compte', 'login', 'ko', 'Erreur : ' + esc(e.message)); }
