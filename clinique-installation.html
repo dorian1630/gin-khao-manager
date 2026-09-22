@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🏗️ Clinique d'installation — Gin Khao</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root { --gold:#E4B860; --ok:#7BD389; --ko:#FF6B6B; --warn:#FFC857; --bg:#0A0908; --card:#171412; --txt:#F3EDE2; --muted:#a79f92; }
+  body { margin:0; background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,sans-serif; padding:18px; max-width:860px; margin:0 auto; }
+  h1 { font-size:22px; margin:8px 0 2px; color:var(--gold); } .sub { color:var(--muted); font-size:13px; margin-bottom:16px; }
+  section { background:var(--card); border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+  h2 { font-size:15px; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .ligne { display:flex; gap:10px; align-items:flex-start; padding:7px 0; border-top:1px solid rgba(255,255,255,.06); font-size:14px; }
+  .ligne:first-of-type { border-top:0; } .etat { width:22px; flex:none; text-align:center; } .txt { flex:1; } .aide { color:var(--muted); font-size:12px; margin-top:2px; }
+  .ok .etat { color:var(--ok); } .ko .etat { color:var(--ko); } .warn .etat { color:var(--warn); } .att .etat { color:var(--muted); }
+  input, button { font:inherit; border-radius:9px; border:1px solid rgba(255,255,255,.15); background:#0f0d0c; color:var(--txt); padding:9px 11px; }
+  input { width:100%; box-sizing:border-box; margin:4px 0; } button { background:var(--gold); color:#0A0908; font-weight:700; cursor:pointer; margin:4px 6px 0 0; } button.sec { background:transparent; color:var(--gold); border-color:var(--gold); }
+  .bilan { font-size:16px; font-weight:700; padding:12px 14px; border-radius:12px; margin-bottom:12px; } .bilan.ok { background:rgba(123,211,137,.15); color:var(--ok); } .bilan.ko { background:rgba(255,107,107,.15); color:var(--ko); }
+  code { background:rgba(255,255,255,.08); padding:1px 5px; border-radius:5px; font-size:12px; }
+</style>
+</head>
+<body>
+<h1>🏗️ Clinique d'installation</h1>
+<div class="sub">Vérifie, par la machine, que cette installation est complète et cohérente. Rien n'est modifié. À lancer sur la tablette caisse (même réseau que le Pi).</div>
+<div id="bilan" class="bilan">⏳ Analyse en cours…</div>
+
+<section><h2>1 · La fiche d'installation (Netlify)</h2><div id="s-fiche"></div></section>
+<section><h2>2 · La base de données</h2><div id="s-base"></div></section>
+<section><h2>3 · Le compte du gérant</h2>
+  <div id="s-compte"></div>
+  <input id="c-email" type="email" placeholder="email du gérant" autocomplete="username">
+  <input id="c-mdp" type="password" placeholder="mot de passe" autocomplete="current-password">
+  <button onclick="verifierCompte()">Vérifier le compte</button>
+</section>
+<section><h2>4 · Le paiement (SumUp) et les fonctions du site</h2><div id="s-paiement"></div></section>
+<section><h2>5 · Le temps réel</h2><div id="s-realtime"></div></section>
+<section><h2>6 · Le Pi et les imprimantes</h2>
+  <div id="s-pi"></div>
+  <input id="pi-url" type="text" placeholder="adresse du relais, ex : http://192.168.1.68:9100">
+  <button onclick="verifierPi()">Interroger le Pi</button>
+  <button class="sec" onclick="testImpression('cuisine')">🖨️ Test cuisine</button>
+  <button class="sec" onclick="testImpression('sushi')">🖨️ Test sushi</button>
+  <button class="sec" onclick="testImpression('borne')">🖨️ Test ticket</button>
+  <div class="aide">Sur une page https, Chrome doit autoriser le « contenu non sécurisé » pour joindre le Pi (réglage du site, comme pour la caisse).</div>
+</section>
+<section><h2>7 · Les versions déployées</h2><div id="s-versions"></div></section>
+
+<script>
+(function () {
+  const GK = (window.GK_CONFIG && typeof window.GK_CONFIG === 'object') ? window.GK_CONFIG : null;
+  const $ = (id) => document.getElementById(id);
+  const etats = {};
+  function ligne(sec, cle, etat, texte, aide) {
+    etats[sec + ':' + cle] = etat;
+    let el = document.getElementById('l-' + sec + '-' + cle);
+    if (!el) { el = document.createElement('div'); el.id = 'l-' + sec + '-' + cle; $('s-' + sec).appendChild(el); }
+    el.className = 'ligne ' + etat;
+    el.innerHTML = '<div class="etat">' + ({ ok: '✅', ko: '❌', warn: '⚠️', att: '⏳' })[etat] + '</div><div class="txt">' + texte + (aide ? '<div class="aide">' + aide + '</div>' : '') + '</div>';
+    bilan();
+  }
+  function bilan() {
+    const v = Object.values(etats); const ko = v.filter((e) => e === 'ko').length, warn = v.filter((e) => e === 'warn').length, att = v.filter((e) => e === 'att').length;
+    const b = $('bilan');
+    if (att) { b.className = 'bilan'; b.textContent = '⏳ ' + att + ' vérification(s) en cours…'; return; }
+    if (ko) { b.className = 'bilan ko'; b.textContent = '❌ ' + ko + ' problème(s) à régler' + (warn ? ' · ' + warn + ' point(s) d\'attention' : ''); return; }
+    b.className = 'bilan ok'; b.textContent = '✅ Installation cohérente' + (warn ? ' · ' + warn + ' point(s) d\'attention' : '');
+  }
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  function decoderJwt(t) { try { return JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) { return null; } }
+  let URL_SB = null, CLE = null, SITE = null, REF = null, sbc = null;
+
+  // ── 1. la fiche ──
+  if (!GK) { ligne('fiche', 'presence', 'ko', 'Aucune fiche d\'installation (window.GK_CONFIG)', 'Netlify → Site configuration → Build & deploy → Post processing → Snippet injection → coller la fiche <code>4-netlify-fiche-…html</code> AVANT &lt;/head&gt;, puis Trigger deploy.'); }
+  else {
+    ligne('fiche', 'presence', 'ok', 'Fiche présente');
+    const urlOk = typeof GK.supabaseUrl === 'string' && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(GK.supabaseUrl);
+    ligne('fiche', 'url', urlOk ? 'ok' : 'ko', 'URL Supabase : <code>' + esc(GK.supabaseUrl) + '</code>', urlOk ? '' : 'Attendu : https://xxxx.supabase.co (Supabase → Settings → API → Project URL)');
+    const jwt = typeof GK.supabaseKey === 'string' ? decoderJwt(GK.supabaseKey) : null;
+    if (!jwt) ligne('fiche', 'cle', 'ko', 'Clé Supabase illisible', 'Coller la clé « anon public » (Settings → API), pas une autre.');
+    else {
+      REF = jwt.ref; const roleOk = jwt.role === 'anon';
+      ligne('fiche', 'cle', roleOk ? 'ok' : 'ko', 'Clé : rôle <code>' + esc(jwt.role) + '</code>, projet <code>' + esc(jwt.ref) + '</code>', roleOk ? '' : 'La fiche doit contenir la clé ANON PUBLIC — jamais la clé service_role.');
+      const coherent = urlOk && GK.supabaseUrl.indexOf(jwt.ref) !== -1;
+      ligne('fiche', 'coherence', coherent ? 'ok' : 'ko', coherent ? 'La clé appartient bien à cette base' : 'La clé n\'appartient PAS au projet de l\'URL', coherent ? '' : 'URL et clé viennent de deux projets différents.');
+    }
+    const siteOk = typeof GK.site === 'string' && /^[a-z][a-z-]{1,24}$/.test(GK.site);
+    ligne('fiche', 'site', siteOk ? 'ok' : 'ko', 'Site : <code>' + esc(GK.site) + '</code>', siteOk ? '' : 'Attendu : st-antoine, la-capelette, st-ferreol ou st-just.');
+    if (urlOk && jwt && siteOk) { URL_SB = GK.supabaseUrl; CLE = GK.supabaseKey; SITE = GK.site; }
+    if (siteOk && GK.site !== 'st-just' && REF === 'szpgbdnijyoquqmjhhjj') ligne('fiche', 'melange', 'ko', 'Cette installation (' + esc(GK.site) + ') pointe vers LA BASE DE SAINT-JUST', 'Une base par restaurant : créer le projet Supabase de ce resto et mettre SON URL et SA clé dans la fiche.');
+  }
+
+  async function rest(chemin, opts) {
+    const r = await fetch(URL_SB + '/rest/v1/' + chemin, Object.assign({ headers: Object.assign({ apikey: CLE, Authorization: 'Bearer ' + (opts && opts.jeton || CLE) }, (opts && opts.headers) || {}) }, opts || {}));
+    return r;
+  }
+  // ── 2. la base ──
+  async function verifierBase() {
+    if (!URL_SB) { ligne('base', 'acces', 'ko', 'Base non vérifiable (fiche invalide)'); return; }
+    ligne('base', 'acces', 'att', 'Connexion à la base…');
+    try {
+      const r = await rest('sites?select=slug');
+      if (!r.ok) { ligne('base', 'acces', 'ko', 'La base répond ' + r.status, r.status === 404 ? 'La table <code>sites</code> n\'existe pas : l\'installateur (1-installer) n\'a pas été exécuté.' : 'Vérifier l\'URL et la clé.'); return; }
+      const slugs = (await r.json()).map((x) => x.slug);
+      ligne('base', 'acces', 'ok', 'Base jointe · sites déclarés : ' + esc(slugs.join(', ') || 'aucun'));
+      ligne('base', 'site', slugs.includes(SITE) ? 'ok' : 'ko', slugs.includes(SITE) ? 'Le site « ' + esc(SITE) + ' » existe dans la base' : 'Le site « ' + esc(SITE) + ' » n\'est PAS dans la table sites', slugs.includes(SITE) ? '' : 'Exécuter l\'installateur du bon restaurant (il insère le site).');
+      const rp = await rest('produits?select=id&limit=1000'); const np = rp.ok ? (await rp.json()).length : -1;
+      ligne('base', 'carte', np > 0 ? 'ok' : (np === 0 ? 'warn' : 'ko'), np > 0 ? 'Carte présente : ' + np + ' produit(s)' : (np === 0 ? 'Carte vide' : 'Table produits inaccessible'), np === 0 ? 'Exécuter <code>3-carte.sql</code> (carte de départ).' : '');
+      const rh = await rest('relais_heartbeat?select=site,battu_le,serveur_impression_ok,imprimantes&site=eq.' + encodeURIComponent(SITE));
+      if (rh.status === 404) ligne('base', 'heartbeat', 'ko', 'Table du battement de cœur absente', 'Exécuter <code>5-heartbeat.sql</code>.');
+      else if (!rh.ok) ligne('base', 'heartbeat', 'ko', 'Battement de cœur : la base répond ' + rh.status);
+      else {
+        const h = (await rh.json())[0];
+        if (!h) ligne('base', 'heartbeat', 'warn', 'Aucun battement de cœur reçu du Pi pour ce site', 'Normal si le Pi n\'est pas encore installé (relais-borne v3). Sinon : vérifier le Pi.');
+        else {
+          const age = Math.round((Date.now() - new Date(h.battu_le).getTime()) / 60000);
+          const kos = Object.keys(h.imprimantes || {}).filter((n) => h.imprimantes[n] && h.imprimantes[n].ok === false);
+          ligne('base', 'heartbeat', age <= 3 && h.serveur_impression_ok && !kos.length ? 'ok' : 'ko', 'Dernier battement du Pi : il y a ' + age + ' min · serveur d\'impression ' + (h.serveur_impression_ok ? 'OK' : 'ARRÊTÉ') + (kos.length ? ' · injoignable : ' + esc(kos.join(', ')) : ' · imprimantes OK'));
+        }
+      }
+    } catch (e) { ligne('base', 'acces', 'ko', 'Base injoignable : ' + esc(e.message), 'Réseau, URL ou clé.'); }
+  }
+  // ── 3. le compte ──
+  window.verifierCompte = async function () {
+    if (!URL_SB) { ligne('compte', 'login', 'ko', 'Fiche invalide'); return; }
+    const email = ($('c-email').value || '').trim().toLowerCase(), mdp = $('c-mdp').value || '';
+    if (!email || !mdp) { ligne('compte', 'login', 'warn', 'Saisir l\'email et le mot de passe du gérant'); return; }
+    ligne('compte', 'login', 'att', 'Connexion…');
+    try {
+      const r = await fetch(URL_SB + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: CLE, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: mdp }) });
+      const j = await r.json();
+      if (!r.ok || !j.access_token) { ligne('compte', 'login', 'ko', 'Connexion refusée : ' + esc(j.error_description || j.msg || r.status), 'Le compte doit exister dans CE projet (Authentication → Users → Add user).'); return; }
+      ligne('compte', 'login', 'ok', 'Connexion acceptée pour ' + esc(email));
+      const ra = await rest('acces_manager?select=email,sites', { jeton: j.access_token }); const a = ra.ok ? (await ra.json())[0] : null;
+      ligne('compte', 'droits', a && (a.sites || []).includes(SITE) ? 'ok' : 'ko', a ? 'Droits Manager : ' + esc((a.sites || []).join(', ')) : 'Aucun droit Manager pour ce compte', a && (a.sites || []).includes(SITE) ? '' : 'Exécuter <code>2-comptes-…sql</code> (avec cet email).');
+      const rp = await rest('profils?select=role', { jeton: j.access_token }); const p = rp.ok ? (await rp.json())[0] : null;
+      ligne('compte', 'admin', p && p.role === 'admin' ? 'ok' : 'ko', p ? 'Profil : ' + esc(p.role) : 'Aucun profil', p && p.role === 'admin' ? '' : 'Sans profil admin, le gérant ne peut pas modifier la carte ni les charges (2-comptes).');
+      const rv = await rest('ventes?select=id&limit=1', { jeton: j.access_token });
+      ligne('compte', 'ventes', rv.ok ? 'ok' : 'ko', rv.ok ? 'Lecture des ventes autorisée (historique, RAZ)' : 'Lecture des ventes refusée (' + rv.status + ')');
+    } catch (e) { ligne('compte', 'login', 'ko', 'Erreur : ' + esc(e.message)); }
+  };
+  // ── 4. paiement + fonctions ──
+  async function verifierPaiement() {
+    if (!URL_SB) return;
+    try {
+      const r = await rest('sumup_readers?select=nom,reader_id,actif&site=eq.' + encodeURIComponent(SITE)); const l = r.ok ? await r.json() : [];
+      const actifs = l.filter((x) => x.actif);
+      ligne('paiement', 'lecteurs', actifs.length ? 'ok' : 'warn', actifs.length ? 'Lecteur(s) SumUp déclaré(s) : ' + esc(actifs.map((x) => x.nom).join(', ')) : 'Aucun lecteur SumUp actif pour ce site', actifs.length ? '' : 'Sans lecteur, la borne n\'affiche que « paiement au comptoir ». Déclarer le lecteur (checklist étape 7).');
+    } catch (e) { ligne('paiement', 'lecteurs', 'ko', 'Lecteurs : ' + esc(e.message)); }
+    for (const f of ['borne-enregistrer-vente', 'sumup-reader-checkout', 'sumup-check-status', 'sumup-cancel-reader', 'pointer']) {
+      try { const r = await fetch('/.netlify/functions/' + f, { method: 'OPTIONS' }); ligne('paiement', f, r.status !== 404 ? 'ok' : 'ko', 'Fonction <code>' + f + '</code> ' + (r.status !== 404 ? 'présente' : 'ABSENTE (404)'), r.status !== 404 ? '' : 'Le site Netlify ne déploie pas netlify/functions — vérifier le dépôt/branche.'); }
+      catch (e) { ligne('paiement', f, 'ko', 'Fonction <code>' + f + '</code> : ' + esc(e.message)); }
+    }
+  }
+  // ── 5. temps réel ──
+  function verifierRealtime() {
+    if (!URL_SB || !window.supabase) { ligne('realtime', 'canal', 'ko', 'Temps réel non vérifiable'); return; }
+    ligne('realtime', 'canal', 'att', 'Abonnement au canal des commandes…');
+    try {
+      sbc = window.supabase.createClient(URL_SB, CLE);
+      let fini = false;
+      const t = setTimeout(() => { if (!fini) { fini = true; ligne('realtime', 'canal', 'ko', 'Pas de confirmation du temps réel en 8 s', 'Vérifier la publication supabase_realtime (installateur) et le réseau.'); } }, 8000);
+      sbc.channel('clinique-' + Date.now()).on('postgres_changes', { event: '*', schema: 'public', table: 'commandes_en_cours' }, () => {})
+        .subscribe((st) => { if (fini) return; if (st === 'SUBSCRIBED') { fini = true; clearTimeout(t); ligne('realtime', 'canal', 'ok', 'Temps réel actif (commandes borne → caisse)'); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { fini = true; clearTimeout(t); ligne('realtime', 'canal', 'ko', 'Temps réel en erreur : ' + esc(st)); } });
+    } catch (e) { ligne('realtime', 'canal', 'ko', 'Temps réel : ' + esc(e.message)); }
+  }
+  // ── 6. le Pi ──
+  function urlPi() { let u = ($('pi-url').value || '').trim().replace(/\/+$/, ''); return u; }
+  window.verifierPi = async function () {
+    const u = urlPi(); if (!u) { ligne('pi', 'sante', 'warn', 'Saisir l\'adresse du relais (http://IP:9100)'); return; }
+    ligne('pi', 'sante', 'att', 'Interrogation du Pi…');
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch(u + '/sante', { signal: ctl.signal }); const j = await r.json();
+      ligne('pi', 'sante', 'ok', 'Pi joignable · serveur d\'impression ' + esc(j.version) + ' · ' + esc(j.adresse || '') + (j.siret ? ' · SIRET ' + esc(j.siret) : ' · <b>SIRET non renseigné</b>'));
+      for (const n of Object.keys(j.imprimantes || {})) { const e = j.imprimantes[n]; ligne('pi', 'imp-' + n, e.ok ? 'ok' : 'ko', 'Imprimante <b>' + esc(n) + '</b> (' + esc(e.ip) + ') : ' + (e.ok ? 'joignable en ' + e.ms + ' ms' : 'INJOIGNABLE (' + esc(e.detail || '') + ')'), e.ok ? '' : 'Allumée ? Même réseau ? IP réservée dans la box ?'); }
+      try { localStorage.setItem('relais_url', u); } catch (e) { /* ignore */ }
+    } catch (e) {
+      ligne('pi', 'sante', 'ko', 'Pi injoignable à ' + esc(u), 'Tablette et Pi sur le même réseau ? Chrome autorise le contenu non sécurisé pour ce site ? Le Pi est-il en v10 (/sante) ? Adresse et port corrects ?');
+    }
+  };
+  window.testImpression = async function (poste) {
+    const u = urlPi(); if (!u) { ligne('pi', 'test', 'warn', 'Saisir l\'adresse du relais'); return; }
+    ligne('pi', 'test', 'att', 'Impression test ' + poste + '…');
+    try { const r = await fetch(u + '/test-' + poste); const j = await r.json(); ligne('pi', 'test', j.ok ? 'ok' : 'ko', j.ok ? 'Test ' + esc(poste) + ' envoyé : ' + esc(j.message) : 'Test ' + esc(poste) + ' : ' + esc(j.erreur)); }
+    catch (e) { ligne('pi', 'test', 'ko', 'Test ' + esc(poste) + ' : ' + esc(e.message)); }
+  };
+  // ── 7. versions ──
+  async function verifierVersions() {
+    for (const [page, re] of [['pos.html', /caisse v[0-9.]+-[a-z]+/], ['borne.html', /borne v[0-9.]+-[a-z]+/]]) {
+      try { const t = await (await fetch(page, { cache: 'no-store' })).text(); const m = t.match(re); ligne('versions', page, m ? 'ok' : 'warn', page + ' : ' + esc(m ? m[0] : 'marqueur introuvable')); }
+      catch (e) { ligne('versions', page, 'ko', page + ' : ' + esc(e.message)); }
+    }
+  }
+  try { const memo = localStorage.getItem('relais_url'); if (memo) $('pi-url').value = memo; } catch (e) { /* ignore */ }
+  const p = new URLSearchParams(location.search).get('relais'); if (p) $('pi-url').value = p;
+  verifierBase(); verifierPaiement(); verifierRealtime(); verifierVersions();
+  ligne('compte', 'login', 'warn', 'Saisir le compte du gérant ci-dessous pour vérifier ses droits');
+  if ($('pi-url').value) window.verifierPi(); else ligne('pi', 'sante', 'warn', 'Saisir l\'adresse du relais ci-dessous, ou ouvrir la clinique avec ?relais=http://IP:9100');
+})();
+</script>
+</body>
+</html>
