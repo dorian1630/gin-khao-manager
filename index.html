@@ -5260,7 +5260,7 @@ navBtns.forEach(btn => {
 
 // 🏷️ C10 : LE MARQUEUR DE VERSION — visible en bas à gauche (comme la caisse) :
 //    on sait enfin quelle version un téléphone exécute vraiment.
-const VERSION_MANAGER = 'Manager C12';
+const VERSION_MANAGER = 'Manager C13';
 document.addEventListener('DOMContentLoaded', () => {
   try {
     const m = document.createElement('div');
@@ -5718,15 +5718,25 @@ async function chargerDroitsManager() {
     const { data: { session } } = await sbClient.auth.getSession();
     email = String((session && session.user && session.user.email) || '').toLowerCase();
   } catch (e) { email = ''; }
-  let sites = [];
+  // 🔐 C13 : une LECTURE QUI ÉCHOUE (incident, lenteur, réseau) n'est pas « aucun droit ».
+  //    Avant : échec → signOut GLOBAL → toutes les caisses du même compte perdaient leur
+  //    session (historique à zéro, commandes borne muettes). Désormais : on le dit, et on
+  //    ne déconnecte personne. Et un vrai « aucun droit » ne déconnecte que CET appareil.
+  let sites = [], lectureOk = false;
   try {
-    const { data } = await sbClient.from('acces_manager').select('sites').ilike('email', email).maybeSingle();
+    const { data, error } = await sbClient.from('acces_manager').select('sites').ilike('email', email).maybeSingle();
+    if (error) throw error;
+    lectureOk = true;
     sites = (data && Array.isArray(data.sites)) ? data.sites.filter((x) => SITES_MGR[x]) : [];
-  } catch (e) { sites = []; }
+  } catch (e) { sites = []; lectureOk = false; }
   SITES_AUTORISES = sites;
+  if (!lectureOk) {
+    signalerErreurManager('Impossible de vérifier les droits du compte (base injoignable ?). Recharge la page dans un instant.');
+    return false;
+  }
   if (!SITES_AUTORISES.length) {
     alert('Ce compte n\'a accès à aucun restaurant.\nDemande à l\'administrateur de l\'ajouter dans les droits (acces_manager).');
-    try { await sbClient.auth.signOut(); } catch (e) { /* ignore */ }
+    try { await sbClient.auth.signOut({ scope: 'local' }); } catch (e) { /* ignore */ }   // 🔐 C13 : cet appareil seulement
     location.reload();
     return false;
   }
@@ -5795,7 +5805,7 @@ async function seConnecter() {
 
 async function seDeconnecter() {
   if (!confirm('Se déconnecter de l\'app ?')) return;
-  await sbClient.auth.signOut();
+  await sbClient.auth.signOut({ scope: 'local' });   // 🔐 C13 : cet appareil seulement — jamais les caisses
   location.reload();
 }
 
