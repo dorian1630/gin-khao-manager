@@ -6008,6 +6008,14 @@ html, body {
       </span>
       <span class="drawer-arrow">›</span>
     </button>
+    <button class="drawer-item" onclick="actualiserCarte()">
+      <span class="drawer-icon">🔄</span>
+      <span class="drawer-label">
+        <b>Actualiser la carte</b>
+        <span>Nouveaux plats, prix, images — sans recharger</span>
+      </span>
+      <span class="drawer-arrow">›</span>
+    </button>
   </div>
 </div>
 
@@ -6073,7 +6081,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bu</span></div>
+<div style="position:fixed;bottom:4px;left:8px;font-size:10px;color:rgba(0,0,0,0.22);z-index:9999;pointer-events:none;"><span id="marqueur-version">caisse v26.07-bv</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="noyau-commande.js"></script>
 <script>
@@ -10991,6 +10999,19 @@ function validerCodeAdmin() {
       majAffichageCodeAdmin();
       if (msg) msg.textContent = '';
     }, 1000);
+  }
+}
+// 🔄 v26.07-bv : ACTUALISER LA CARTE depuis le menu ☰ — relit catégories et produits
+//    (chargerMenu, déjà utilisée pour rafraîchir le stock) sans recharger la page :
+//    le ticket en cours et la session ne bougent pas.
+async function actualiserCarte() {
+  fermerMenuHamburger();
+  afficherToast('🔄', 'Actualisation de la carte…', 'plats, prix, images');
+  try {
+    await chargerMenu();
+    afficherToast('✅', 'Carte à jour', (produits ? produits.length : 0) + ' produits');
+  } catch (e) {
+    posAlert('Actualisation impossible : ' + (e && e.message || e));
   }
 }
 function fermerMenuHamburger() {
