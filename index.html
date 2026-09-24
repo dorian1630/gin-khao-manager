@@ -162,10 +162,11 @@ html, body {
 .app-content::-webkit-scrollbar { display: none; }
 
 /* Screens */
-/* 📜 D1 : UNE SEULE PAGE QUI DÉFILE — tous les écrans à la suite (Accueil, Ventes, Équipe,
-   Compta, Clients, Assistant) ; la barre du bas fait défiler jusqu'à la section. */
-.screen { display: block; padding: 8px 20px 20px; scroll-margin-top: 8px; }
-.screen + .screen { border-top: 1px solid var(--border-soft); margin-top: 6px; padding-top: 18px; }
+/* 📜 D2 : écrans séparés (comme avant D1), capsule WHOOP conservée */
+.screen { display: none; padding: 8px 20px 20px; animation: fadeIn 0.35s ease; }
+.screen.active { display: block; }
+/* la capsule s'efface quand une fenêtre est ouverte (elle passait devant les boutons des fiches) */
+body.modale-ouverte .capsule-nav, body.modale-ouverte .plus-sheet { display: none !important; }
 #screen-reviews, #screen-stock { display: none !important; }   /* D1 : écrans de démonstration (chiffres fictifs) retirés */
 .guide { font-size: 11.5px; line-height: 1.35; color: var(--text-mute); margin-top: 6px; }
 .guide::before { content: "✦ "; color: var(--gold); }
@@ -175,7 +176,7 @@ html, body {
 .point-du-jour p { margin: 0; font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--text); }
 .point-du-jour p b { color: var(--gold); font-variant-numeric: tabular-nums; }
 /* la capsule WHOOP : 4 entrées + le rond de l'assistant */
-.capsule-nav { position: fixed; left: 0; right: 0; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; gap: 10px; padding: 0 14px; z-index: 900; pointer-events: none; }
+.capsule-nav { position: fixed; left: 0; right: 0; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; gap: 10px; padding: 0 14px; z-index: 800; pointer-events: none; }
 .capsule-nav .capsule { pointer-events: auto; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; width: min(340px, calc(100% - 76px)); height: 64px; border-radius: 32px; background: rgba(38, 33, 29, 0.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.07); box-shadow: 0 12px 30px rgba(0,0,0,0.45); }
 .capsule-nav .capsule .nav-btn { background: none; border: none; color: var(--text-mute); font-family: inherit; font-size: 11px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; cursor: pointer; }
 .capsule-nav .capsule .nav-btn .nav-icon { width: 22px; height: 22px; }
@@ -5294,47 +5295,37 @@ const navBtns = document.querySelectorAll('.nav-btn');
 const screens = document.querySelectorAll('.screen');
 const appContent = document.getElementById('app-content');
 
-// 📜 D1 : ORDRE DES SECTIONS sur la page qui défile
-const ORDRE_SECTIONS = ['home', 'sales', 'equipe', 'compta', 'clients', 'ai'];
-ORDRE_SECTIONS.forEach((k) => { const el = document.getElementById('screen-' + k); if (el) appContent.appendChild(el); });
-const _initFaits = {};
-function initSection(key) {   // chaque section charge ses données UNE fois, à la demande ou quand elle arrive à l'écran
-  if (_initFaits[key]) return; _initFaits[key] = true;
-  try {
-    if (key === 'sales' && typeof initVentes === 'function') initVentes();
-    if (key === 'compta' && typeof rafraichirCompta === 'function') setTimeout(rafraichirCompta, 50);
-    if (key === 'clients' && typeof chargerClients === 'function') chargerClients();
-    if (key === 'equipe' && typeof chargerEquipe === 'function') chargerEquipe();
-  } catch (e) { signalerErreurManager('Section ' + key + ' : ' + (e && e.message || e)); }
-}
+// 📜 D2 : ÉCRANS SÉPARÉS — la capsule bascule d'un écran à l'autre (Compta et Clients via « Plus »)
 function marquerNavActive(screenKey) {
   const dansPlus = ['compta', 'clients'].includes(screenKey);
   navBtns.forEach(b => b.classList.toggle('active', b.dataset.screen === screenKey || (dansPlus && b.id === 'btn-plus')));
 }
 function switchScreen(screenKey) {
-  const cible = document.getElementById('screen-' + screenKey);
   fermerPlus();
   marquerNavActive(screenKey);
-  initSection(screenKey);
-  if (cible) cible.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + screenKey));
+  appContent.scrollTop = 0;
+  if (screenKey === 'clients' && typeof chargerClients === 'function') chargerClients();
+  if (screenKey === 'equipe' && typeof chargerEquipe === 'function') chargerEquipe();
 }
+// 🪟 la capsule s'efface quand une fenêtre (fiche, modale) est ouverte
+const SELECTEURS_FENETRES = '.eq-overlay[style*="flex"], .eq-overlay[style*="block"], .modal-overlay.active, .clients-modal.show, .charges-modal.show';
+function surveillerFenetres() {
+  const maj = () => document.body.classList.toggle('modale-ouverte', !!document.querySelector(SELECTEURS_FENETRES));
+  try { new MutationObserver(maj).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['style', 'class'] }); } catch (e) { setInterval(maj, 400); }
+  maj();
+}
+document.addEventListener('DOMContentLoaded', surveillerFenetres);
 function basculerPlus() { const p = document.getElementById('plus-sheet'); if (p) p.classList.toggle('ouvert'); }
 function fermerPlus() { const p = document.getElementById('plus-sheet'); if (p) p.classList.remove('ouvert'); }
 document.addEventListener('click', (ev) => { if (!ev.target.closest('#plus-sheet') && !ev.target.closest('#btn-plus')) fermerPlus(); });
 navBtns.forEach(btn => {
   if (btn.dataset.screen) btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
 });
-// à l'écran → la section se charge, et la barre suit le défilement
-if ('IntersectionObserver' in window) {
-  const obs = new IntersectionObserver((entrees) => {
-    entrees.forEach((e) => { if (e.isIntersecting) { const key = e.target.id.replace('screen-', ''); initSection(key); if (e.intersectionRatio > 0.35) marquerNavActive(key); } });
-  }, { root: appContent, threshold: [0.05, 0.4] });
-  ORDRE_SECTIONS.forEach((k) => { const el = document.getElementById('screen-' + k); if (el) obs.observe(el); });
-}
 
 // 🏷️ C10 : LE MARQUEUR DE VERSION — visible en bas à gauche (comme la caisse) :
 //    on sait enfin quelle version un téléphone exécute vraiment.
-const VERSION_MANAGER = 'Manager D1';
+const VERSION_MANAGER = 'Manager D2';
 document.addEventListener('DOMContentLoaded', () => {
   try {
     const m = document.createElement('div');
