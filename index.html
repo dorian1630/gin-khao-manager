@@ -162,8 +162,33 @@ html, body {
 .app-content::-webkit-scrollbar { display: none; }
 
 /* Screens */
-.screen { display: none; padding: 8px 20px 20px; animation: fadeIn 0.35s ease; }
-.screen.active { display: block; }
+/* 📜 D1 : UNE SEULE PAGE QUI DÉFILE — tous les écrans à la suite (Accueil, Ventes, Équipe,
+   Compta, Clients, Assistant) ; la barre du bas fait défiler jusqu'à la section. */
+.screen { display: block; padding: 8px 20px 20px; scroll-margin-top: 8px; }
+.screen + .screen { border-top: 1px solid var(--border-soft); margin-top: 6px; padding-top: 18px; }
+#screen-reviews, #screen-stock { display: none !important; }   /* D1 : écrans de démonstration (chiffres fictifs) retirés */
+.guide { font-size: 11.5px; line-height: 1.35; color: var(--text-mute); margin-top: 6px; }
+.guide::before { content: "✦ "; color: var(--gold); }
+.point-du-jour { background: var(--surface-2, #1d1a17); border: 1px solid var(--border-soft); border-radius: 18px; padding: 14px 16px 13px; margin: 0 0 14px; }
+.point-du-jour .pdj-qui { display: flex; align-items: center; gap: 8px; color: var(--text-mute); font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.point-du-jour .pdj-qui i { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(212, 175, 90, 0.16); display: inline-block; }
+.point-du-jour p { margin: 0; font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--text); }
+.point-du-jour p b { color: var(--gold); font-variant-numeric: tabular-nums; }
+/* la capsule WHOOP : 4 entrées + le rond de l'assistant */
+.capsule-nav { position: fixed; left: 0; right: 0; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; gap: 10px; padding: 0 14px; z-index: 900; pointer-events: none; }
+.capsule-nav .capsule { pointer-events: auto; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; width: min(340px, calc(100% - 76px)); height: 64px; border-radius: 32px; background: rgba(38, 33, 29, 0.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.07); box-shadow: 0 12px 30px rgba(0,0,0,0.45); }
+.capsule-nav .capsule .nav-btn { background: none; border: none; color: var(--text-mute); font-family: inherit; font-size: 11px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; cursor: pointer; }
+.capsule-nav .capsule .nav-btn .nav-icon { width: 22px; height: 22px; }
+.capsule-nav .capsule .nav-btn.active { color: #fff; }
+.capsule-nav .rond { pointer-events: auto; width: 64px; height: 64px; border-radius: 20px; background: rgba(38, 33, 29, 0.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.07); box-shadow: 0 12px 30px rgba(0,0,0,0.45); display: grid; place-items: center; cursor: pointer; }
+.capsule-nav .rond span { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: var(--text); background: radial-gradient(circle at 30% 30%, #2a2622, #15120f); box-shadow: 0 0 0 2.5px var(--gold), 0 0 18px rgba(212, 175, 90, 0.45); }
+.plus-sheet { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width: min(340px, calc(100% - 28px)); background: rgba(38, 33, 29, 0.96); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 10px; display: none; grid-template-columns: 1fr 1fr; gap: 8px; z-index: 901; box-shadow: 0 12px 30px rgba(0,0,0,0.45); }
+.plus-sheet.ouvert { display: grid; }
+.plus-sheet .nav-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; color: var(--text); font-family: inherit; font-weight: 700; font-size: 13px; padding: 12px 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.plus-sheet .nav-btn .nav-icon { width: 20px; height: 20px; }
+.plus-sheet .nav-btn.active { color: var(--gold); }
+.app-content { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+.bottom-nav { display: none; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -3559,9 +3584,15 @@ html, body {
           </div>
         </header>
 
+        <!-- 🗣️ D1 : LE POINT DU JOUR — une phrase claire, construite à partir des chiffres -->
+        <div class="point-du-jour" id="point-du-jour">
+          <div class="pdj-qui"><i></i><span id="pdj-titre">Le point du jour</span></div>
+          <p id="pdj-texte">Un instant, je lis la journée…</p>
+        </div>
+
         <!-- HERO -->
         <div class="hero">
-          <div class="hero-label">Chiffre d'affaires · Aujourd'hui</div>
+          <div class="hero-label">Chiffre du jour</div>
           <div class="hero-amount"><span id="hero-amount">0</span><span class="currency">€</span></div>
           <div class="hero-delta">
             <span class="label" id="hero-delta-label">Données en direct de la caisse</span>
@@ -3584,16 +3615,19 @@ html, body {
             <div class="kpi-label">Commandes</div>
             <div class="kpi-value" id="kpi-commandes">0</div>
             <div class="kpi-sub" id="kpi-commandes-sub">aujourd'hui</div>
+            <div class="guide">Tickets encaissés depuis l'ouverture, borne comprise.</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Ticket moy.</div>
+            <div class="kpi-label">Ticket moyen</div>
             <div class="kpi-value" id="kpi-ticket-moyen">0,00€</div>
             <div class="kpi-sub" id="kpi-ticket-sub">par commande</div>
+            <div class="guide">Le chiffre du jour divisé par le nombre de commandes.</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Note</div>
-            <div class="kpi-value">4,2★</div>
-            <div class="kpi-sub down">↓ 0,1</div>
+            <div class="kpi-label">Clôture du soir</div>
+            <div class="kpi-value" id="kpi-cloture">—</div>
+            <div class="kpi-sub" id="kpi-cloture-sub">à faire le soir</div>
+            <div class="guide">Le total du jour, enregistré et imprimé depuis la caisse.</div>
           </div>
         </div>
 
@@ -4143,7 +4177,7 @@ html, body {
           <div class="fec-card" onclick="ouvrirExportFEC()">
             <div class="fec-icon">📦</div>
             <div class="fec-content">
-              <div class="fec-title">Export FEC</div>
+              <div class="fec-title">Export comptable (FEC)</div>
               <div class="fec-desc">Fichier des Écritures Comptables (norme NF Z 42-013) à fournir en cas de contrôle fiscal</div>
             </div>
             <svg class="fec-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4506,7 +4540,7 @@ html, body {
           <button class="prod-back" onclick="fermerExportFEC()" title="Retour">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
-          <h2>Export FEC</h2>
+          <h2>Export comptable (FEC)</h2>
           <div style="width:38px;"></div>
         </div>
 
@@ -5197,6 +5231,20 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
     </div>
 
     <!-- ====== BOTTOM NAV ====== -->
+    <!-- 📜 D1 : la capsule WHOOP — 4 entrées, le rond de l'assistant, et « Plus » pour le reste -->
+    <div class="plus-sheet" id="plus-sheet">
+      <button class="nav-btn" data-screen="compta"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/></svg><span class="nav-label">Compta</span></button>
+      <button class="nav-btn" data-screen="clients"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-label">Clients</span></button>
+    </div>
+    <nav class="capsule-nav">
+      <div class="capsule">
+        <button class="nav-btn active" data-screen="home"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Accueil</span></button>
+        <button class="nav-btn" data-screen="sales"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="nav-label">Ventes</span></button>
+        <button class="nav-btn" data-screen="equipe"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="nav-label">Équipe</span></button>
+        <button class="nav-btn" id="btn-plus" type="button" onclick="basculerPlus()"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="nav-label">Plus</span></button>
+      </div>
+      <div class="rond" title="Assistant" onclick="switchScreen('ai')"><span>GK</span></div>
+    </nav>
     <nav class="bottom-nav">
       <button class="nav-btn active" data-screen="home">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -5238,29 +5286,55 @@ On vous attend ce soir, ou livraison Uber/Deliveroo</div>
 </div>
 
 <!-- Supabase (pour la fidélité) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
 <script>
 // ===== TAB NAVIGATION =====
 const navBtns = document.querySelectorAll('.nav-btn');
 const screens = document.querySelectorAll('.screen');
 const appContent = document.getElementById('app-content');
 
-function switchScreen(screenKey) {
-  navBtns.forEach(b => b.classList.toggle('active', b.dataset.screen === screenKey));
-  screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + screenKey));
-  appContent.scrollTop = 0;
-  if (screenKey === 'clients' && typeof chargerClients === 'function') chargerClients();
-  if (screenKey === 'equipe' && typeof chargerEquipe === 'function') chargerEquipe();
+// 📜 D1 : ORDRE DES SECTIONS sur la page qui défile
+const ORDRE_SECTIONS = ['home', 'sales', 'equipe', 'compta', 'clients', 'ai'];
+ORDRE_SECTIONS.forEach((k) => { const el = document.getElementById('screen-' + k); if (el) appContent.appendChild(el); });
+const _initFaits = {};
+function initSection(key) {   // chaque section charge ses données UNE fois, à la demande ou quand elle arrive à l'écran
+  if (_initFaits[key]) return; _initFaits[key] = true;
+  try {
+    if (key === 'sales' && typeof initVentes === 'function') initVentes();
+    if (key === 'compta' && typeof rafraichirCompta === 'function') setTimeout(rafraichirCompta, 50);
+    if (key === 'clients' && typeof chargerClients === 'function') chargerClients();
+    if (key === 'equipe' && typeof chargerEquipe === 'function') chargerEquipe();
+  } catch (e) { signalerErreurManager('Section ' + key + ' : ' + (e && e.message || e)); }
 }
-
+function marquerNavActive(screenKey) {
+  const dansPlus = ['compta', 'clients'].includes(screenKey);
+  navBtns.forEach(b => b.classList.toggle('active', b.dataset.screen === screenKey || (dansPlus && b.id === 'btn-plus')));
+}
+function switchScreen(screenKey) {
+  const cible = document.getElementById('screen-' + screenKey);
+  fermerPlus();
+  marquerNavActive(screenKey);
+  initSection(screenKey);
+  if (cible) cible.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function basculerPlus() { const p = document.getElementById('plus-sheet'); if (p) p.classList.toggle('ouvert'); }
+function fermerPlus() { const p = document.getElementById('plus-sheet'); if (p) p.classList.remove('ouvert'); }
+document.addEventListener('click', (ev) => { if (!ev.target.closest('#plus-sheet') && !ev.target.closest('#btn-plus')) fermerPlus(); });
 navBtns.forEach(btn => {
-  btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
+  if (btn.dataset.screen) btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
 });
+// à l'écran → la section se charge, et la barre suit le défilement
+if ('IntersectionObserver' in window) {
+  const obs = new IntersectionObserver((entrees) => {
+    entrees.forEach((e) => { if (e.isIntersecting) { const key = e.target.id.replace('screen-', ''); initSection(key); if (e.intersectionRatio > 0.35) marquerNavActive(key); } });
+  }, { root: appContent, threshold: [0.05, 0.4] });
+  ORDRE_SECTIONS.forEach((k) => { const el = document.getElementById('screen-' + k); if (el) obs.observe(el); });
+}
 
 // 🏷️ C10 : LE MARQUEUR DE VERSION — visible en bas à gauche (comme la caisse) :
 //    on sait enfin quelle version un téléphone exécute vraiment.
-const VERSION_MANAGER = 'Manager C13';
+const VERSION_MANAGER = 'Manager D1';
 document.addEventListener('DOMContentLoaded', () => {
   try {
     const m = document.createElement('div');
@@ -5317,7 +5391,20 @@ function signalerErreurManager(msg) {
     document.getElementById('mgr-erreur-txt').textContent = '⚠️ ' + String(msg || 'Erreur inconnue').slice(0, 300);
   } catch (e) { /* jamais bloquant */ }
 }
-window.addEventListener('error', (ev) => { if (ev && ev.message) signalerErreurManager(ev.message); });
+window.addEventListener('error', (ev) => {
+  if (!ev || !ev.message) return;
+  // 🩺 C14 : « Script error. » nu = erreur dans un script d'un autre domaine, masquée par le
+  //    navigateur. Les scripts externes sont désormais chargés en CORS (crossorigin) pour
+  //    obtenir le vrai message ; s'il reste masqué, on le dit et on nomme la source.
+  const msg = (ev.message === 'Script error.' || ev.message === 'Script error')
+    ? 'Erreur dans une librairie externe (' + (ev.filename || 'source masquée par le navigateur') + ') — non bloquante si les chiffres s\'affichent'
+    : ev.message + (ev.filename ? ' (' + ev.filename.split('/').pop() + ':' + ev.lineno + ')' : '');
+  signalerErreurManager(msg);
+});
+window.addEventListener('unhandledrejection', (ev) => {   // 🩺 C14 : les promesses rejetées sans catch sont visibles aussi
+  const r = ev && ev.reason; if (!r) return;
+  signalerErreurManager('Erreur non traitée : ' + (r.message || String(r)));
+});
 window.addEventListener('unhandledrejection', (ev) => { const r = ev && ev.reason; signalerErreurManager((r && (r.message || r.details)) || r); });
 
 // ===== PERIOD TABS =====
@@ -7719,6 +7806,33 @@ function majGreetingHome() {
 }
 
 // Charge le CA et les KPI du jour
+// 🗣️ D1 : LE POINT DU JOUR — une phrase claire construite à partir des chiffres (sans IA pour
+//    l'instant : l'assistant viendra reformuler en D2). Et la carte « Clôture du soir ».
+function phraseDuJour(total, nbVentes, moyen, heure, cloture) {
+  const eur = (n) => Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €';
+  const moment = heure < 12 ? 'ce matin' : heure < 18 ? 'cet après-midi' : 'ce soir';
+  let p;
+  if (!nbVentes) p = heure < 11 ? 'La journée n\'a pas encore commencé : aucune vente pour l\'instant.' : 'Aucune vente enregistrée pour l\'instant ' + moment + '.';
+  else p = '<b>' + eur(total) + '</b> ' + moment + ', <b>' + nbVentes + '</b> vente' + (nbVentes > 1 ? 's' : '') + ', ticket moyen <b>' + Number(moyen).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €</b>.';
+  if (cloture && cloture.faite) p += ' La clôture du soir est faite (Z n°' + cloture.numero + ' à ' + cloture.heure + ').';
+  else if (heure >= 21 && nbVentes) p += ' Il reste la clôture du soir à faire.';
+  return p;
+}
+async function majPointDuJour(total, nbVentes, moyen) {
+  try {
+    const heure = new Date().getHours();
+    let cloture = null;
+    try {
+      const debut = new Date(); debut.setHours(0, 0, 0, 0);
+      const { data } = await sbClient.from('clotures').select('numero_z, periode_fin').eq('restaurant_id', RESTO_ID).in('site', MGR_SITES).gte('periode_fin', debut.toISOString()).order('periode_fin', { ascending: false }).limit(1);
+      if (data && data[0]) cloture = { faite: true, numero: data[0].numero_z, heure: new Date(data[0].periode_fin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) };
+    } catch (e) { /* sans info de clôture, la phrase reste juste */ }
+    const t = document.getElementById('pdj-texte'); if (t) t.innerHTML = phraseDuJour(total, nbVentes, moyen, heure, cloture);
+    const titre = document.getElementById('pdj-titre'); if (titre) titre.textContent = heure < 12 ? 'Le point du matin' : heure < 18 ? 'Le point de l\'après-midi' : 'Le point du soir';
+    const kc = document.getElementById('kpi-cloture'), ks = document.getElementById('kpi-cloture-sub');
+    if (kc && ks) { if (cloture) { kc.textContent = 'Faite'; ks.textContent = 'Z n°' + cloture.numero + ' · ' + cloture.heure; ks.className = 'kpi-sub'; } else { kc.textContent = nbVentes ? 'À faire' : '—'; ks.textContent = nbVentes ? 'depuis la caisse, le soir' : 'rien à clôturer'; ks.className = 'kpi-sub'; } }
+  } catch (e) { /* la phrase ne doit jamais casser l'accueil */ }
+}
 async function chargerKpisHome() {
   try {
     const debut = new Date();
@@ -7747,6 +7861,7 @@ async function chargerKpisHome() {
     // Ticket moyen
     const moyEl = document.getElementById('kpi-ticket-moyen');
     if (moyEl) moyEl.textContent = moyen.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
+    majPointDuJour(total, nbVentes, moyen);   // 🗣️ D1
   } catch (e) {
     console.error('Erreur chargement KPI home:', e); signalerErreurManager('chargement KPI home : ' + (e && (e.message || e.details || e.hint) || e)); /* 🩺 C9 */
   }
