@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#F4F6FA">
+<meta name="theme-color" content="#0A0C12">
 <link rel="manifest" href="manifest-manager.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Manager">
-<meta name="theme-color" content="#F4F6FA">
+<meta name="theme-color" content="#0A0C12">
 <title>Gin Khao Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3549,6 +3549,26 @@ button.btn-primary, .btn-gold, .eq-btn-primary, .tache button, .btn-notif-encais
 /* la courbe : trait bleu avec halo */
 .hero svg path[stroke], .chart svg path[stroke] { filter: drop-shadow(0 6px 10px rgba(31, 94, 255, 0.35)); }
 .wf-fill { min-width: 6px; border-radius: 999px; }   /* D6.1 : une charge minuscule garde une barre propre */
+
+/* ══════════════════ 🖤 D6.4 · FOND NOIR — la page en noir bleuté, les cartes restent blanches et en relief ══════════════════ */
+:root { --bg-deep: #0A0C12; --bg-page-texte: #F4F6FA; --bg-page-texte-2: #9AA3B5; }
+body, .desktop-stage, .phone { background: radial-gradient(900px 500px at 15% -10%, #16213A 0%, transparent 60%), radial-gradient(700px 400px at 110% 15%, #101A30 0%, transparent 55%), #0A0C12 !important; }
+.app-content { background: transparent; }
+/* ce qui est posé sur le fond (hors cartes) passe en clair */
+.app-header h1, .app-header .screen-title, #home-greeting, .home-greeting { color: #FFFFFF; }
+.app-header .screen-sub, #home-date, .home-date, .hero-label-out, .app-header p { color: var(--bg-page-texte-2); }
+#mgr-site-libelle, .home-site { color: #5B8CFF; }
+.bell, .logout, .app-header button { background: linear-gradient(180deg, #1B2233, #121828); border: 1px solid rgba(255, 255, 255, 0.10); color: #E6EAF2; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.bell.actif { color: #5B8CFF; border-color: #5B8CFF; }
+/* les cartes : blanches, ombres profondes sur fond noir */
+:root { --ombre-1: 0 2px 4px rgba(0, 0, 0, 0.35), 0 10px 24px rgba(0, 0, 0, 0.35), 0 24px 60px rgba(31, 94, 255, 0.10); --ombre-2: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.45), 0 40px 90px rgba(31, 94, 255, 0.16); }
+.kpi, .section, .point-du-jour, .stock-ligne, .eq-card, .charge-item, .clients-card, .compta-card, .venti-card, .card, .hero { border-color: rgba(255, 255, 255, 0.6); }
+.screen + .screen { border-top-color: rgba(255, 255, 255, 0.06); }
+/* titres de sections posés hors carte (le cas échéant) */
+.screen > .section-title, .screen > h2, .screen > .section-head .section-title { color: #FFFFFF; }
+/* la capsule : verre clair sur fond noir */
+.capsule-nav .capsule { background: rgba(255, 255, 255, 0.86); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.5), inset 0 1px 0 #fff; }
+#marqueur-version { color: rgba(255, 255, 255, 0.35) !important; }
 </style>
 </head>
 <body>
