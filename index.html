@@ -192,7 +192,7 @@ body.modale-ouverte .capsule-nav, body.modale-ouverte .plus-sheet { display: non
 .recap-axes li::marker { color: var(--gold); }
 .bell.actif { border-color: var(--gold); color: var(--gold); }
 /* la capsule WHOOP : 4 entrées + le rond de l'assistant */
-.capsule-nav { position: fixed; left: 0; right: 0; bottom: max(8px, env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; gap: 10px; padding: 0 12px; z-index: 800; pointer-events: none; }   /* D6.2 : collée au bas de l'écran */
+.capsule-nav { position: fixed; left: 0; right: 0; bottom: 0; padding: 0 12px max(8px, env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; gap: 10px; z-index: 800; pointer-events: none; }   /* D6.3 : bottom: 0, la marge est dans le padding */
 .capsule-nav .capsule { pointer-events: auto; display: grid; grid-template-columns: repeat(7, 1fr); align-items: center; width: min(440px, 100%); height: 64px; border-radius: 32px; background: rgba(255, 255, 255, 0.90); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(15, 23, 42, 0.06); box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14); }
 .capsule-nav .capsule .nav-btn { background: none; border: none; color: var(--text-mute); font-family: inherit; font-size: 9.5px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; cursor: pointer; }
 .capsule-nav .capsule .nav-btn .nav-icon { width: 21px; height: 21px; }
@@ -1906,11 +1906,14 @@ body.modale-ouverte .capsule-nav, body.modale-ouverte .plus-sheet { display: non
     inset: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;            /* D6.3 : la vraie hauteur visible (barre Safari comprise) */
+    min-height: -webkit-fill-available;
     min-height: 0;
     border-radius: 0;
     border: none;
     box-shadow: none;
   }
+  html, body { height: 100%; height: 100dvh; margin: 0; overflow: hidden; }
   .notch { display: none; }
   /* On masque la fausse barre : la vraie barre iPhone affiche déjà l'heure */
   .status-bar { display: none; }
