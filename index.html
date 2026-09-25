@@ -205,7 +205,7 @@ body.modale-ouverte .capsule-nav, body.modale-ouverte .plus-sheet { display: non
 .plus-sheet .nav-btn .nav-icon { width: 20px; height: 20px; }
 .plus-sheet .nav-btn.active { color: var(--gold); }
 .app-content { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
-.bottom-nav { display: none; }
+.bottom-nav { display: none !important; }   /* D6.1 : l'ancienne barre restait derrière la capsule (bande sombre) */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -3542,6 +3542,7 @@ button.btn-primary, .btn-gold, .eq-btn-primary, .tache button, .btn-notif-encais
 .eq-modal, .modal-sheet, .clients-modal, .charges-modal { box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25), var(--reflet); border: 1px solid rgba(255, 255, 255, 0.9); }
 /* la courbe : trait bleu avec halo */
 .hero svg path[stroke], .chart svg path[stroke] { filter: drop-shadow(0 6px 10px rgba(31, 94, 255, 0.35)); }
+.wf-fill { min-width: 6px; border-radius: 999px; }   /* D6.1 : une charge minuscule garde une barre propre */
 </style>
 </head>
 <body>
@@ -5287,7 +5288,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     const m = document.createElement('div');
     m.id = 'marqueur-version';
-    m.style.cssText = 'position:fixed;bottom:2px;left:6px;font-size:9px;color:rgba(255,255,255,.28);z-index:99990;pointer-events:none;';
+    m.style.cssText = 'position:fixed;bottom:calc(84px + env(safe-area-inset-bottom, 0px));left:10px;font-size:9px;color:rgba(15,23,42,.35);z-index:99990;pointer-events:none;';
     m.textContent = VERSION_MANAGER + ' · ' + ((window.GK_CONFIG && window.GK_CONFIG.site) || '?');
     document.body.appendChild(m);
   } catch (e) { /* ignore */ }
